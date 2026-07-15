@@ -12,11 +12,8 @@
 
       <div class="recent-body">
         <div class="recent-card">
-          <div v-if="!loading" class="recent-content">
+          <div class="recent-content">
             <TheMdPreview :content="recent" />
-          </div>
-          <div v-else>
-            <div class="recent-loading">{{ t('recentCard.generating') }}</div>
           </div>
         </div>
       </div>
@@ -34,7 +31,6 @@ import {
   HOME_CACHE_TTL,
   HOME_RECENT_CACHE_KEY,
   readHomeCache,
-  refreshHomeCacheInBackground,
   writeHomeCache,
 } from '@/utils/home-cache'
 
@@ -47,7 +43,6 @@ const { AgentSetting } = storeToRefs(settingStore)
 const { t } = useI18n()
 
 const recent = ref<string>(String(t('recentCard.mysteriousRecent')))
-const loading = ref<boolean>(true)
 
 onMounted(() => {
   if (AgentSetting.value.enable) {
@@ -60,11 +55,6 @@ onMounted(() => {
     const cached = readHomeCache<RecentCachePayload>(HOME_RECENT_CACHE_KEY)
     if (cached) {
       recent.value = cached.data.recent
-      loading.value = false
-      if (!cached.fresh) {
-        void refreshHomeCacheInBackground(HOME_RECENT_CACHE_KEY, HOME_CACHE_TTL, fetchRecentPayload)
-      }
-      return
     }
 
     fetchRecentPayload()
@@ -72,9 +62,6 @@ onMounted(() => {
         if (!payload) return
         recent.value = payload.recent
         writeHomeCache(HOME_RECENT_CACHE_KEY, payload, HOME_CACHE_TTL)
-      })
-      .finally(() => {
-        loading.value = false
       })
   }
 })
@@ -141,11 +128,6 @@ onMounted(() => {
   line-height: 1.65;
   white-space: normal;
   overflow-wrap: anywhere;
-}
-
-.recent-loading {
-  color: var(--color-text-secondary);
-  font-size: 13px;
 }
 
 :deep(.echo-markdown p) {

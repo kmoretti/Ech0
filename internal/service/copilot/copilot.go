@@ -4,6 +4,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/lin-snow/ech0/internal/kvstore"
 	"github.com/lin-snow/ech0/internal/storage"
 	"golang.org/x/sync/singleflight"
@@ -18,6 +20,7 @@ type CopilotService struct {
 	durableKV      kvstore.Store
 	storage        *storage.Manager // 多模态：读取命中 Echo 配图字节用于注入模型
 	recentGenGroup singleflight.Group
+	recentBuilder  func(context.Context) (string, error)
 }
 
 var (
