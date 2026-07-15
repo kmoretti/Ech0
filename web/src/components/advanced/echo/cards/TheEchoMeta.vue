@@ -2,11 +2,11 @@
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
   <div class="echo-meta">
-    <div v-if="tags.length > 0" class="echo-meta-tags">
+    <div v-if="showTags && tags.length > 0" class="echo-meta-tags">
       <span v-for="tag in tags" :key="tag.id" class="echo-meta-chip"> #{{ tag.name }} </span>
     </div>
 
-    <div class="echo-meta-line">
+    <div v-if="showStats" class="echo-meta-line">
       <time class="echo-meta-item" :datetime="String(props.echo.created_at)">
         {{ formatDateTime(props.echo.created_at) }}
       </time>
@@ -40,10 +40,14 @@ const { t } = useI18n()
 
 const props = defineProps<{
   echo: App.Api.Ech0.Echo
+  mode?: 'full' | 'tags' | 'stats'
 }>()
 
 const wordCount = computed(() => countWords(props.echo.content))
 const tags = computed(() => props.echo.tags ?? [])
+const metaMode = computed(() => props.mode ?? 'full')
+const showTags = computed(() => metaMode.value === 'full' || metaMode.value === 'tags')
+const showStats = computed(() => metaMode.value === 'full' || metaMode.value === 'stats')
 </script>
 
 <style scoped>

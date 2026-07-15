@@ -97,6 +97,7 @@ export function fetchGetGithubRepo(githubRepo: { owner: string; repo: string }) 
     dirrectUrlAndData: `https://api.github.com/repos/${githubRepo.owner}/${githubRepo.repo}`,
     url: `/github`,
     method: 'GET',
+    silentError: true,
   })
 }
 

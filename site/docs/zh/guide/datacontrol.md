@@ -36,7 +36,7 @@ ech0 import snapshot ./snapshot.zip --yes  # 破坏性恢复，必须显式确�
 ```
 
 若你要的是**可读、可搬家、能长期保存**的内容备份，而不是整库镜像，请看
-[胶囊与静态站](/zh/docs/guide/capsule)——`ech0 export capsule` 产出的是一棵
+[胶囊与静态站](/docs/guide/capsule)——`ech0 export capsule` 产出的是一棵
 Markdown 目录树，还能一键编译成静态归档站。
 
 完整子命令以 `ech0 --help` 为准。
@@ -91,7 +91,7 @@ Markdown 目录树，还能一键编译成静态归档站。
 
 ## 与对象存储、文件路径
 
-若已启用 **S3**，附件实际在桶内；数据库里存的是引用信息。换桶、换域名、本地⇄对象互迁等操作前请阅读 [对象存储](/zh/docs/guide/s3)，并在测试环境验证后再上生产。
+若已启用 **S3**，附件实际在桶内；数据库里存的是引用信息。换桶、换域名、本地⇄对象互迁等，请参考仓库 **[存储迁移指南](https://github.com/LiuShen-Fork/Ech0/blob/main/docs/usage/storage-migration.md)**，并在测试环境验证后再上生产。
 
 ---
 

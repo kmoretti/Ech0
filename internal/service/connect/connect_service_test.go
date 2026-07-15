@@ -204,10 +204,11 @@ func TestGetConnect_LogoDerivation(t *testing.T) {
 		serverLogo string
 		wantLogo   string
 	}{
-		{"empty logo falls back to default", "https://ech0.app", "", "https://ech0.app/Ech0.svg"},
-		{"Ech0.svg sentinel falls back to default", "https://ech0.app", "Ech0.svg", "https://ech0.app/Ech0.svg"},
-		{"/Ech0.svg sentinel falls back to default", "https://ech0.app", "/Ech0.svg", "https://ech0.app/Ech0.svg"},
-		{"trailing slash on server url is trimmed", "https://ech0.app/", "", "https://ech0.app/Ech0.svg"},
+		{"empty logo falls back to default", "https://ech0.app", "", "https://ech0.app/favicon.ico"},
+		{"Ech0.svg sentinel falls back to default", "https://ech0.app", "Ech0.svg", "https://ech0.app/favicon.ico"},
+		{"/Ech0.svg sentinel falls back to default", "https://ech0.app", "/Ech0.svg", "https://ech0.app/favicon.ico"},
+		{"favicon.ico sentinel falls back to default", "https://ech0.app", "/favicon.ico", "https://ech0.app/favicon.ico"},
+		{"trailing slash on server url is trimmed", "https://ech0.app/", "", "https://ech0.app/favicon.ico"},
 		{"absolute https logo is kept verbatim", "https://ech0.app", "https://cdn.example.com/logo.png", "https://cdn.example.com/logo.png"},
 		{"absolute http logo is kept verbatim", "https://ech0.app", "http://cdn.example.com/logo.png", "http://cdn.example.com/logo.png"},
 		{"root-relative logo joins server url", "https://ech0.app", "/static/logo.png", "https://ech0.app/static/logo.png"},

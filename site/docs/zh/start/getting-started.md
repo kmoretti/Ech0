@@ -42,9 +42,10 @@ docker run -d \
   -p 6277:6277 \
   -v /opt/ech0/data:/app/data \
   -e JWT_SECRET="请改为随机长字符串" \
-  sn0wl1n/ech0:latest
+  <dockerhub-username>/ech0:latest
 ```
 
+- 将 `<dockerhub-username>` 替换为你在 GitHub Actions 中配置的 Docker Hub 用户名。
 - `-v` 把数据存到宿主机 `/opt/ech0/data`，重装容器也不丢库；路径可按需修改。
 - 若端口被占用，把左侧 `6277` 改成例如 `8080:6277`，浏览器则用新端口访问。
 - 命令里的 `JWT_SECRET` 是安全关键，请替换为随机长字符串，勿照抄示例。
@@ -99,6 +100,6 @@ docker run -d \
 
 ---
 
-## 版本差异
+## 与官方仓库的关系
 
-本站文档侧重**上手路径与功能说明**。不同版本之间按钮位置、字段名称可能略有差异；最终以**你实例的界面**与实例上的 OpenAPI（`/swagger/index.html`）为准。
+本定制版的功能说明、环境变量和排错方式以当前仓库的 `README.md` 与 `docs/` 为准；上游通用文档可参考 [`lin-snow/Ech0`](https://github.com/lin-snow/Ech0)。本站文档侧重**上手路径与功能说明**，具体版本差异以当前实例界面和 OpenAPI 为准。

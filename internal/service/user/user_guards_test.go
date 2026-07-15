@@ -265,6 +265,54 @@ func TestUpdateUser_PasswordTooLong(t *testing.T) {
 	require.EqualError(t, err, commonModel.PASSWORD_TOO_LONG)
 }
 
+func TestUpdateUser_AvatarFileIDLifecycle(t *testing.T) {
+	t.Run("stores avatar file id when avatar changes", func(t *testing.T) {
+		svc, m := newUserSvc(t)
+		m.repo.EXPECT().GetUserByID(mock.Anything, "admin-1").
+			Return(helpers.NewUser(withID("admin-1"), helpers.AsAdmin), nil).Once()
+		m.expectTxPassthrough()
+		m.repo.EXPECT().UpdateUser(mock.Anything, mock.Anything).
+			Run(func(_ context.Context, u *userModel.User) {
+				assert.Equal(t, "https://cdn.example.com/avatar.png", u.Avatar)
+				assert.Equal(t, "avatar-file-1", u.AvatarFileID)
+			}).
+			Return(nil).
+			Once()
+		m.file.EXPECT().ConfirmTempFiles(mock.Anything, []string{"avatar-file-1"}).Return(nil).Once()
+
+		err := svc.UpdateUser(helpers.CtxAsUser("admin-1"), userModel.UserInfoDto{
+			Avatar:       "https://cdn.example.com/avatar.png",
+			AvatarFileID: "avatar-file-1",
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("clears avatar and file id when resetting avatar", func(t *testing.T) {
+		svc, m := newUserSvc(t)
+		current := helpers.NewUser(withID("admin-1"), helpers.AsAdmin)
+		current.Avatar = "https://cdn.example.com/avatar.png"
+		current.AvatarFileID = "avatar-file-1"
+		m.repo.EXPECT().GetUserByID(mock.Anything, "admin-1").Return(current, nil).Once()
+		m.expectTxPassthrough()
+		m.repo.EXPECT().UpdateUser(mock.Anything, mock.Anything).
+			Run(func(_ context.Context, u *userModel.User) {
+				assert.Empty(t, u.Avatar)
+				assert.Empty(t, u.AvatarFileID)
+			}).
+			Return(nil).
+			Once()
+
+		err := svc.UpdateUser(helpers.CtxAsUser("admin-1"), userModel.UserInfoDto{
+			ResetAvatar: true,
+		})
+		require.NoError(t, err)
+	})
+}
+
+// ---------------------------------------------------------------------------
+// UpdateUserAdmin：owner-only、不可改自己/owner
+// ---------------------------------------------------------------------------
+
 func TestUpdateUserAdmin_OperatorLookupError(t *testing.T) {
 	svc, m := newUserSvc(t)
 	sentinel := errors.New("db down")

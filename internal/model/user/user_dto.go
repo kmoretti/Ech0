@@ -4,6 +4,8 @@
 package model
 
 type UserInfoDto struct {
+	// 用户�?
+	// example: linsnow
 	Username string `json:"username"`
 
 	Password string `json:"password"`
@@ -18,6 +20,11 @@ type UserInfoDto struct {
 
 	AvatarFileID string `json:"avatar_file_id"`
 
+	// ResetAvatar restores the built-in default avatar.
+	ResetAvatar bool `json:"reset_avatar"`
+
+	// 语言偏好
+	// example: zh-CN
 	Locale string `json:"locale"`
 }
 

@@ -3,60 +3,55 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!--ECH0_SEO_START-->
     <meta
       name="description"
-      content="Ech0 is a next-generation open-source self-hosted platform built for individuals. It is lightweight and low-cost, making it easy to publish and share your ideas, writing, and links."
+      content="提笔摘星是清羽飞扬基于 Ech0 打造的个人个性化说说程序，用于记录想法、文字、图片与链接。"
     />
     <meta name="robots" content="index,follow,max-image-preview:large" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Ech0" />
-    <meta property="og:title" content="Ech0" />
+    <meta property="og:site_name" content="提笔摘星" />
+    <meta property="og:title" content="提笔摘星" />
     <meta
       property="og:description"
-      content="Ech0 is a next-generation open-source self-hosted platform built for individuals. It is lightweight and low-cost, making it easy to publish and share your ideas, writing, and links."
+      content="提笔摘星是清羽飞扬基于 Ech0 打造的个人个性化说说程序，用于记录想法、文字、图片与链接。"
     />
     <meta property="og:url" content="/" />
-    <meta property="og:image" content="/og-cover.jpg" />
-    <meta property="og:image:type" content="image/jpeg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Ech0" />
+    <meta property="og:image" content="/web-app-manifest-512x512.png" />
+    <meta property="og:image:alt" content="提笔摘星" />
     <meta property="og:locale" content="zh_CN" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Ech0" />
+    <meta name="twitter:title" content="提笔摘星" />
     <meta
       name="twitter:description"
-      content="Ech0 is a next-generation open-source self-hosted platform built for individuals. It is lightweight and low-cost, making it easy to publish and share your ideas, writing, and links."
+      content="提笔摘星是清羽飞扬基于 Ech0 打造的个人个性化说说程序，用于记录想法、文字、图片与链接。"
     />
-    <meta name="twitter:image" content="/og-cover.jpg" />
-    <meta name="twitter:image:alt" content="Ech0" />
+    <meta name="twitter:image" content="/web-app-manifest-512x512.png" />
+    <meta name="twitter:image:alt" content="提笔摘星" />
 
-    <title>Ech0</title>
+    <title>提笔摘星</title>
 
     <script id="website-jsonld" type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "WebSite",
-        "name": "Ech0",
-        "description": "Ech0 is a next-generation open-source self-hosted platform built for individuals. It is lightweight and low-cost, making it easy to publish and share your ideas, writing, and links.",
+        "name": "提笔摘星",
+        "description": "提笔摘星是清羽飞扬基于 Ech0 打造的个人个性化说说程序，用于记录想法、文字、图片与链接。",
         "url": "/",
         "publisher": {
-          "@type": "Organization",
-          "name": "Ech0 Team",
-          "logo": "/Ech0.png"
+          "@type": "Person",
+          "name": "清羽飞扬"
         },
-        "sameAs": ["https://github.com/lin-snow/Ech0"]
+        "sameAs": ["https://github.com/LiuShen-Fork/Ech0"]
       }
     </script>
     <!--ECH0_SEO_END-->
 
-    <link rel="alternate" type="application/atom+xml" title="Ech0 Atom Feed" href="/rss" />
+    <link rel="alternate" type="application/atom+xml" title="提笔摘星 Atom Feed" href="/rss" />
 
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png" />
@@ -68,8 +63,12 @@
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#f4f1ec" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#333333" media="(prefers-color-scheme: dark)" />
-    <meta name="author" content="Ech0 Team" />
-    <meta name="generator" content="Ech0" />
+    <meta
+      name="keywords"
+      content="提笔摘星, Ech0, 清羽飞扬, 个人说说, 微博客, 自托管, 图片, 链接, 个人网站"
+    />
+    <meta name="author" content="清羽飞扬" />
+    <meta name="generator" content="提笔摘星 / Ech0" />
 
     <style>
       html.app-loading,
@@ -117,10 +116,43 @@
         pointer-events: none;
       }
 
+      .loader-shell {
+        width: 90px;
+        height: 90px;
+        margin: 0 auto;
+        position: relative;
+      }
+
+      .loader-widget-smile {
+        position: absolute;
+        inset: 50%;
+        width: 60px;
+        height: 60px;
+        transform: translate(-50%, -50%);
+        color: #8b8b8b;
+        filter: drop-shadow(0 6px 12px rgba(146, 102, 59, 0.14));
+      }
+
+      .loader-widget-smile::before {
+        content: '';
+        position: absolute;
+        inset: -10px;
+        border-radius: 999px;
+        border: 1px dashed rgba(177, 130, 84, 0.3);
+        animation: smile-spin 3.4s linear infinite;
+      }
+
+      .loader-widget-smile svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        animation: smile-spin 1.2s linear infinite;
+      }
+
       #app-loader .loader-brand {
         margin: 0;
-        display: flex;
-        justify-content: center;
         text-align: center;
         font-family: 'Iowan Old Style', 'Palatino Linotype', 'Noto Serif SC', ui-serif, Georgia, serif;
         font-size: 42px;
@@ -128,33 +160,7 @@
         letter-spacing: 0.06em;
         color: #7a5436;
         text-shadow: 0 6px 24px rgba(139, 99, 58, 0.2);
-        animation: brand-fade-up 0.7s ease-out both;
-      }
-
-      #app-loader .loader-brand span {
-        display: inline-block;
-        transform-origin: 50% 100%;
-        animation: letter-hop 2s ease-in-out infinite;
-      }
-
-      #app-loader .loader-brand span:nth-child(odd) {
-        --tilt: -4deg;
-      }
-
-      #app-loader .loader-brand span:nth-child(even) {
-        --tilt: 4deg;
-      }
-
-      #app-loader .loader-brand span:nth-child(2) {
-        animation-delay: 0.09s;
-      }
-
-      #app-loader .loader-brand span:nth-child(3) {
-        animation-delay: 0.18s;
-      }
-
-      #app-loader .loader-brand span:nth-child(4) {
-        animation-delay: 0.27s;
+        animation: brand-fade-up 0.9s ease-out both;
       }
 
       #app-loader p {
@@ -167,7 +173,6 @@
         font-size: 12px;
         letter-spacing: 0.16em;
         color: rgba(124, 93, 62, 0.82);
-        animation: brand-fade-up 0.7s ease-out 0.2s both;
       }
 
       #app-loader p::after {
@@ -184,20 +189,12 @@
         visibility: hidden;
       }
 
-      @keyframes letter-hop {
-        0%,
-        40%,
-        100% {
-          transform: translateY(0) scale(1) rotate(0deg);
+      @keyframes smile-spin {
+        from {
+          transform: rotate(0deg);
         }
-        10% {
-          transform: translateY(0.04em) scale(1.08, 0.92) rotate(0deg);
-        }
-        22% {
-          transform: translateY(-0.3em) scale(0.96, 1.05) rotate(var(--tilt, 0deg));
-        }
-        32% {
-          transform: translateY(0) scale(1.06, 0.94) rotate(0deg);
+        to {
+          transform: rotate(360deg);
         }
       }
 
@@ -223,9 +220,10 @@
 
       @media (prefers-reduced-motion: reduce) {
         #app-loader .loader-brand,
-        #app-loader .loader-brand span,
         #app-loader p,
-        #app-loader p::after {
+        #app-loader p::after,
+        .loader-widget-smile::before,
+        .loader-widget-smile svg {
           animation: none;
         }
       }
@@ -238,13 +236,28 @@
       <!--ECH0_NOSCRIPT_END-->
     </div>
     <div id="app-loader">
-      <h1 class="loader-brand" aria-label="Ech0">
-        <span aria-hidden="true">E</span>
-        <span aria-hidden="true">c</span>
-        <span aria-hidden="true">h</span>
-        <span aria-hidden="true">0</span>
-      </h1>
-      <p lang="en">A little moment, please</p>
+      <div class="loader-shell" aria-hidden="true">
+        <div class="loader-widget-smile">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <g
+              fill="none"
+              stroke="#888888"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+            >
+              <path
+                d="M12 3c4.97 0 9 4.03 9 9c0 4.97 -4.03 9 -9 9c-4.97 0 -9 -4.03 -9 -9c0 -4.97 4.03 -9 9 -9"
+              />
+              <path d="M9 9v1" />
+              <path d="M15 9v1" />
+              <path d="M8 14c0.5 1.5 1.79 3 4 3c2.21 0 3.5 -1.5 4 -3" />
+            </g>
+          </svg>
+        </div>
+      </div>
+      <h1 class="loader-brand">提笔摘星</h1>
+      <p>静候灵感落笔</p>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

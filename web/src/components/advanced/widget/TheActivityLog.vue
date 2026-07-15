@@ -45,6 +45,17 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import WidgetShell from './WidgetShell.vue'
 import { fetchGetHeatMap } from '@/service/api'
+import {
+  HOME_ACTIVITY_CACHE_KEY,
+  HOME_CACHE_TTL,
+  readHomeCache,
+  refreshHomeCacheInBackground,
+  writeHomeCache,
+} from '@/utils/home-cache'
+
+type ActivityCachePayload = {
+  data: App.Api.Ech0.HeatMap
+}
 
 defineProps<{ fluid?: boolean }>()
 
@@ -115,10 +126,27 @@ function hideTooltip() {
   tooltip.value.visible = false
 }
 
+const fetchActivityPayload = async (): Promise<ActivityCachePayload | null> => {
+  const res = await fetchGetHeatMap()
+  if (!res.data) return null
+  return { data: res.data }
+}
+
 onMounted(async () => {
+  const cached = readHomeCache<ActivityCachePayload>(HOME_ACTIVITY_CACHE_KEY)
+  if (cached) {
+    heatmapData.value = cached.data.data
+    if (!cached.fresh) {
+      void refreshHomeCacheInBackground(HOME_ACTIVITY_CACHE_KEY, HOME_CACHE_TTL, fetchActivityPayload)
+    }
+    return
+  }
+
   try {
-    const res = await fetchGetHeatMap()
-    if (res.data) heatmapData.value = res.data
+    const payload = await fetchActivityPayload()
+    if (!payload) return
+    heatmapData.value = payload.data
+    writeHomeCache(HOME_ACTIVITY_CACHE_KEY, payload, HOME_CACHE_TTL)
   } catch {}
 })
 </script>

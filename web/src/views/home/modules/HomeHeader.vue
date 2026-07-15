@@ -28,13 +28,15 @@
           <Rss class="w-4 h-4" />
         </a>
         <button
+          v-if="isLogin"
           type="button"
-          v-tooltip="t('zenMode.tooltip')"
-          :aria-label="t('zenMode.tooltip')"
+          v-tooltip="t('homeSidebar.panel')"
+          :title="t('homeSidebar.panel')"
+          :aria-label="t('homeSidebar.panel')"
           class="home-header__link-icon"
-          @click="handleGoZen"
+          @click="handleGoPanel"
         >
-          <Zen class="w-4 h-4" />
+          <Setting class="block w-4 h-4" />
         </button>
         <button
           type="button"
@@ -82,7 +84,7 @@ import TreeIcon from '@/components/icons/tree.vue'
 import Rss from '@/components/icons/rss.vue'
 import Auth from '@/components/icons/auth.vue'
 import Signoff from '@/components/icons/signoff.vue'
-import Zen from '@/components/icons/zen.vue'
+import Setting from '@/components/icons/setting.vue'
 import TheLocaleToggle from '@/components/common/TheLocaleToggle.vue'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -190,12 +192,12 @@ const handleGoExplore = async () => {
   await router.push({ name: 'home' })
 }
 
-const handleGoZen = async () => {
-  await router.push({ name: 'zen' })
-}
-
 const handleGoLogin = async () => {
   await router.push({ name: 'auth' })
+}
+
+const handleGoPanel = async () => {
+  await router.push({ name: 'panel-setting' })
 }
 
 const handleLogout = () => {

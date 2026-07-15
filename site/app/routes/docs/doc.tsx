@@ -1,80 +1,56 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2025-2026 lin-snow
-
-import { Link, redirect, useLocation } from "react-router";
+import { Link, redirect } from "react-router";
 import type { Route } from "./+types/doc";
 import { DocToc } from "../../docs/DocToc";
-import { LocaleSwitch } from "../../docs/LocaleSwitch";
 import { getDoc } from "../../docs/registry";
 import { MarkdownDoc } from "../../docs/MarkdownDoc";
 import { extractTocFromMarkdown } from "../../docs/toc";
-import {
-  docPath,
-  docsIndexPath,
-  localeFromPathname,
-  OG_LOCALE,
-} from "../../docs/locale";
-import { DOCS_UI } from "../../docs/ui";
 import { absoluteUrl } from "../../site";
 
-export function meta({ loaderData, location }: Route.MetaArgs) {
-  const locale = loaderData?.locale ?? localeFromPathname(location.pathname);
-  if (!loaderData?.title) {
-    return [{ title: DOCS_UI[locale].docsTitle }];
+export function meta({ data }: Route.MetaArgs) {
+  if (!data?.title) {
+    return [{ title: "文档 - 提笔摘星" }];
   }
-  const title = `${loaderData.title} — Ech0 Docs`;
-  const description =
-    loaderData.description || `${loaderData.title} — Ech0 documentation.`;
   return [
-    { title },
-    { name: "description", content: description },
-    { property: "og:title", content: title },
-    { property: "og:description", content: description },
+    { title: `${data.title} - 提笔摘星文档` },
     {
-      property: "og:url",
-      content: absoluteUrl(docPath(locale, loaderData.slug)),
+      name: "description",
+      content: data.description || `${data.title} - 提笔摘星文档。`,
     },
-    { property: "og:locale", content: OG_LOCALE[locale] },
+    { property: "og:title", content: `${data.title} - 提笔摘星文档` },
+    { property: "og:url", content: absoluteUrl(`/docs/${data.slug}`) },
   ];
 }
 
 const LEGACY_DOC_REDIRECTS: Record<string, string> = {
-  "guide/connect": "guide/federation",
-  "guide/hub": "guide/federation",
-  "guide/oauth": "guide/sso",
-  "guide/passkey": "guide/sso",
-  "design/palette": "",
-  "start/credits": "start/community",
+  "guide/connect": "/docs/guide/federation",
+  "guide/hub": "/docs/guide/federation",
+  "guide/oauth": "/docs/guide/sso",
+  "guide/passkey": "/docs/guide/sso",
+  "design/palette": "/docs",
+  "start/credits": "/docs/start/community",
 };
 
-export async function clientLoader({
-  params,
-  request,
-}: Route.ClientLoaderArgs) {
-  const locale = localeFromPathname(new URL(request.url).pathname);
+export async function clientLoader({ params }: Route.ClientLoaderArgs) {
   const splat = params["*"]?.replace(/\/$/, "") ?? "";
   if (splat === "" || splat === "README") {
-    return redirect(docsIndexPath(locale));
+    return redirect("/docs");
   }
   const legacy = LEGACY_DOC_REDIRECTS[splat];
-  if (legacy !== undefined) {
-    return redirect(docPath(locale, legacy));
+  if (legacy) {
+    return redirect(legacy);
   }
-  const doc = getDoc(splat, locale);
+  const doc = getDoc(splat);
   if (!doc) throw new Response("Not Found", { status: 404 });
   return {
     body: doc.body,
     title: doc.title,
     description: doc.description,
     slug: splat,
-    locale,
   };
 }
 
 export default function DocsPage({ loaderData }: Route.ComponentProps) {
-  const { pathname } = useLocation();
-  const { body, title, description, locale } = loaderData;
-  const ui = DOCS_UI[locale];
+  const { body, title, description } = loaderData;
   const toc = extractTocFromMarkdown(body);
   const hasToc = toc.length > 0;
   const firstMeaningfulLine = body
@@ -86,19 +62,17 @@ export default function DocsPage({ loaderData }: Route.ComponentProps) {
   const mdProps = {
     content: body,
     tocItems: hasToc ? toc : undefined,
-    locale,
   } as const;
 
   return (
     <>
-      <div className="flex items-center justify-between pt-8">
+      <div className="flex items-center pt-8">
         <Link
-          to={docsIndexPath(locale)}
+          to="/docs"
           className="text-xs font-medium text-sand-11 transition-colors hover:text-sand-12"
         >
-          ← {ui.allDocs}
+          ← All docs
         </Link>
-        <LocaleSwitch locale={locale} pathname={pathname} />
       </div>
 
       {!hasTopH1 ? (
@@ -133,7 +107,7 @@ export default function DocsPage({ loaderData }: Route.ComponentProps) {
 
       {hasToc ? (
         <div className="mt-8 lg:grid lg:grid-cols-[minmax(0,12rem)_minmax(0,30rem)_minmax(0,11rem)] lg:items-start lg:gap-x-8">
-          <DocToc items={toc} label={ui.onThisPage} />
+          <DocToc items={toc} />
           <div className="min-w-0">
             <article className="lg:max-w-none">
               <MarkdownDoc {...mdProps} />
