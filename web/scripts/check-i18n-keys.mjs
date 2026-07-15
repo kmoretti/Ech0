@@ -18,7 +18,7 @@ const flatten = (obj, prefix = '', result = new Map()) => {
 
 const readLocale = (name) => {
   const content = readFileSync(join(localesDir, name), 'utf8')
-  return flatten(JSON.parse(content))
+  return flatten(JSON.parse(content.replace(/^\uFEFF/, '')))
 }
 
 const base = readLocale('zh-CN.json')

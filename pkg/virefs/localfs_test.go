@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -159,7 +160,7 @@ func TestLocalFS_Access(t *testing.T) {
 	if info.URL != "" {
 		t.Fatal("Access.URL should be empty for LocalFS without AccessFunc")
 	}
-	if !strings.HasSuffix(info.Path, "doc/readme.txt") {
+	if !strings.HasSuffix(filepath.ToSlash(info.Path), "doc/readme.txt") {
 		t.Fatalf("Access.Path = %q, want suffix doc/readme.txt", info.Path)
 	}
 }
@@ -180,7 +181,7 @@ func TestLocalFS_AccessWithAccessFunc(t *testing.T) {
 	if info.Path == "" {
 		t.Fatal("Access.Path should still be set with AccessFunc")
 	}
-	if !strings.HasSuffix(info.Path, "images/logo.png") {
+	if !strings.HasSuffix(filepath.ToSlash(info.Path), "images/logo.png") {
 		t.Fatalf("Access.Path = %q, want suffix images/logo.png", info.Path)
 	}
 	wantURL := "https://cdn.example.com/files/images/logo.png"
@@ -203,7 +204,7 @@ func TestLocalFS_AccessFuncWithKeyFunc(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Access: %v", err)
 	}
-	if !strings.HasSuffix(info.Path, "v2/doc.txt") {
+	if !strings.HasSuffix(filepath.ToSlash(info.Path), "v2/doc.txt") {
 		t.Fatalf("Access.Path = %q, want suffix v2/doc.txt", info.Path)
 	}
 	wantURL := "https://cdn.example.com/v2/doc.txt"
@@ -252,7 +253,7 @@ func TestLocalFS_AccessWithKeyFunc(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Access with KeyFunc: %v", err)
 	}
-	if !strings.HasSuffix(info.Path, "v2/file.txt") {
+	if !strings.HasSuffix(filepath.ToSlash(info.Path), "v2/file.txt") {
 		t.Fatalf("Access.Path = %q, want suffix v2/file.txt", info.Path)
 	}
 }
@@ -448,6 +449,9 @@ func TestLocalFS_WithDirPerm(t *testing.T) {
 		t.Fatalf("Stat sub dir: %v", err)
 	}
 	got := info.Mode().Perm()
+	if runtime.GOOS == "windows" {
+		return
+	}
 	if got != perm {
 		t.Fatalf("dir perm = %o, want %o", got, perm)
 	}

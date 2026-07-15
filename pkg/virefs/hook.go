@@ -5,6 +5,7 @@ package virefs
 
 import (
 	"context"
+	"fmt"
 	"io"
 )
 
@@ -35,9 +36,32 @@ func (h *hookFS) Get(ctx context.Context, key string) (io.ReadCloser, error) {
 		return nil, err
 	}
 	if h.hooks.WrapGet != nil {
-		rc = h.hooks.WrapGet(key, rc)
+		wrapped := h.hooks.WrapGet(key, rc)
+		if wrapped == nil {
+			_ = rc.Close()
+			return nil, fmt.Errorf("virefs: WrapGet returned nil for %q", key)
+		}
+		if wrapped != rc {
+			rc = &hookReadCloser{ReadCloser: wrapped, inner: rc}
+		} else {
+			rc = wrapped
+		}
 	}
 	return rc, nil
+}
+
+type hookReadCloser struct {
+	io.ReadCloser
+	inner io.ReadCloser
+}
+
+func (r *hookReadCloser) Close() error {
+	err := r.ReadCloser.Close()
+	innerErr := r.inner.Close()
+	if err != nil {
+		return err
+	}
+	return innerErr
 }
 
 func (h *hookFS) Put(ctx context.Context, key string, r io.Reader, opts ...PutOption) error {

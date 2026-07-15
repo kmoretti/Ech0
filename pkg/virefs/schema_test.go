@@ -6,6 +6,7 @@ package virefs
 import (
 	"context"
 	"io"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -134,17 +135,17 @@ func TestSchema_IntegrationLocalFS(t *testing.T) {
 	}
 
 	info, _ := fs.Access(ctx, "cat.jpg")
-	if !strings.Contains(info.Path, "images/cat.jpg") {
+	if !strings.Contains(filepath.ToSlash(info.Path), "images/cat.jpg") {
 		t.Fatalf("Access path should contain images/cat.jpg, got %q", info.Path)
 	}
 
 	info, _ = fs.Access(ctx, "report.pdf")
-	if !strings.Contains(info.Path, "docs/report.pdf") {
+	if !strings.Contains(filepath.ToSlash(info.Path), "docs/report.pdf") {
 		t.Fatalf("Access path should contain docs/report.pdf, got %q", info.Path)
 	}
 
 	info, _ = fs.Access(ctx, "data.csv")
-	if !strings.Contains(info.Path, "other/data.csv") {
+	if !strings.Contains(filepath.ToSlash(info.Path), "other/data.csv") {
 		t.Fatalf("Access path should contain other/data.csv, got %q", info.Path)
 	}
 }

@@ -175,17 +175,18 @@ func collectSite(ctx context.Context, deps Deps, data *dataset) error {
 		return fmt.Errorf("capsule export: load system setting: %w", err)
 	}
 	data.site = capsule.Site{
-		SiteTitle:     system.SiteTitle,
-		ServerLogo:    system.ServerLogo,
-		ServerName:    system.ServerName,
-		ServerURL:     system.ServerURL,
-		DefaultLocale: system.DefaultLocale,
-		ICPNumber:     system.ICPNumber,
-		FooterContent: system.FooterContent,
-		FooterLink:    system.FooterLink,
-		MetingAPI:     system.MetingAPI,
-		CustomCSS:     system.CustomCSS,
-		CustomJS:      system.CustomJS,
+		SiteTitle:        system.SiteTitle,
+		ServerLogo:       system.ServerLogo,
+		ServerLogoFileID: system.ServerLogoFileID,
+		ServerName:       system.ServerName,
+		ServerURL:        system.ServerURL,
+		DefaultLocale:    system.DefaultLocale,
+		ICPNumber:        system.ICPNumber,
+		FooterContent:    system.FooterContent,
+		FooterLink:       system.FooterLink,
+		MetingAPI:        system.MetingAPI,
+		CustomCSS:        system.CustomCSS,
+		CustomJS:         system.CustomJS,
 	}
 	return nil
 }

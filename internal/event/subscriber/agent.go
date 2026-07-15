@@ -53,7 +53,7 @@ func (ap *AgentProcessor) HandleUserDeleted(ctx context.Context, e event.UserDel
 }
 
 func (ap *AgentProcessor) clearCache() error {
-	return ap.durableKV.Delete(context.Background(), string(agent.GEN_RECENT))
+	return ap.durableKV.Set(context.Background(), string(agent.GEN_RECENT_DIRTY), "1")
 }
 
 func (ap *AgentProcessor) Registrations() []eventbus.Registration {

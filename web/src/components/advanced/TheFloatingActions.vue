@@ -114,14 +114,16 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 2.75rem;
+  height: 2.75rem;
   color: var(--color-text-secondary);
   background: color-mix(in srgb, var(--color-bg-surface) 92%, transparent);
   border: 1px solid var(--color-border-subtle);
   border-radius: 50%;
   box-shadow: 0 10px 28px rgb(0 0 0 / 10%);
   backdrop-filter: blur(12px);
+  cursor: pointer;
+  touch-action: manipulation;
   transition: transform 180ms ease, color 180ms ease, box-shadow 180ms ease;
 }
 
@@ -140,6 +142,7 @@ onBeforeUnmount(() => {
 .floating-actions__button :deep(svg) {
   width: 1.15rem;
   height: 1.15rem;
+  pointer-events: none;
 }
 
 .floating-action-enter-active,
