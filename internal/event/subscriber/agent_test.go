@@ -39,18 +39,18 @@ func TestAgentProcessor_Handlers(t *testing.T) {
 	}
 
 	for name, call := range invoke {
-		t.Run(name+"/valid setting clears gen cache", func(t *testing.T) {
+		t.Run(name+"/valid setting marks gen cache dirty", func(t *testing.T) {
 			kv := kvmock.NewMockStore(t)
 			kv.EXPECT().Get(mock.Anything, commonModel.AgentSettingKey).Return(validAgentJSON, nil).Once()
 
-			var deletedKey string
-			kv.EXPECT().Delete(mock.Anything, agent.GEN_RECENT).
-				Run(func(_ context.Context, key string) { deletedKey = key }).
+			var dirtyKey string
+			kv.EXPECT().Set(mock.Anything, agent.GEN_RECENT_DIRTY, "1").
+				Run(func(_ context.Context, key string, _ string) { dirtyKey = key }).
 				Return(nil).Once()
 
 			ap := subscriber.NewAgentProcessor(kv)
 			require.NoError(t, call(ap, helpers.CtxAnonymous()))
-			assert.Equal(t, agent.GEN_RECENT, deletedKey)
+			assert.Equal(t, agent.GEN_RECENT_DIRTY, dirtyKey)
 		})
 	}
 }
@@ -76,7 +76,7 @@ func TestAgentProcessor_InvalidJSON(t *testing.T) {
 func TestAgentProcessor_NotFoundStillClears(t *testing.T) {
 	kv := kvmock.NewMockStore(t)
 	kv.EXPECT().Get(mock.Anything, commonModel.AgentSettingKey).Return("", kvstore.ErrNotFound).Once()
-	kv.EXPECT().Delete(mock.Anything, agent.GEN_RECENT).Return(nil).Once()
+	kv.EXPECT().Set(mock.Anything, agent.GEN_RECENT_DIRTY, "1").Return(nil).Once()
 
 	ap := subscriber.NewAgentProcessor(kv)
 	require.NoError(t, ap.HandleUserDeleted(helpers.CtxAnonymous(), event.UserDeleted{User: helpers.NewUser()}))
@@ -93,10 +93,10 @@ func TestAgentProcessor_Registrations(t *testing.T) {
 }
 
 func TestAgentProcessor_DeleteError(t *testing.T) {
-	delErr := errors.New("delete failed")
+	delErr := errors.New("mark dirty failed")
 	kv := kvmock.NewMockStore(t)
 	kv.EXPECT().Get(mock.Anything, commonModel.AgentSettingKey).Return(validAgentJSON, nil).Once()
-	kv.EXPECT().Delete(mock.Anything, agent.GEN_RECENT).Return(delErr).Once()
+	kv.EXPECT().Set(mock.Anything, agent.GEN_RECENT_DIRTY, "1").Return(delErr).Once()
 
 	ap := subscriber.NewAgentProcessor(kv)
 	err := ap.HandleEchoCreated(helpers.CtxAnonymous(), event.EchoCreated{Echo: helpers.NewEcho()})

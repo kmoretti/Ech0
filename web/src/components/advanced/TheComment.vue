@@ -302,11 +302,8 @@ import Verified from '../icons/verified.vue'
 import MarkdownIcon from '../icons/markdown.vue'
 import Comments from '../icons/comments.vue'
 import { useI18n } from 'vue-i18n'
-<<<<<<< HEAD
 import { isStaticMode } from '@/service/request/shared'
-=======
 import { invalidateHomeCommentsCache } from '@/utils/home-cache'
->>>>>>> d55e1685 (完成个性化定制，修改整体为瀑布流，完成若干配置项)
 
 type CapSolveDetail = {
   token?: string

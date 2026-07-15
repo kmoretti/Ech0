@@ -45,6 +45,7 @@ func TestCleanupTmpDirFromPayload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("getwd failed: %v", err)
 	}
+	defer func() { _ = os.Chdir(prevWD) }()
 	t.Cleanup(func() { _ = os.Chdir(prevWD) })
 	if err := os.Chdir(t.TempDir()); err != nil {
 		t.Fatalf("chdir failed: %v", err)

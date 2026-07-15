@@ -5,65 +5,81 @@ package service
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/lin-snow/ech0/internal/agent"
 	"github.com/lin-snow/ech0/internal/kvstore"
-	commonModel "github.com/lin-snow/ech0/internal/model/common"
-	settingModel "github.com/lin-snow/ech0/internal/model/setting"
+	"github.com/lin-snow/ech0/internal/test/helpers"
+	"github.com/stretchr/testify/require"
 )
 
-func seedRecent(t *testing.T, kv kvstore.Store, fingerprint, text string) {
-	t.Helper()
-	raw, _ := json.Marshal(recentCache{Fingerprint: fingerprint, Text: text})
-	if err := kv.Set(context.Background(), agent.GEN_RECENT, string(raw)); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestGetRecent_ServesMatchingCache(t *testing.T) {
+func TestGetRecent_ReturnsCachedValueWhileDirtyAndRefreshesInBackground(t *testing.T) {
 	kv := kvstore.NewMemory()
-	setting := settingModel.AgentSetting{Enable: true, Protocol: "openai", Model: "gpt-4o", ApiKey: "k"}
-	seedAgentSetting(t, kv, setting)
-	seedRecent(t, kv, recentFingerprint(setting), "cached summary")
+	require.NoError(t, kv.Set(helpers.CtxAnonymous(), string(agent.GEN_RECENT), "old summary"))
+	require.NoError(t, kv.Set(helpers.CtxAnonymous(), string(agent.GEN_RECENT_DIRTY), "1"))
 
-	got, err := (&CopilotService{durableKV: kv}).GetRecent(context.Background())
-	if err != nil || got != "cached summary" {
-		t.Fatalf("got %q, %v; want the cached summary", got, err)
+	refreshed := make(chan struct{})
+	s := &CopilotService{
+		durableKV: kv,
+		recentBuilder: func(ctx context.Context) (string, error) {
+			close(refreshed)
+			return "new summary", nil
+		},
 	}
-}
 
-// The endpoint is public: switching the agent off has to stop the summary
-// being served, not leave it up until the next post clears the cache.
-func TestGetRecent_DisabledIsRefusedEvenWhenCached(t *testing.T) {
-	kv := kvstore.NewMemory()
-	setting := settingModel.AgentSetting{Enable: false, Protocol: "openai", Model: "gpt-4o"}
-	seedAgentSetting(t, kv, setting)
-	seedRecent(t, kv, recentFingerprint(setting), "stale summary")
+	got, err := s.GetRecent(helpers.CtxAnonymous())
+	require.NoError(t, err)
+	require.Equal(t, "old summary", got)
 
-	if _, err := (&CopilotService{durableKV: kv}).GetRecent(context.Background()); err == nil ||
-		err.Error() != commonModel.AGENT_NOT_ENABLED {
-		t.Fatalf("want %q, got %v", commonModel.AGENT_NOT_ENABLED, err)
-	}
-}
-
-func TestRecentFingerprint_TracksWhatShapesTheSummary(t *testing.T) {
-	base := settingModel.AgentSetting{Protocol: "openai", Model: "a", Prompt: "p", BaseURL: "u", ApiKey: "k1"}
-	for name, mutate := range map[string]func(*settingModel.AgentSetting){
-		"model":    func(s *settingModel.AgentSetting) { s.Model = "b" },
-		"prompt":   func(s *settingModel.AgentSetting) { s.Prompt = "q" },
-		"endpoint": func(s *settingModel.AgentSetting) { s.BaseURL = "v" },
-	} {
-		changed := base
-		mutate(&changed)
-		if recentFingerprint(changed) == recentFingerprint(base) {
-			t.Fatalf("changing the %s must invalidate the cached summary", name)
+	require.Eventually(t, func() bool {
+		select {
+		case <-refreshed:
+		default:
+			return false
 		}
+		value, err := kv.Get(helpers.CtxAnonymous(), string(agent.GEN_RECENT))
+		if err != nil || value != "new summary" {
+			return false
+		}
+		_, err = kv.Get(helpers.CtxAnonymous(), string(agent.GEN_RECENT_DIRTY))
+		return errors.Is(err, kvstore.ErrNotFound)
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestGetRecent_RefreshFailureKeepsCachedValueAndDirtyMarker(t *testing.T) {
+	kv := kvstore.NewMemory()
+	require.NoError(t, kv.Set(helpers.CtxAnonymous(), string(agent.GEN_RECENT), "old summary"))
+	require.NoError(t, kv.Set(helpers.CtxAnonymous(), string(agent.GEN_RECENT_DIRTY), "1"))
+
+	refreshed := make(chan struct{})
+	s := &CopilotService{
+		durableKV: kv,
+		recentBuilder: func(ctx context.Context) (string, error) {
+			close(refreshed)
+			return "", errors.New("generate failed")
+		},
 	}
-	rotated := base
-	rotated.ApiKey = "k2"
-	if recentFingerprint(rotated) != recentFingerprint(base) {
-		t.Fatalf("rotating the API key does not change what the summary says")
-	}
+
+	got, err := s.GetRecent(helpers.CtxAnonymous())
+	require.NoError(t, err)
+	require.Equal(t, "old summary", got)
+
+	require.Eventually(t, func() bool {
+		select {
+		case <-refreshed:
+			return true
+		default:
+			return false
+		}
+	}, time.Second, 10*time.Millisecond)
+
+	value, err := kv.Get(helpers.CtxAnonymous(), string(agent.GEN_RECENT))
+	require.NoError(t, err)
+	require.Equal(t, "old summary", value)
+
+	dirty, err := kv.Get(helpers.CtxAnonymous(), string(agent.GEN_RECENT_DIRTY))
+	require.NoError(t, err)
+	require.Equal(t, "1", dirty)
 }

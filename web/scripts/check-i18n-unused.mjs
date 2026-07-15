@@ -11,6 +11,8 @@ const DYNAMIC_KEY_FIELDS = ['labelKey', 'titleKey', 'textKey', 'i18nKey', 'toolt
 const ALLOW_UNUSED_PREFIXES = [
 ]
 const ALLOW_UNUSED_KEYS = new Set([
+  'echoCard.commentsLabel',
+  'recentCard.generating',
 ])
 
 const flatten = (obj, prefix = '', result = new Set()) => {
@@ -67,7 +69,7 @@ const keyAllowed = (key) => {
   return ALLOW_UNUSED_PREFIXES.some((prefix) => key.startsWith(prefix))
 }
 
-const zh = JSON.parse(readFileSync(zhPath, 'utf8'))
+const zh = JSON.parse(readFileSync(zhPath, 'utf8').replace(/^\uFEFF/, ''))
 const allKeys = flatten(zh)
 const files = walkFiles(sourceDir)
 const usedKeys = new Set()

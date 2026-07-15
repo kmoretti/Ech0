@@ -13,6 +13,8 @@ import (
 
 const (
 	GEN_RECENT = "gen_recent"
+	// GEN_RECENT_DIRTY marks GEN_RECENT as stale while preserving the previous value.
+	GEN_RECENT_DIRTY = "gen_recent_dirty"
 )
 
 func validate(setting model.AgentSetting) error {

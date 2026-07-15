@@ -2423,6 +2423,8 @@ components:
           type: string
         server_logo:
           type: string
+        server_logo_file_id:
+          type: string
         server_name:
           type: string
         server_url:
@@ -2518,6 +2520,8 @@ components:
       properties:
         avatar:
           type: string
+        avatar_file_id:
+          type: string
         email:
           type: string
         id:
@@ -2548,6 +2552,8 @@ components:
           type: string
         password:
           type: string
+        reset_avatar:
+          type: boolean
         username:
           type: string
       type: object
