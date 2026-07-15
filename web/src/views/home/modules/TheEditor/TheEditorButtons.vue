@@ -515,6 +515,11 @@ const goToTagManager = () => {
     right: 0.35rem;
     width: auto;
     max-width: none;
+    scrollbar-width: none;
+  }
+
+  .editor-actions__tag-panel::-webkit-scrollbar {
+    display: none;
   }
 
   .editor-actions__publish-panel {

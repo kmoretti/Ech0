@@ -4,6 +4,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/lin-snow/ech0/internal/kvstore"
 	"github.com/lin-snow/ech0/internal/storage"
 	"golang.org/x/sync/singleflight"
@@ -17,6 +19,7 @@ type CopilotService struct {
 	storage        *storage.Manager
 	recentGenGroup singleflight.Group
 	asks           *askRegistry
+	recentBuilder  func(context.Context) (string, error)
 }
 
 var (

@@ -24,17 +24,18 @@ type Manifest struct {
 }
 
 type Site struct {
-	SiteTitle     string `yaml:"site_title,omitempty"`
-	ServerLogo    string `yaml:"server_logo,omitempty"`
-	ServerName    string `yaml:"server_name,omitempty"`
-	ServerURL     string `yaml:"server_url,omitempty"`
-	DefaultLocale string `yaml:"default_locale,omitempty"`
-	ICPNumber     string `yaml:"ICP_number,omitempty"`
-	FooterContent string `yaml:"footer_content,omitempty"`
-	FooterLink    string `yaml:"footer_link,omitempty"`
-	MetingAPI     string `yaml:"meting_api,omitempty"`
-	CustomCSS     string `yaml:"custom_css,omitempty"`
-	CustomJS      string `yaml:"custom_js,omitempty"`
+	SiteTitle        string `yaml:"site_title,omitempty"`
+	ServerLogo       string `yaml:"server_logo,omitempty"`
+	ServerLogoFileID string `yaml:"server_logo_file_id,omitempty"`
+	ServerName       string `yaml:"server_name,omitempty"`
+	ServerURL        string `yaml:"server_url,omitempty"`
+	DefaultLocale    string `yaml:"default_locale,omitempty"`
+	ICPNumber        string `yaml:"ICP_number,omitempty"`
+	FooterContent    string `yaml:"footer_content,omitempty"`
+	FooterLink       string `yaml:"footer_link,omitempty"`
+	MetingAPI        string `yaml:"meting_api,omitempty"`
+	CustomCSS        string `yaml:"custom_css,omitempty"`
+	CustomJS         string `yaml:"custom_js,omitempty"`
 }
 
 type Owner struct {

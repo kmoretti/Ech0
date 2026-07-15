@@ -41,6 +41,11 @@ func TestImporterMigrate_SuccessAndIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open source db failed: %v", err)
 	}
+	sourceSQLDB, err := sourceDB.DB()
+	if err != nil {
+		t.Fatalf("get source sql db failed: %v", err)
+	}
+	defer sourceSQLDB.Close()
 	if err := migrateBaseTables(sourceDB); err != nil {
 		t.Fatalf("migrate source tables failed: %v", err)
 	}
@@ -60,6 +65,11 @@ func TestImporterMigrate_SuccessAndIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open target db failed: %v", err)
 	}
+	targetSQLDB, err := targetDB.DB()
+	if err != nil {
+		t.Fatalf("get target sql db failed: %v", err)
+	}
+	defer targetSQLDB.Close()
 	if err := migrateBaseTables(targetDB); err != nil {
 		t.Fatalf("migrate target tables failed: %v", err)
 	}

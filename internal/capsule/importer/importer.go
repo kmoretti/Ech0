@@ -465,6 +465,7 @@ func (s *session) applySite(ctx context.Context) error {
 	}{
 		{"site_title", &current.SiteTitle, site.SiteTitle},
 		{"server_logo", &current.ServerLogo, site.ServerLogo},
+		{"server_logo_file_id", &current.ServerLogoFileID, site.ServerLogoFileID},
 		{"server_name", &current.ServerName, site.ServerName},
 		{"server_url", &current.ServerURL, site.ServerURL},
 		{"default_locale", &current.DefaultLocale, site.DefaultLocale},
@@ -478,17 +479,18 @@ func (s *session) applySite(ctx context.Context) error {
 	pristine := coreSetting.System.Default()
 	coreSetting.System.Normalize(&pristine)
 	defaults := map[string]string{
-		"site_title":     pristine.SiteTitle,
-		"server_logo":    pristine.ServerLogo,
-		"server_name":    pristine.ServerName,
-		"server_url":     pristine.ServerURL,
-		"default_locale": pristine.DefaultLocale,
-		"ICP_number":     pristine.ICPNumber,
-		"footer_content": pristine.FooterContent,
-		"footer_link":    pristine.FooterLink,
-		"meting_api":     pristine.MetingAPI,
-		"custom_css":     pristine.CustomCSS,
-		"custom_js":      pristine.CustomJS,
+		"site_title":          pristine.SiteTitle,
+		"server_logo":         pristine.ServerLogo,
+		"server_logo_file_id": pristine.ServerLogoFileID,
+		"server_name":         pristine.ServerName,
+		"server_url":          pristine.ServerURL,
+		"default_locale":      pristine.DefaultLocale,
+		"ICP_number":          pristine.ICPNumber,
+		"footer_content":      pristine.FooterContent,
+		"footer_link":         pristine.FooterLink,
+		"meting_api":          pristine.MetingAPI,
+		"custom_css":          pristine.CustomCSS,
+		"custom_js":           pristine.CustomJS,
 	}
 
 	filled := make([]string, 0, len(fields))

@@ -18,13 +18,37 @@ import (
 
 func (s *CopilotService) GetRecent(ctx context.Context) (string, error) {
 	const cacheKey = string(agent.GEN_RECENT)
+	const dirtyKey = string(agent.GEN_RECENT_DIRTY)
 
 	if value, ok := s.getRecentFromCache(ctx, cacheKey); ok {
+		if s.isRecentDirty(ctx, dirtyKey) {
+			s.refreshRecentInBackground(cacheKey, dirtyKey)
+		}
 		return value, nil
 	}
 
+	return s.generateAndCacheRecent(ctx, cacheKey, dirtyKey)
+}
+
+func (s *CopilotService) generateAndCacheRecent(ctx context.Context, cacheKey string, dirtyKey string) (string, error) {
 	value, err, _ := s.recentGenGroup.Do(cacheKey, func() (any, error) {
 		if cached, ok := s.getRecentFromCache(ctx, cacheKey); ok {
+			if s.isRecentDirty(ctx, dirtyKey) {
+				output, err := s.buildRecentSummary(ctx)
+				if err != nil {
+					return cached, nil
+				}
+				if err := s.durableKV.Set(ctx, cacheKey, output); err != nil {
+					logUtil.GetLogger().
+						Error("Failed to add or update key value", logUtil.Err(err))
+					return output, nil
+				}
+				if err := s.durableKV.Delete(ctx, dirtyKey); err != nil {
+					logUtil.GetLogger().
+						Error("Failed to clear recent summary dirty flag", logUtil.Err(err))
+				}
+				return output, nil
+			}
 			return cached, nil
 		}
 
@@ -36,6 +60,11 @@ func (s *CopilotService) GetRecent(ctx context.Context) (string, error) {
 		if err := s.durableKV.Set(ctx, cacheKey, output); err != nil {
 			logUtil.GetLogger().
 				Error("Failed to add or update key value", logUtil.Err(err))
+			return output, nil
+		}
+		if err := s.durableKV.Delete(ctx, dirtyKey); err != nil {
+			logUtil.GetLogger().
+				Error("Failed to clear recent summary dirty flag", logUtil.Err(err))
 		}
 
 		return output, nil
@@ -52,6 +81,21 @@ func (s *CopilotService) GetRecent(ctx context.Context) (string, error) {
 	return recent, nil
 }
 
+func (s *CopilotService) isRecentDirty(ctx context.Context, dirtyKey string) bool {
+	_, err := s.durableKV.Get(ctx, dirtyKey)
+	return err == nil
+}
+
+func (s *CopilotService) refreshRecentInBackground(cacheKey string, dirtyKey string) {
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		if _, err := s.generateAndCacheRecent(ctx, cacheKey, dirtyKey); err != nil {
+			logUtil.GetLogger().Error("Failed to refresh recent summary", logUtil.Err(err))
+		}
+	}()
+}
+
 func (s *CopilotService) getRecentFromCache(ctx context.Context, cacheKey string) (string, bool) {
 	cachedValue, err := s.durableKV.Get(ctx, cacheKey)
 	if err != nil {
@@ -61,6 +105,10 @@ func (s *CopilotService) getRecentFromCache(ctx context.Context, cacheKey string
 }
 
 func (s *CopilotService) buildRecentSummary(ctx context.Context) (string, error) {
+	if s.recentBuilder != nil {
+		return s.recentBuilder(ctx)
+	}
+
 	systemCtx := viewer.WithContext(ctx, viewer.NewSystemViewer())
 	echos, err := s.echoService.GetEchosByPage(
 		systemCtx,
