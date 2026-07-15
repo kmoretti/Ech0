@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "requestFailed": "Anfrage fehlgeschlagen",
     "save": "Speichern",
@@ -34,13 +34,11 @@
     "mixedCategoryRejected": "Ein Echo darf nur Dateien eines einzigen Typs enthalten",
     "categoryLockedHint": "Vorhandene Dateien entfernen, um den Typ zu wechseln",
     "singleMediaLimit": "Nur ein Audio / Video pro Echo – aktuelle Datei vor dem Ersetzen entfernen",
-    "imageAddMethod": "Speicherart wählen:",
+    "imageAddMethod": "Hinzufügen per:",
     "imageSourceExternal": "URL",
-    "imageSourceLocal": "Lokal",
-    "imageSourceObject": "S3",
     "imageLayout": "Layout wählen:",
     "imageSmartCompress": "Intelligente Komprimierung:",
-    "currentUploadMode": "Aktuelle Speicherart:",
+    "currentUploadMode": "Aktuelle Methode:",
     "uploadingSuffix": ", wird hochgeladen…",
     "addMoreImages": "Weitere Anhänge hinzufügen",
     "layoutWaterfall": "Wasserfall",
@@ -162,7 +160,8 @@
     "unorderedList": "Aufzählung",
     "codeBlock": "Codeblock",
     "addedLabel": "Hinzugefügt:",
-    "noContentAdded": "Noch keine Inhalte hinzugefügt"
+    "noContentAdded": "Noch keine Inhalte hinzugefügt",
+    "imageSourceUpload": "Upload"
   },
   "commentManager": {
     "tabSetting": "Kommentar-Einstellungen",
@@ -374,17 +373,6 @@
     "searchPlaceholder": "Suchen…",
     "rssTitle": "RSS"
   },
-  "zenMode": {
-    "tooltip": "Zen-Modus aktivieren (immersives Stöbern)",
-    "exit": "Zen-Modus beenden",
-    "openDetail": "Detail öffnen",
-    "bwOn": "Monochrom anzeigen (Karte hovern, um Farbe wiederherzustellen)",
-    "bwOff": "Farbe wiederherstellen",
-    "bwToastOn": "Zu Schwarz-Weiß gewechselt",
-    "bwToastOff": "Zu Farbe gewechselt",
-    "empty": "Noch keine Inhalte",
-    "noMore": "Du bist am Ende angekommen"
-  },
   "commandPalette": {
     "title": "Schnellsuche",
     "placeholder": "Inhalte durchsuchen…",
@@ -420,9 +408,7 @@
     "home": "Feed",
     "panel": "Einstellungen",
     "publish": "Veröffentlichen",
-    "plaza": "Erkunden",
-    "status": "Status",
-    "tags": "Tags"
+    "plaza": "Erkunden"
   },
   "homeBio": {
     "tagline": "Willkommen"
@@ -432,8 +418,7 @@
     "noMore": "Keine weiteren Daten",
     "noMoreFiltered": "Keine weiteren Daten",
     "loading": "Wird geladen…",
-    "older": "Älter",
-    "newer": "Neuer"
+    "older": "Älter"
   },
   "dateTime": {
     "justNow": "Gerade eben",
@@ -521,7 +506,9 @@
     "deleteConfirmDesc": "Diese Aktion kann nicht rückgängig gemacht werden.",
     "deleteSuccess": "Gelöscht",
     "exitUpdateModeFirst": "Bitte zuerst den Bearbeitungsmodus verlassen",
-    "openDetail": "Detail öffnen"
+    "openDetail": "Detail öffnen",
+    "commentsLabel": "Kommentare",
+    "commentCount": "{count} Kommentare"
   },
   "userSetting": {
     "title": "Benutzerverwaltung",
@@ -536,7 +523,12 @@
     "passwordPlaceholder": "Passwort eingeben",
     "avatarUploading": "Avatar wird hochgeladen…",
     "avatarUploadSuccess": "Avatar hochgeladen!",
-    "uploadFailed": "Upload fehlgeschlagen, bitte später erneut versuchen"
+    "uploadFailed": "Upload fehlgeschlagen, bitte später erneut versuchen",
+    "resetAvatar": "Avatar zurücksetzen",
+    "resetAvatarConfirmTitle": "Avatar zurücksetzen?",
+    "resetAvatarConfirmDesc": "Die aktuelle benutzerdefinierte Avatar-Datei wird gelöscht und kann nicht wiederhergestellt werden.",
+    "resetAvatarSuccess": "Standard-Avatar wiederhergestellt",
+    "resetAvatarDeleteFailed": "Avatar wurde zurückgesetzt, aber die alte Datei konnte nicht gelöscht werden. Bitte später in der Speicherverwaltung bereinigen."
   },
   "userManager": {
     "title": "Benutzerverwaltung",
@@ -573,11 +565,18 @@
     "defaultLocale": "Standardsprache",
     "logoUploading": "Server-Logo wird hochgeladen…",
     "logoUploadSuccess": "Server-Logo hochgeladen!",
-    "uploadFailed": "Upload fehlgeschlagen, bitte später erneut versuchen"
+    "uploadFailed": "Upload fehlgeschlagen, bitte später erneut versuchen",
+    "resetLogo": "Logo zurücksetzen",
+    "resetLogoConfirmTitle": "Logo zurücksetzen?",
+    "resetLogoConfirmDesc": "Die aktuelle benutzerdefinierte Logo-Datei wird gelöscht und kann nicht wiederhergestellt werden.",
+    "resetLogoSuccess": "Standard-Logo wiederhergestellt",
+    "resetLogoDeleteFailed": "Logo wurde zurückgesetzt, aber die alte Datei konnte nicht gelöscht werden. Bitte später in der Speicherverwaltung bereinigen."
   },
   "storageSetting": {
     "title": "Objektspeicher-Einstellungen",
     "enableS3": "S3-Speicher aktivieren",
+    "localModeHint": "Wenn S3 deaktiviert ist, werden alle verwalteten Uploads lokal gespeichert.",
+    "s3ExclusiveModeHint": "Wenn aktiviert, werden Bilder, Anhänge, Avatare und Logos vollständig über S3 hochgeladen und nicht lokal gespeichert.",
     "enableSsl": "SSL aktivieren",
     "s3Provider": "S3-Anbieter",
     "usePathStyle": "Path-Style-Zugriff",
@@ -854,7 +853,8 @@
   },
   "settingManagement": {
     "tabSystem": "Systemeinstellungen",
-    "tabAccessToken": "Zugangstoken"
+    "tabAccessToken": "Zugangstoken",
+    "tabTags": "Tags"
   },
   "migrationSetting": {
     "title": "Datenimport",

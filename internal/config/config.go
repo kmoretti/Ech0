@@ -286,7 +286,7 @@ func defaultConfig() *AppConfig {
 		},
 		Setting: SettingConfig{
 			SiteTitle:     "Ech0",
-			ServerLogo:    "/Ech0.svg",
+			ServerLogo:    "/favicon.ico",
 			Servername:    "Ech0",
 			Serverurl:     "https://ech0.example.com",
 			AllowRegister: true,

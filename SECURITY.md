@@ -1,43 +1,28 @@
-# Security Policy
+# 安全策略
 
-Thank you for helping improve Ech0’s security.
+感谢你帮助改进提笔摘星 / Ech0 的安全性。
 
-## Supported Versions
+## 支持范围
 
-We generally provide security fixes only for:
+本仓库是个人定制版本，通常只维护当前 `main` 分支和最新发布的 Docker 镜像。旧版本不保证持续获得安全修复，建议在备份数据后及时升级。
 
-- The latest release (Latest)
-- The previous stable release (Previous)
+## 报告安全漏洞
 
-Older releases may not receive security patches; we recommend upgrading as soon as practical.
+请勿在公开 Issue、Discussions、评论或截图中披露漏洞细节、访问令牌、S3 密钥和其他敏感信息。
 
-## Reporting a Vulnerability
+优先使用 GitHub 的私密漏洞报告：
 
-Please do not disclose security vulnerability details in public Issues or Discussions.
+- https://github.com/LiuShen-Fork/Ech0/security/advisories/new
 
-We recommend using GitHub’s private vulnerability reporting (Security Advisories):
+报告内容建议包括：
 
-- https://github.com/lin-snow/Ech0/security/advisories/new
+- 漏洞类型及可能影响
+- 可复现步骤或最小验证示例
+- 受影响版本、运行环境与相关配置
+- 建议修复方式（可选）
 
-If you cannot use the link above, contact the maintainers through a private channel they control, and include:
+## 处理说明
 
-- Vulnerability type and impact
-- Steps to reproduce or a proof of concept
-- Affected versions, environment, and configuration
-- Suggested fix (optional)
+收到报告后会先确认问题是否可复现并评估影响，再根据个人维护时间安排修复。由于本仓库主要用于个人部署，不承诺固定响应时限。
 
-## Response Process
-
-After we receive a report, we aim to:
-
-- Acknowledge receipt within 48 hours
-- Complete an initial assessment and severity rating within 7 days
-- Ship a fix in a release as soon as possible and publish an advisory
-
-Actual timelines may vary with complexity and release windows.
-
-## Coordinated Disclosure
-
-Please avoid public disclosure of vulnerability details before a patch is available.
-
-We encourage responsible disclosure: share technical details after a fix is released to protect users.
+在修复可用前，请避免公开披露可被直接利用的技术细节。

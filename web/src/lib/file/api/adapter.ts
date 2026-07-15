@@ -12,6 +12,7 @@ import {
 } from '@/service/api'
 import { getApiUrl } from '@/service/request/shared'
 import { useAuthStore } from '@/stores/auth'
+import { httpUpload, UPLOAD_KIND } from '../upload'
 import type {
   ExternalFileInput,
   FileEntity,
@@ -43,6 +44,25 @@ function ensureSuccess<T>(res: App.Api.Response<T>, fallbackMsg: string): T {
 }
 
 export async function uploadFile(input: FileUploadInput): Promise<FileEntity> {
+  if (input.storageType === FILE_STORAGE_TYPE.OBJECT) {
+    const contentType = input.file.type || 'application/octet-stream'
+    const presign = await getPresign({
+      fileName: input.file.name || `upload_${Date.now()}`,
+      contentType,
+      storageType: FILE_STORAGE_TYPE.OBJECT,
+    })
+    await httpUpload(input.file, {
+      kind: UPLOAD_KIND.S3,
+      presignUrl: presign.presign_url,
+      contentType,
+    })
+    return updateFileMeta({
+      id: presign.id,
+      size: input.file.size,
+      contentType,
+    })
+  }
+
   const res = await fetchUploadFile(
     input.file,
     input.storageType || FILE_STORAGE_TYPE.LOCAL,
@@ -71,8 +91,11 @@ export async function getFileById(id: string): Promise<FileEntity> {
   return normalizeFileEntity(data)
 }
 
-export async function deleteFileById(id: string): Promise<void> {
-  const res = await fetchDeleteFile({ id })
+export async function deleteFileById(
+  id: string,
+  options?: { silentError?: boolean },
+): Promise<void> {
+  const res = await fetchDeleteFile({ id }, Boolean(options?.silentError))
   ensureSuccess(res, '文件删除失败')
 }
 

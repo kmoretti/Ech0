@@ -13,13 +13,14 @@ const (
 )
 
 type User struct {
-	ID       string `gorm:"type:char(36);primaryKey" json:"id"`
-	Username string `gorm:"size:255;not null;unique" json:"username"`
-	Email    string `gorm:"size:255;index"            json:"email"`
-	IsAdmin  bool   `gorm:"bool"                     json:"is_admin"`
-	IsOwner  bool   `gorm:"bool"                     json:"is_owner"`
-	Avatar   string `gorm:"size:255"                 json:"avatar"`
-	Locale   string `gorm:"size:16;default:zh-CN"    json:"locale"`
+	ID           string `gorm:"type:char(36);primaryKey" json:"id"`
+	Username     string `gorm:"size:255;not null;unique" json:"username"`
+	Email        string `gorm:"size:255;index"            json:"email"`
+	IsAdmin      bool   `gorm:"bool"                     json:"is_admin"`
+	IsOwner      bool   `gorm:"bool"                     json:"is_owner"`
+	Avatar       string `gorm:"size:255"                 json:"avatar"`
+	AvatarFileID string `gorm:"size:36"                  json:"avatar_file_id"`
+	Locale       string `gorm:"size:16;default:zh-CN"    json:"locale"`
 }
 
 func (u *User) BeforeCreate(_ *gorm.DB) error {

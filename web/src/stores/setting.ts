@@ -28,7 +28,7 @@ export const useSettingStore = defineStore('settingStore', () => {
 
   const SystemSetting = ref<App.Api.Setting.SystemSetting>({
     site_title: import.meta.env.VITE_APP_TITLE,
-    server_logo: '/Ech0.svg',
+    server_logo: '/favicon.ico',
     server_logo_file_id: '',
     server_name: import.meta.env.VITE_APP_NAME,
     server_url: '',
@@ -114,11 +114,11 @@ export const useSettingStore = defineStore('settingStore', () => {
   }
 
   const getS3Setting = async () => {
-    fetchGetS3Settings().then((res) => {
-      if (res.code === 1) {
-        S3Setting.value = res.data
-      }
-    })
+    const res = await fetchGetS3Settings()
+    if (res.code === 1) {
+      S3Setting.value = res.data
+    }
+    return S3Setting.value
   }
 
   const getOAuth2Setting = async () => {

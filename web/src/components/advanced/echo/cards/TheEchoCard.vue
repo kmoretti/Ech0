@@ -1,19 +1,27 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
-  <div class="echo-timeline group w-full">
+  <article
+    class="echo-timeline group w-full"
+    :class="{ 'echo-timeline--masonry': props.variant === 'masonry' }"
+  >
     <div class="echo-header-sticky flex justify-between items-center">
       <div class="flex justify-start items-center h-9">
         <div class="flex items-center h-full pr-1">
-          <div class="timeline-marker" :class="{ 'is-first': props.index === 0 }">
+          <div
+            v-if="props.variant !== 'masonry'"
+            class="timeline-marker"
+            :class="{ 'is-first': props.index === 0 }"
+          >
             <div class="w-2 h-2 rounded-full bg-[var(--color-accent)]"></div>
           </div>
-          <div
+          <button
+            type="button"
             @click="handleExpandEcho(echo.id)"
             class="flex items-center h-full justify-start leading-none text-sm font-semibold text-nowrap text-[var(--color-accent)] cursor-pointer hover:underline hover:decoration-offset-3 hover:decoration-1 mr-1"
           >
             {{ formatDate(props.echo.created_at) }}
-          </div>
+          </button>
           <button
             type="button"
             class="echo-open-btn flex items-center justify-center w-6 h-6 rounded-sm text-[var(--color-text-muted)] opacity-0 transition-opacity duration-150 hover:text-[var(--color-text-primary)] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-border-subtle)]"
@@ -105,10 +113,10 @@
     </div>
 
     <div class="timeline-content">
-      <div class="px-4 py-3">
+      <div class="echo-card-body px-4 py-3" :class="{ 'echo-card-body--clamped': isLongMasonryContent }">
         <template v-if="isContentLeadingEcho(props.echo)">
           <div class="mx-auto w-11/12 pl-1 mb-3">
-            <TheMdPreview :content="props.echo.content" />
+            <TheMdPreview :content="previewContent" />
           </div>
 
           <div :class="{ 'mx-auto w-11/12 pl-1': isAvEcho }">
@@ -130,7 +138,7 @@
           </div>
 
           <div class="mx-auto w-11/12 pl-1 mt-3">
-            <TheMdPreview :content="props.echo.content" />
+            <TheMdPreview :content="previewContent" />
           </div>
         </template>
 
@@ -138,8 +146,38 @@
           <TheExtensionRenderer :echo="props.echo" />
         </div>
       </div>
+      <button
+        v-if="isLongMasonryContent"
+        type="button"
+        class="echo-card-more"
+        @click="handleExpandEcho(echo.id)"
+      >
+        {{ t('echoCard.openDetail') }}
+      </button>
+      <div v-if="props.variant === 'masonry' && props.comments?.length" class="echo-card-comments">
+        <div class="echo-card-comments__divider">
+          <span>{{ t('echoCard.commentCount', { count: props.comments.length }) }}</span>
+        </div>
+        <button
+          v-for="comment in props.comments.slice(0, 5)"
+          :key="comment.id"
+          type="button"
+          class="echo-card-comment"
+          @click="handleExpandEcho(echo.id)"
+        >
+          <span class="echo-card-comment__author">{{ comment.nickname }}</span>
+          <span class="echo-card-comment__content">{{ comment.content }}</span>
+        </button>
+      </div>
+      <TheEchoMeta
+        v-if="props.variant === 'masonry'"
+        class="echo-card-meta echo-card-meta--stats"
+        mode="stats"
+        :echo="props.echo"
+        @update-like-count="handleUpdateLikeCount"
+      />
     </div>
-  </div>
+  </article>
 </template>
 
 <script lang="ts">
@@ -159,6 +197,7 @@ import Lock from '@/components/icons/lock.vue'
 import More from '@/components/icons/more.vue'
 import EditEcho from '@/components/icons/editecho.vue'
 import Open from '@/components/icons/open.vue'
+import TheEchoMeta from '@/components/advanced/echo/cards/TheEchoMeta.vue'
 import { useRouter } from 'vue-router'
 import { getEchoFilesBy, isContentLeadingEcho } from '@/utils/echo'
 import { formatDate } from '@/utils/other'
@@ -182,8 +221,19 @@ type Echo = App.Api.Ech0.Echo
 const props = defineProps<{
   echo: Echo
   index?: number
+  variant?: 'timeline' | 'masonry'
+  comments?: App.Api.Comment.CommentItem[]
 }>()
 
+const isLongMasonryContent = computed(
+  () => props.variant === 'masonry' && Array.from(props.echo.content || '').length > 200,
+)
+const previewContent = computed(() => {
+  if (!isLongMasonryContent.value) return props.echo.content
+  return `${Array.from(props.echo.content || '').slice(0, 200).join('')}...`
+})
+
+// 音视频作为「正文级」区块，与正文同宽对齐；图片保持满宽铺满卡片。
 const isAvEcho = computed(
   () => getEchoFilesBy(props.echo, { categories: ['audio', 'video'] }).length > 0,
 )
@@ -201,10 +251,15 @@ const handleDeleteEcho = (echoId: string) => {
     onConfirm: () => {
       fetchDeleteEcho(echoId).then(() => {
         theToast.success(String(t('echoCard.deleteSuccess')))
+        echoStore.invalidateEchosCache()
         emit('refresh')
       })
     },
   })
+}
+
+const handleUpdateLikeCount = (echoId: string) => {
+  echoStore.updateLikeCount(echoId)
 }
 
 const handleUpdateEcho = async () => {
@@ -322,6 +377,175 @@ onBeforeUnmount(() => {
 
   max-width: 100%;
   overflow: clip visible;
+}
+
+.echo-timeline--masonry {
+  overflow: clip visible;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-bg-surface) 96%, transparent);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 5%);
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.echo-timeline--masonry:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-border-strong);
+  box-shadow: 0 14px 34px rgb(0 0 0 / 8%);
+}
+
+.echo-timeline--masonry .echo-header-sticky {
+  min-height: 2rem;
+  padding: 0.45rem 0.65rem 0;
+  background: transparent;
+}
+
+.echo-timeline--masonry .timeline-content {
+  margin-left: 0;
+}
+
+.echo-timeline--masonry .timeline-content::before {
+  display: none;
+}
+
+.echo-timeline--masonry .echo-card-body {
+  padding-bottom: 0.55rem;
+}
+
+.echo-card-body--clamped {
+  position: relative;
+  max-height: 18rem;
+  overflow: hidden;
+}
+
+.echo-card-body--clamped::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 6rem;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--color-bg-surface));
+}
+
+.echo-card-more {
+  display: flex;
+  width: calc(100% - 1.5rem);
+  margin: -0.1rem 0.75rem 0.75rem;
+  padding: 0.45rem 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.echo-card-meta {
+  margin-inline: 0.75rem;
+}
+
+.echo-card-meta--stats {
+  margin-top: 0.35rem;
+  margin-bottom: 0.7rem;
+}
+
+.echo-card-comments + .echo-card-meta--stats {
+  margin-top: 0.55rem;
+}
+
+.echo-card-meta :deep(.echo-meta) {
+  padding-top: 0;
+}
+
+.echo-card-meta :deep(.echo-meta-line) {
+  gap: 0.32rem;
+  font-size: 0.68rem;
+}
+
+.echo-card-meta :deep(.echo-meta-actions) {
+  gap: 0.45rem;
+}
+
+.echo-card-meta :deep(.echo-meta-actions button) {
+  color: var(--color-text-muted);
+}
+
+.echo-card-meta :deep(.echo-meta-actions button:hover) {
+  color: var(--color-accent);
+}
+
+.echo-card-comments {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0 0.75rem;
+  padding-top: 0;
+}
+
+.echo-card-comments__divider {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+}
+
+.echo-card-comments__divider::before,
+.echo-card-comments__divider::after {
+  content: '';
+  height: 1px;
+  background: var(--color-border-subtle);
+}
+
+.echo-card-comments__divider::before {
+  display: none;
+}
+
+.echo-card-comments__divider::after {
+  flex: 1 1 auto;
+}
+
+.echo-card-comments__divider span {
+  padding: 0.16rem 0.5rem;
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-bg-surface) 88%, var(--color-accent) 12%);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 22%, var(--color-border-subtle));
+  border-radius: 999px;
+  line-height: 1;
+}
+
+.echo-card-comment {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.echo-card-comment__author {
+  flex: 0 0 auto;
+  max-width: 38%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.echo-card-comment__content {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .timeline-marker {

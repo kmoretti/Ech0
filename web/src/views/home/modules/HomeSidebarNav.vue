@@ -79,10 +79,8 @@ const searchOpenState = computed({
     emit('update:mobileSearchOpen', value)
   },
 })
-const currentHomeTab = computed<'home' | 'publish' | 'status' | 'tags' | 'hub'>(() => {
+const currentHomeTab = computed<'home' | 'publish' | 'hub'>(() => {
   if (route.query.tab === 'publish') return 'publish'
-  if (route.query.tab === 'status') return 'status'
-  if (route.query.tab === 'tags') return 'tags'
   if (route.query.tab === 'hub') return 'hub'
   return 'home'
 })
@@ -105,18 +103,6 @@ const items = [
     id: 'publish',
     to: { name: 'home', query: { tab: 'publish' } },
     labelKey: 'homeSidebar.publish',
-    kind: 'homeTab',
-  },
-  {
-    id: 'status',
-    to: { name: 'home', query: { tab: 'status' } },
-    labelKey: 'homeSidebar.status',
-    kind: 'homeTab',
-  },
-  {
-    id: 'tags',
-    to: { name: 'home', query: { tab: 'tags' } },
-    labelKey: 'homeSidebar.tags',
     kind: 'homeTab',
   },
   {

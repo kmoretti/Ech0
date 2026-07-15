@@ -1,69 +1,70 @@
-name: ✨ Feature Request
-description: Propose a new feature or enhancement for Ech0.
-title: "✨ [Feature] "
+name: 功能建议
+description: 提议新的功能或现有体验改进。
+title: "[功能建议] "
 labels:
   - enhancement
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for suggesting an idea. For open-ended discussion or "what do you think about..." topics, prefer **GitHub Discussions**. Use this template when the request is concrete enough to scope and implement.
+        请尽量说明真实使用场景和需要解决的问题。开放性想法可先在 Discussions 中交流，需求明确后再创建 Issue。
 
   - type: textarea
     id: problem
     attributes:
-      label: Problem / motivation
-      description: What user problem or limitation does this solve? Who is affected?
-      placeholder: As a self-hosted user, I cannot ...
+      label: 使用场景与问题
+      description: 目前遇到了什么限制，这项功能会帮助谁？
+      placeholder: 在使用……时，目前无法……
     validations:
       required: true
 
   - type: textarea
     id: proposal
     attributes:
-      label: Proposed solution
-      description: Describe the feature. UI sketches, API shape, or config knobs are welcome.
+      label: 建议方案
+      description: 描述你期望的功能、交互或配置方式，可附截图和参考链接。
     validations:
       required: true
 
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives considered
-      description: Other approaches you weighed and why this one is preferable.
+      label: 其他方案
+      description: 你是否尝试或考虑过其他解决方式？
 
   - type: dropdown
     id: area
     attributes:
-      label: Area
+      label: 涉及范围
       multiple: true
       options:
-        - Backend / API
-        - Frontend / UI
-        - Auth / Access tokens
-        - Storage (local / S3)
-        - Webhook / Agent / Events
-        - Migration / Backup
+        - 后端 / API
+        - 前端 / 界面
+        - 登录 / 权限
+        - 本地存储 / S3
+        - 说说 / 评论
         - Hub / Connect
-        - Docs
-        - Other
+        - 数据迁移 / 备份
+        - Docker / GitHub Actions
+        - 文档
+        - 其他
     validations:
       required: true
 
   - type: textarea
     id: context
     attributes:
-      label: Additional context
-      description: Links, related issues, screenshots, or examples from other tools.
+      label: 补充信息
+      description: 可提供相关 Issue、截图、草图或其他项目的实现参考。
 
   - type: checkboxes
     id: confirm
     attributes:
-      label: Checklist
+      label: 提交确认
       options:
-        - label: I searched existing issues and discussions and this is not a duplicate.
+        - label: 我已搜索现有 Issue 和 Discussions，确认没有重复建议。
           required: true
-        - label: I am willing to discuss scope and trade-offs before implementation begins.
+        - label: 我愿意在实现前继续讨论需求范围和取舍。
           required: false
-        - label: I would like to implement this myself (optional).
+        - label: 我愿意尝试自行实现该功能。
           required: false

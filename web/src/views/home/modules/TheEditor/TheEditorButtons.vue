@@ -172,6 +172,7 @@ import { theToast } from '@/utils/toast'
 import { localStg } from '@/utils/storage'
 import { computed, onMounted, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 const editorStore = useEditorStore()
 const {
@@ -189,6 +190,7 @@ const {
 const echoStore = useEchoStore()
 const { tagOptions } = storeToRefs(echoStore)
 const { t } = useI18n()
+const router = useRouter()
 
 onMounted(() => {
   echoStore.ensureTagsLoaded()
@@ -241,16 +243,15 @@ const handleChangeMode = () => {
 }
 
 const handleAddMediaMode = () => {
-  fileToAdd.value.storage_type = FILE_STORAGE_TYPE.LOCAL
-
   const rememberedSource = localStg.getItem<App.Api.File.StorageType>('file_storage_type')
   if (rememberedSource) {
     fileToAdd.value.storage_type = rememberedSource
+  } else {
+    fileToAdd.value.storage_type = FILE_STORAGE_TYPE.LOCAL
   }
 
   editorStore.setMode(Mode.Media)
 }
-
 const handleExitUpdateMode = () => {
   editorStore.handleExitUpdateMode()
 }
@@ -282,7 +283,7 @@ const toggleTag = (name: string) => {
 }
 
 const goToTagManager = () => {
-  editorStore.setMode(Mode.TagManage)
+  router.push({ name: 'panel-setting', query: { tab: 'tags' } })
 }
 </script>
 

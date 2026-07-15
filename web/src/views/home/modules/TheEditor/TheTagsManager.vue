@@ -1,29 +1,26 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
-  <div class="py-4">
-    <h2 class="text-[var(--color-text-secondary)] font-bold mb-2">
-      {{ t('editor.tagManagerTitle') }}
-    </h2>
-    <p class="text-xs text-[var(--color-text-muted)] mb-3">{{ t('editor.tagManagerHint') }}</p>
+  <div class="tag-manager-panel">
+    <header class="tag-manager-panel__header">
+      <h2>{{ t('editor.tagManagerTitle') }}</h2>
+      <p>{{ t('editor.tagManagerHint') }}</p>
+    </header>
 
-    <form v-if="isLogin" class="flex items-center gap-2 mb-4" @submit.prevent="handleCreateTag">
-      <div
-        class="flex items-center gap-1 flex-1 border border-dashed border-[var(--color-border-subtle)] rounded-sm px-2 py-1 focus-within:border-[var(--color-text-secondary)] transition-colors"
-      >
-        <span class="text-[var(--color-text-muted)] select-none">#</span>
+    <form v-if="isLogin" class="tag-manager-panel__form" @submit.prevent="handleCreateTag">
+      <div class="tag-manager-panel__input-wrap">
+        <span>#</span>
         <input
           v-model="newTagName"
           type="text"
           maxlength="50"
           :placeholder="t('editor.createTagPlaceholder')"
-          class="flex-1 bg-transparent text-sm outline-none text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)]"
         />
       </div>
       <button
         type="submit"
         :disabled="isCreating || newTagName.trim() === ''"
-        class="text-sm font-medium px-3 py-1 rounded-sm border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-secondary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        class="tag-manager-panel__submit"
       >
         {{ t('editor.createTagButton') }}
       </button>
@@ -31,11 +28,11 @@
 
     <div
       v-if="tagList.length === 0"
-      class="text-sm text-[var(--color-text-muted)] py-4 text-center"
+      class="tag-manager-panel__empty"
     >
       {{ t('editor.tagManagerEmpty') }}
     </div>
-    <div v-else ref="listRef" class="flex flex-wrap gap-2">
+    <div v-else ref="listRef" class="tag-manager-panel__list">
       <Popover
         v-for="tag in tagList"
         :key="tag.id"
@@ -43,12 +40,12 @@
         v-slot="{ close }"
       >
         <PopoverButton
-          class="flex items-center gap-1 border rounded-sm border-[var(--color-border-subtle)] border-dashed py-0.5 px-1 mb-1 outline-none transition-colors duration-150 hover:text-[var(--color-text-secondary)]"
+          class="tag-manager-panel__tag"
           style="white-space: nowrap"
           @click="resolvePanelSide($event, tag.id)"
         >
           <div
-            class="hover:cursor-pointer text-[var(--color-text-muted)] flex items-center justify-start gap-2"
+            class="tag-manager-panel__tag-inner"
           >
             <div>#</div>
             {{ tag.name }}
@@ -196,6 +193,7 @@ const handleDeleteTag = (tagId: string) => {
     onConfirm: () => {
       fetchDeleteTagById(tagId).then((res) => {
         if (res.code === 1) {
+          echoStore.invalidateEchosCache()
           echoStore.getTags()
         }
       })
@@ -204,4 +202,151 @@ const handleDeleteTag = (tagId: string) => {
 }
 </script>
 
-<style scoped></style>
+<style scoped>
+.tag-manager-panel {
+  padding: 1rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-bg-surface) 96%, transparent);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 4%);
+}
+
+.tag-manager-panel__header {
+  margin-bottom: 1rem;
+}
+
+.tag-manager-panel__header h2 {
+  margin: 0 0 0.25rem;
+  color: var(--color-text-primary);
+  font-family: var(--font-family-display);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.tag-manager-panel__header p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.tag-manager-panel__form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tag-manager-panel__input-wrap {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.55rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--color-bg-surface) 92%, transparent);
+  transition: border-color 160ms ease;
+}
+
+.tag-manager-panel__input-wrap:focus-within {
+  border-color: var(--color-border-strong);
+}
+
+.tag-manager-panel__input-wrap span {
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+.tag-manager-panel__input-wrap input {
+  min-width: 0;
+  flex: 1 1 auto;
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font-size: 0.875rem;
+}
+
+.tag-manager-panel__input-wrap input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.tag-manager-panel__submit {
+  flex: 0 0 auto;
+  padding: 0.42rem 0.75rem;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xs);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.tag-manager-panel__submit:hover:not(:disabled) {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border-subtle));
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.tag-manager-panel__submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.tag-manager-panel__empty {
+  padding: 1.25rem 0;
+  color: var(--color-text-muted);
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.tag-manager-panel__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.tag-manager-panel__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.25rem 0.55rem;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  outline: none;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.tag-manager-panel__tag:hover {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 24%, var(--color-border-subtle));
+  background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+}
+
+.tag-manager-panel__tag-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
+@media (width < 640px) {
+  .tag-manager-panel {
+    padding: 0.85rem;
+  }
+
+  .tag-manager-panel__form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+</style>

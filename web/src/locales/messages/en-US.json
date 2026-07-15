@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "requestFailed": "Request failed",
     "save": "Save",
@@ -34,13 +34,11 @@
     "mixedCategoryRejected": "An Echo can only contain files of a single type",
     "categoryLockedHint": "Remove existing files before switching type",
     "singleMediaLimit": "Only one audio / video per Echo — remove the current file before replacing it",
-    "imageAddMethod": "Select storage method:",
+    "imageAddMethod": "Add method:",
     "imageSourceExternal": "URL",
-    "imageSourceLocal": "Local",
-    "imageSourceObject": "S3",
     "imageLayout": "Select layout:",
     "imageSmartCompress": "Smart compression:",
-    "currentUploadMode": "Current storage method:",
+    "currentUploadMode": "Current add method:",
     "uploadingSuffix": ", uploading...",
     "addMoreImages": "Add more attachments",
     "layoutWaterfall": "Waterfall",
@@ -162,7 +160,8 @@
     "unorderedList": "Unordered list",
     "codeBlock": "Code block",
     "addedLabel": "Added:",
-    "noContentAdded": "No content added yet"
+    "noContentAdded": "No content added yet",
+    "imageSourceUpload": "Upload"
   },
   "commentManager": {
     "tabSetting": "Comment Settings",
@@ -374,17 +373,6 @@
     "searchPlaceholder": "Search...",
     "rssTitle": "RSS"
   },
-  "zenMode": {
-    "tooltip": "Enter Zen Mode (immersive browse)",
-    "exit": "Exit Zen Mode",
-    "openDetail": "Open detail",
-    "bwOn": "Switch to monochrome (hover a card to restore color)",
-    "bwOff": "Restore color",
-    "bwToastOn": "Switched to black & white",
-    "bwToastOff": "Switched to color",
-    "empty": "No content yet",
-    "noMore": "You've reached the end"
-  },
   "commandPalette": {
     "title": "Quick search",
     "placeholder": "Search content…",
@@ -420,9 +408,7 @@
     "home": "Feed",
     "panel": "Settings",
     "publish": "Publish",
-    "plaza": "Explore",
-    "status": "Status",
-    "tags": "Tags"
+    "plaza": "Explore"
   },
   "homeBio": {
     "tagline": "Welcome"
@@ -432,8 +418,7 @@
     "noMore": "No more data",
     "noMoreFiltered": "No more data",
     "loading": "Loading...",
-    "older": "Before",
-    "newer": "After"
+    "older": "Before"
   },
   "dateTime": {
     "justNow": "Just now",
@@ -521,7 +506,9 @@
     "deleteConfirmDesc": "This action cannot be undone.",
     "deleteSuccess": "Deleted successfully",
     "exitUpdateModeFirst": "Please exit update mode first",
-    "openDetail": "Open detail"
+    "openDetail": "Open detail",
+    "commentsLabel": "Comments",
+    "commentCount": "{count} comments"
   },
   "userSetting": {
     "title": "User Center",
@@ -536,7 +523,12 @@
     "passwordPlaceholder": "Enter password",
     "avatarUploading": "Uploading avatar...",
     "avatarUploadSuccess": "Avatar uploaded successfully!",
-    "uploadFailed": "Upload failed, please try again later"
+    "uploadFailed": "Upload failed, please try again later",
+    "resetAvatar": "Reset avatar",
+    "resetAvatarConfirmTitle": "Reset avatar?",
+    "resetAvatarConfirmDesc": "The current custom avatar file will be deleted and cannot be restored.",
+    "resetAvatarSuccess": "Default avatar restored",
+    "resetAvatarDeleteFailed": "Avatar was reset, but deleting the old file failed. Clean it up later in storage management."
   },
   "userManager": {
     "title": "User Manager",
@@ -573,11 +565,18 @@
     "defaultLocale": "Default language",
     "logoUploading": "Uploading server logo...",
     "logoUploadSuccess": "Server logo uploaded successfully!",
-    "uploadFailed": "Upload failed, please try again later"
+    "uploadFailed": "Upload failed, please try again later",
+    "resetLogo": "Reset logo",
+    "resetLogoConfirmTitle": "Reset logo?",
+    "resetLogoConfirmDesc": "The current custom logo file will be deleted and cannot be restored.",
+    "resetLogoSuccess": "Default logo restored",
+    "resetLogoDeleteFailed": "Logo was reset, but deleting the old file failed. Clean it up later in storage management."
   },
   "storageSetting": {
     "title": "Object Storage Settings",
     "enableS3": "Enable S3 storage",
+    "localModeHint": "When S3 is disabled, all managed uploads are stored locally.",
+    "s3ExclusiveModeHint": "When enabled, images, attachments, avatars, and logos are all uploaded through S3 instead of local storage.",
     "enableSsl": "Enable SSL",
     "s3Provider": "S3 provider",
     "usePathStyle": "Path-style access",
@@ -854,7 +853,8 @@
   },
   "settingManagement": {
     "tabSystem": "System Settings",
-    "tabAccessToken": "Access Tokens"
+    "tabAccessToken": "Access Tokens",
+    "tabTags": "Tags"
   },
   "migrationSetting": {
     "title": "Data Import",

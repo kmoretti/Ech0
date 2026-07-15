@@ -2,7 +2,7 @@ import { Outlet } from "react-router";
 import type { Route } from "./+types/layout";
 
 export function meta(_args: Route.MetaArgs) {
-  return [{ title: "Documentation — Ech0" }];
+  return [{ title: "文档 - 提笔摘星" }];
 }
 
 export default function DocsLayout() {

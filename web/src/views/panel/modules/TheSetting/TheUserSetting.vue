@@ -43,6 +43,13 @@
           >
             {{ t('userSetting.changeAvatar') }}
           </BaseButton>
+          <BaseButton
+            v-if="editMode && hasCustomAvatar"
+            class="rounded-md text-center w-auto text-align-center h-8 mt-2 md:ml-5"
+            @click="handleResetAvatar"
+          >
+            {{ t('userSetting.resetAvatar') }}
+          </BaseButton>
         </div>
       </div>
 
@@ -122,17 +129,20 @@ import { computed, ref, onMounted } from 'vue'
 import { fetchGetCurrentUser, fetchUpdateUser } from '@/service/api'
 import { theToast } from '@/utils/toast'
 import { storeToRefs } from 'pinia'
-import { useUserStore } from '@/stores'
-import { resolveAvatarUrl } from '@/service/request/shared'
-import { FILE_CATEGORY, FILE_STORAGE_TYPE } from '@/constants/file'
-import { useFileQueue } from '@/lib/file'
+import { useSettingStore, useUserStore } from '@/stores'
+import { DEFAULT_USER_AVATAR_URL, resolveAvatarUrl } from '@/service/request/shared'
+import { FILE_CATEGORY } from '@/constants/file'
+import { deleteFileById, resolveManagedUploadStorageType, useFileQueue } from '@/lib/file'
 import { useI18n } from 'vue-i18n'
 import { setI18nLocale, LOCALE_ENDONYMS, LOCALE_OPTIONS, type AppLocale } from '@/locales'
+import { useBaseDialog } from '@/composables/useBaseDialog'
 
 const userStore = useUserStore()
+const settingStore = useSettingStore()
 const { t } = useI18n()
 const { refreshCurrentUser } = userStore
 const { user } = storeToRefs(userStore)
+const { S3Setting } = storeToRefs(settingStore)
 const userInfo = ref<App.Api.User.UserInfo>({
   username: '',
   password: '',
@@ -140,16 +150,20 @@ const userInfo = ref<App.Api.User.UserInfo>({
   is_admin: false,
   avatar: '',
   avatar_file_id: '',
+  reset_avatar: false,
   locale: 'zh-CN',
 })
 
 const editMode = ref<boolean>(false)
-const avatarSrc = computed(() => resolveAvatarUrl(user.value?.avatar))
+const avatarSrc = computed(() => resolveAvatarUrl(user.value?.avatar, DEFAULT_USER_AVATAR_URL))
+const hasCustomAvatar = computed(() => Boolean(userInfo.value.avatar || userInfo.value.avatar_file_id))
+// 用户界面语言统一用 endonym 选项（与头部切换器、站点默认语言一致）。
 const localeOptions = LOCALE_OPTIONS
 const localeLabel = computed(
   () => LOCALE_ENDONYMS[userInfo.value.locale as AppLocale] || LOCALE_ENDONYMS['zh-CN'],
 )
 const { enqueueUpload, waitForTask, clearFinishedUploads } = useFileQueue()
+const { openConfirm } = useBaseDialog()
 
 const handleUpdateUser = async () => {
   await fetchUpdateUser(userInfo.value)
@@ -158,6 +172,7 @@ const handleUpdateUser = async () => {
         theToast.success(res.msg)
         void setI18nLocale(userInfo.value.locale)
         editMode.value = false
+        userInfo.value.reset_avatar = false
       }
     })
     .finally(() => {
@@ -180,9 +195,10 @@ const handleUploadImage = async (event: Event) => {
   if (!file) return
 
   try {
+    await settingStore.getS3Setting()
     const taskId = enqueueUpload({
       file,
-      storageType: FILE_STORAGE_TYPE.LOCAL,
+      storageType: resolveManagedUploadStorageType(S3Setting.value.enable),
       category: FILE_CATEGORY.IMAGE,
     })
     const task = await theToast.promise(waitForTask(taskId), {
@@ -194,6 +210,7 @@ const handleUploadImage = async (event: Event) => {
     if (task.result?.url) {
       userInfo.value.avatar = task.result.url
       userInfo.value.avatar_file_id = task.result.id
+      userInfo.value.reset_avatar = false
       if (user.value) user.value.avatar = task.result.url
     }
   } catch (err) {
@@ -204,12 +221,52 @@ const handleUploadImage = async (event: Event) => {
   }
 }
 
+const deleteFileBestEffort = async (fileId?: string) => {
+  const id = String(fileId || '').trim()
+  if (!id) return
+  try {
+    await deleteFileById(id, { silentError: true })
+  } catch {
+    theToast.warning(String(t('userSetting.resetAvatarDeleteFailed')))
+  }
+}
+
+const handleResetAvatar = () => {
+  const oldFileId = userInfo.value.avatar_file_id || user.value?.avatar_file_id
+  openConfirm({
+    title: String(t('userSetting.resetAvatarConfirmTitle')),
+    description: String(t('userSetting.resetAvatarConfirmDesc')),
+    onConfirm: async () => {
+      const payload: App.Api.User.UserInfo = {
+        ...userInfo.value,
+        avatar: '',
+        avatar_file_id: '',
+        reset_avatar: true,
+      }
+      const res = await fetchUpdateUser(payload)
+      if (res.code !== 1) return
+      userInfo.value.avatar = ''
+      userInfo.value.avatar_file_id = ''
+      userInfo.value.reset_avatar = false
+      if (user.value) {
+        user.value.avatar = ''
+        user.value.avatar_file_id = ''
+      }
+      await deleteFileBestEffort(oldFileId)
+      await refreshCurrentUser()
+      theToast.success(String(t('userSetting.resetAvatarSuccess')))
+    },
+  })
+}
+
 onMounted(() => {
+  void settingStore.getS3Setting()
   fetchGetCurrentUser().then((res) => {
     if (res.code === 1) {
       userInfo.value.username = res.data.username
       userInfo.value.password = res.data.password || ''
       userInfo.value.avatar = res.data.avatar || ''
+      userInfo.value.avatar_file_id = res.data.avatar_file_id || ''
       userInfo.value.email = res.data.email || ''
       userInfo.value.is_admin = res.data.is_admin
       userInfo.value.locale = res.data.locale || 'zh-CN'

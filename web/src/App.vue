@@ -2,7 +2,7 @@
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <script setup lang="ts">
 import { RouterView, useRouter } from 'vue-router'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useSettingStore, useThemeStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { Toaster } from 'vue-sonner'
@@ -10,6 +10,8 @@ import { resolveAvatarUrl } from './service/request/shared'
 import 'vue-sonner/style.css'
 import BaseDialog from './components/common/BaseDialog.vue'
 import TheRouteProgress from './components/common/TheRouteProgress.vue'
+import TheFloatingActions from './components/advanced/TheFloatingActions.vue'
+import TheChatLauncher from './views/home/modules/TheChatLauncher.vue'
 
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import { useBfCacheRestore } from '@/composables/useBfCacheRestore'
@@ -17,6 +19,10 @@ import { useSeoHead } from '@/composables/useSeoHead'
 
 const { register, title, description, handleConfirm, handleCancel } = useBaseDialog()
 const dialogRef = ref()
+const chatLauncherOpen = ref(false)
+const openGlobalChat = () => {
+  chatLauncherOpen.value = true
+}
 
 const router = useRouter()
 const transitionName = ref('fade')
@@ -178,7 +184,12 @@ watch(
 )
 
 onMounted(() => {
-  register(dialogRef.value)
+  register(dialogRef.value) // 全局注册弹窗对话框
+  window.addEventListener('ech0:open-chat', openGlobalChat)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('ech0:open-chat', openGlobalChat)
 })
 </script>
 
@@ -209,6 +220,8 @@ onMounted(() => {
       @confirm="handleConfirm"
       @cancel="handleCancel"
     />
+    <TheFloatingActions @open-chat="chatLauncherOpen = true" />
+    <TheChatLauncher v-model="chatLauncherOpen" />
   </div>
 </template>
 

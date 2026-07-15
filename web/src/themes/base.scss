@@ -1,11 +1,36 @@
 html,
 body {
+  max-width: 100%;
+  overflow-x: hidden;
   font-family: var(--font-family-sans);
   scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
+  scrollbar-color: var(--scrollbar-thumb-bg) var(--scrollbar-track-bg);
 
   background: var(--color-bg-canvas);
   color: var(--color-text-primary);
+}
+
+#app {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-bg);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover-bg);
 }
 
 ::selection {

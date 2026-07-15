@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import type { Route } from "./+types/home";
 import { absoluteUrl, DEFAULT_DESCRIPTION, SITE_NAME, siteUrl } from "../site";
 
-const PAGE_TITLE = `${SITE_NAME} — Self-hosted microblog & timeline`;
+const PAGE_TITLE = `${SITE_NAME} - 清羽飞扬自用个性化说说程序`;
 const OG_IMAGE_PATH = "/screenshot.png";
 const OG_IMAGE_WIDTH = 1412;
 const OG_IMAGE_HEIGHT = 1131;
@@ -18,9 +18,9 @@ export function meta(_args: Route.MetaArgs) {
     {
       name: "keywords",
       content:
-        "Ech0, microblog, self-hosted, timeline, open source, blog, personal website, RSS alternative, memo",
+        "提笔摘星, Ech0, 清羽飞扬, 个人说说, 微博客, 自托管, RSS, 个人网站",
     },
-    { name: "author", content: "Ech0" },
+    { name: "author", content: "清羽飞扬" },
     { name: "application-name", content: SITE_NAME },
     { name: "robots", content: "index, follow" },
     { name: "theme-color", content: "#f6f4f0" },
@@ -38,7 +38,7 @@ export function meta(_args: Route.MetaArgs) {
     { property: "og:image:height", content: String(OG_IMAGE_HEIGHT) },
     {
       property: "og:image:alt",
-      content: "Ech0 web interface showing a personal timeline feed",
+      content: "提笔摘星个人说说界面预览",
     },
     { property: "og:locale", content: "en_US" },
     { name: "twitter:card", content: "summary_large_image" },
@@ -47,7 +47,7 @@ export function meta(_args: Route.MetaArgs) {
     { name: "twitter:image", content: imageUrl },
     {
       name: "twitter:image:alt",
-      content: "Ech0 web interface showing a personal timeline feed",
+      content: "提笔摘星个人说说界面预览",
     },
   ];
 }
@@ -85,7 +85,7 @@ function buildHomeJsonLd() {
         url: base,
         name: SITE_NAME,
         description: DEFAULT_DESCRIPTION,
-        inLanguage: "en",
+        inLanguage: "zh-CN",
         publisher: { "@id": `${base}/#software` },
       },
       {
@@ -98,9 +98,9 @@ function buildHomeJsonLd() {
         screenshot: imageUrl,
         applicationCategory: "WebApplication",
         operatingSystem: "Linux, Docker, self-hosted",
-        license: "https://github.com/lin-snow/Ech0/blob/main/LICENSE",
-        codeRepository: "https://github.com/lin-snow/Ech0",
-        sameAs: ["https://github.com/lin-snow/Ech0"],
+        license: "https://github.com/LiuShen-Fork/Ech0/blob/main/LICENSE",
+        codeRepository: "https://github.com/LiuShen-Fork/Ech0",
+        sameAs: ["https://github.com/LiuShen-Fork/Ech0"],
         offers: {
           "@type": "Offer",
           price: "0",
@@ -122,14 +122,14 @@ export default function Home() {
           className="flex items-center gap-2.5 text-sand-12 no-underline"
         >
           <img
-            src="/logo.svg"
-            alt="Ech0"
+            src="/favicon.ico"
+            alt="提笔摘星"
             width={28}
             height={28}
             className="size-7 shrink-0 rounded-sm"
           />
           <span className="text-[0.95rem] font-medium tracking-tight">
-            Ech0
+            提笔摘星
           </span>
         </a>
         <Link
@@ -145,7 +145,7 @@ export default function Home() {
         <div className="overflow-hidden rounded-xl shadow-[0_16px_40px_-12px_rgba(33,32,28,0.12)] ring-1 ring-sand-6/70">
           <img
             src="/screenshot.png"
-            alt="Ech0 interface preview"
+            alt="提笔摘星界面预览"
             className="block w-full align-middle"
             width={1412}
             height={1131}
@@ -161,11 +161,11 @@ export default function Home() {
         {}
         <section className="flex flex-col items-center gap-8 text-center">
           <h1 className="max-w-[22ch] font-serif text-[1.65rem] font-normal leading-[1.2] tracking-[-0.02em] text-sand-12 sm:text-[1.75rem]">
-            Let your thoughts flow.
+            提笔摘星
           </h1>
 
           <p className="max-w-[26ch] font-serif text-[0.9375rem] font-normal leading-[1.45] tracking-[0.01em] text-sand-11">
-            A personal timeline, hosted on your server.
+            清羽飞扬自用的个性化说说程序。
           </p>
 
           <div className="flex flex-col items-center gap-3">
@@ -175,10 +175,10 @@ export default function Home() {
               className="inline-flex items-center gap-2 rounded-full border border-sand-6 bg-sand-2/80 px-5 py-2.5 text-[13px] font-medium text-sand-11 shadow-[0_1px_2px_rgba(33,32,28,0.05)] no-underline transition-colors hover:border-sand-11/25 hover:bg-sand-2 hover:text-sand-12"
             >
               <RiQuillPenLine className="size-3.5 shrink-0 opacity-75" />
-              Get started
+              开始使用
             </Link>
             <p className="text-[0.6875rem] font-medium tracking-wide text-sand-11/85">
-              AGPL-3.0 · Lightweight · Self-hosted
+              AGPL-3.0 · 轻量 · 自托管
             </p>
           </div>
         </section>
@@ -186,18 +186,17 @@ export default function Home() {
         {}
         <section className={`${dashedSection} text-left`}>
           <h2 className="font-serif text-[1.2rem] font-semibold leading-snug tracking-[-0.02em] text-sand-12">
-            Why Ech0?
+            为什么是提笔摘星？
           </h2>
           <p className="mt-5 font-serif text-base italic leading-snug text-sand-11">
-            One timeline, entirely yours.
+            一条真正属于自己的时间线。
           </p>
           <div className="mt-5 space-y-4 font-sans text-[0.9375rem] leading-[1.65] text-sand-11">
             <p>
               If you want a corner of the web that feels like{" "}
               <em className="not-italic font-medium text-sand-12">yours</em>—not
-              someone else&rsquo;s feed, not a rented profile—Ech0 is a small,
-              self-hosted microblog: one calm stream for what you publish,
-              running on hardware you control.
+              someone else&rsquo;s feed, not a rented profile—提笔摘星是一个小而完整的
+              自托管说说程序：用于记录想法、文字、图片与链接，运行在你自己掌控的环境中。
             </p>
             <p>
               No ads, no subscription wall, no algorithm in the middle.
@@ -208,7 +207,7 @@ export default function Home() {
 
         <section className={dashedSection}>
           <h2 className="font-serif text-[1.2rem] font-semibold leading-snug tracking-[-0.02em] text-sand-12">
-            What can Ech0 do for you?
+            提笔摘星能做什么？
           </h2>
           <ol className="mt-6 list-decimal space-y-5 pl-[1.35rem] text-[0.9375rem] leading-[1.6] text-sand-11 marker:font-serif marker:text-[0.95rem] marker:text-sand-11 sm:pl-6">
             <li>
@@ -286,7 +285,7 @@ export default function Home() {
           </a>
           <span className="mx-2 text-sand-6">·</span>
           <a
-            href="https://github.com/lin-snow/Ech0"
+            href="https://github.com/LiuShen-Fork/Ech0"
             className="font-medium underline-offset-4 transition-colors hover:text-sand-12"
           >
             GitHub

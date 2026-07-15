@@ -45,9 +45,18 @@ const getServiceBaseUrl = () => {
   return baseUrl.replace(/\/+$/, '')
 }
 
-export const resolveAvatarUrl = (rawUrl?: string, fallback = '/Ech0.svg') => {
+export const DEFAULT_SITE_ICON_URL = '/favicon.ico'
+export const DEFAULT_USER_AVATAR_URL = '/default-avatar.jpg'
+
+export const resolveAvatarUrl = (rawUrl?: string, fallback = DEFAULT_SITE_ICON_URL) => {
   const value = (rawUrl || '').trim()
-  if (!value || value === 'Ech0.svg' || value === '/Ech0.svg') {
+  if (
+    !value ||
+    value === 'Ech0.svg' ||
+    value === '/Ech0.svg' ||
+    value === 'favicon.ico' ||
+    value === '/favicon.ico'
+  ) {
     return fallback
   }
 

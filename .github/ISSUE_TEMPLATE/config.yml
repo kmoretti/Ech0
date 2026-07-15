@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Questions & general discussion
-    url: https://github.com/lin-snow/Ech0/discussions
-    about: For usage questions, ideas, or open-ended discussion, please use GitHub Discussions instead of opening an issue.
-  - name: Security vulnerability
-    url: https://github.com/lin-snow/Ech0/security/policy
-    about: Please report security issues privately — do not open a public issue. See SECURITY.md.
+  - name: 使用问题与交流
+    url: https://github.com/LiuShen-Fork/Ech0/discussions
+    about: 使用问题、想法交流或开放性讨论请优先使用 GitHub Discussions。
+  - name: 安全漏洞报告
+    url: https://github.com/LiuShen-Fork/Ech0/security/advisories/new
+    about: 请通过私密漏洞报告提交安全问题，不要公开创建 Issue。

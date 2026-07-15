@@ -4,9 +4,6 @@
   <div class="px-2">
     <div class="widget bg-transparent! w-full max-w-[19rem] mx-auto rounded-md p-4">
       <div class="connect-head mb-2">
-        <div class="connect-icon-chip">
-          <Connect class="w-8 h-8" />
-        </div>
         <div class="connect-title-wrap">
           <div class="connect-title">Connect</div>
           <div class="connect-title-accent">Widget</div>
@@ -16,16 +13,13 @@
         <div v-if="!connectsInfo.length" class="text-[var(--color-text-muted)] text-sm mb-2">
           {{ t('connectWidget.noConnections') }}
         </div>
-        <div v-else class="flex flex-wrap gap-3">
-          <div
-            v-for="(connect, index) in connectsInfo"
-            :key="index"
-            class="relative flex flex-col items-center justify-center w-8 h-8 min-w-[2rem] min-h-[2rem] flex-none border-2 border-[var(--color-border-subtle)] shadow-sm rounded-full hover:shadow-md transition duration-200 ease-in-out group"
-          >
+        <div v-else class="connect-grid">
+          <div v-for="(connect, index) in connectsInfo" :key="index" class="connect-cell">
             <a
               :href="connect.server_url"
               target="_blank"
-              class="block w-full h-full"
+              rel="noopener noreferrer"
+              class="connect-link"
               @mouseenter="showTooltip(connect, $event)"
               @mouseleave="hideTooltip"
             >
@@ -68,7 +62,6 @@
 </template>
 
 <script setup lang="ts">
-import Connect from '@/components/icons/connect.vue'
 import { useConnectStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
@@ -116,18 +109,7 @@ onMounted(() => {
 .connect-head {
   display: flex;
   align-items: end;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.connect-icon-chip {
-  width: 64px;
-  height: 64px;
-  border-radius: 9999px;
-  color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
 }
 
 .connect-title-wrap {
@@ -148,5 +130,38 @@ onMounted(() => {
   font-size: 20px;
   font-weight: 700;
   margin-top: -2px;
+}
+
+.connect-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(2.35rem, 1fr));
+  gap: 0.7rem;
+  width: 100%;
+}
+
+.connect-cell {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.connect-link {
+  position: relative;
+  display: block;
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 2px solid var(--color-border-subtle);
+  border-radius: 9999px;
+  box-shadow: 0 4px 10px rgb(0 0 0 / 4%);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.connect-link:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: 0 7px 16px rgb(0 0 0 / 7%);
+  transform: translateY(-1px);
 }
 </style>

@@ -1,86 +1,36 @@
 # Ech0 Hub
 
-Frontend for **[hub.ech0.app](https://hub.ech0.app)**: it loads a static **instance registry JSON**, fetches each Ech0 deployment’s posts API in parallel in the browser, and merges results into a **single unified timeline**.
+该目录是探索页使用的 Vue 3 前端。它读取静态实例列表，异步获取各 Ech0 实例的公开说说，并合并为统一时间线。
 
-## How to join Ech0 Hub
+当前个人 fork 已删除上游的 Issue 自动登记、健康检查清理和 Hub 发布 Actions，因此实例列表需要直接编辑 `public/hub.json`。
 
-Want **your** public Ech0 instance to appear on [hub.ech0.app](https://hub.ech0.app)? Two steps:
-
-1. **Configure CORS on your instance.** Allow the Hub origin to call your instance API — set `Access-Control-Allow-Origin` (or the equivalent on your reverse proxy / CDN) to permit `https://hub.ech0.app`. If you also develop the Hub locally, additionally allow `http://localhost:5173`. If you cannot modify your instance, run a reverse proxy on the Hub domain so requests are same-origin.
-2. **Open the registration issue.** Submit via [**Register on Ech0 Hub**](https://github.com/lin-snow/Ech0/issues/new?template=register-hub-instance.yml) (GitHub sign-in required) and fill in:
-   - **Instance ID** — lowercase letters, digits, and hyphens only; globally unique within Hub.
-   - **Instance URL** — your deployment base URL, **no trailing slash** (e.g. `https://memo.example.com`).
-
-   Once submitted, CI parses the issue and opens a PR that updates [`public/hub.json`](./public/hub.json). After a maintainer merges, your instance shows up in the Hub timeline.
-
-> Requirements: your instance must be reachable over HTTPS, expose the standard Ech0 API, and run version **≥ 4.4.0** (Hub gates aggregation on the version returned by `/healthz`). Instances that fail the health check or are unreachable are dropped from the merged timeline with a visible reason.
-
-## Architecture
-
-
-| Aspect  | Description                                                                                                                                         |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **CSR** | Content is rendered after data is fetched in the browser; no server-side templates.                                                                 |
-| **SPA** | Vue 3 + `vue-router` single-page app; route changes do not full-page reload.                                                                        |
-| **PWA** | `vite-plugin-pwa` provides the Web App Manifest and Service Worker (installable on desktop/home screen, static asset caching per `vite.config.ts`). |
-
-
-For a detailed task list as the implementation evolves, see the repo root: `docs/superpowers/plans/2026-04-05-ech0-hub-csr-spa-pwa.md`.
-
-## Registration automation workflow
-
-The workflow file is `.github/workflows/hub-register-from-issue.yml`. It automates issue-to-PR registration with these triggers:
-
-- `issues.opened`: runs when a new issue is created.
-- `issues.reopened`: runs when an existing issue is reopened.
-- `workflow_dispatch`: manual recovery path by passing `issue_number` from the Actions UI.
-
-Execution logic:
-
-1. For `opened` / `reopened`, the job only runs when the issue has the `hub` label.
-2. For `workflow_dispatch`, it fetches the target issue by `issue_number` and validates that `hub` label exists.
-3. It parses `Instance ID` and `Instance URL` from the issue body, validates format and URL scheme (`https`), then updates `hub/public/hub.json`.
-4. It creates a PR on branch `hub/issue-<issue_number>` with commit title `chore(hub): add instance ...`.
-5. The PR body includes `Closes #<issue_number>`, so merging the PR automatically closes the source issue.
-6. It comments on the issue with the created PR link for status tracking.
-
-Repository settings required for PR creation from Actions:
-
-- `Settings -> Actions -> General -> Workflow permissions` must be set to **Read and write permissions**.
-- Enable **Allow GitHub Actions to create and approve pull requests**.
-
-## Instance registry `public/hub.json`
-
-At runtime Hub requests `/hub.json` from the same origin (in dev, Vite serves it from `public/`). Each instance needs only `id` and `url`:
+## 实例配置
 
 ```json
 {
   "instances": [
-    { "id": "my-instance", "url": "https://your-ech0-origin.example.com" }
+    {
+      "id": "my-instance",
+      "url": "https://memo.example.com"
+    }
   ]
 }
 ```
 
-- `**id**`: Short identifier for the instance (source labeling and UI).
-- `**url**`: API root **without** a trailing slash; aggregated requests use `{url}/api/echo/query` (same as the main project’s `internal/router`). Health checks use `**GET {url}/healthz`** on the same host (see `internal/router/resource.go`; not under `/api`).
+- `id` 使用简短且唯一的标识。
+- `url` 填写实例根地址，不要以 `/` 结尾。
+- 实例必须允许 Hub 所在域名跨域访问公开 API 和 `/healthz`。
 
-## Health checks and version gate
+## 聚合流程
 
-1. For each instance, call `**GET {url}/healthz`**, parse `data.version` when `**code === 1`** (same contract as `Healthz` in `internal/handler/common/common.go`).
-2. Only instances whose version is **≥ 4.4.0** (same semantics as `Version` in `internal/model/common/common.go`) participate in post aggregation.
-3. If the check fails or the request errors, show the reason on the page and exclude that instance from the timeline.
+1. 读取 `/hub.json` 实例列表。
+2. 请求 `{url}/healthz` 获取健康状态与版本。
+3. 请求 `{url}/api/echo/query` 获取公开说说。
+4. 合并结果并按创建时间倒序展示。
 
-## Body / images and reuse from `web`
+无法访问或健康检查失败的实例不会进入聚合时间线。Connect 状态等非关键数据应异步加载，不阻塞主要内容展示。
 
-- **Markdown & images**: Vite `resolve.alias` maps `@` to the repo’s `web/src`, reusing `TheMdPreview` (via `MarkdownRenderer`) and `TheImageGallery`; gallery requests pass the instance `baseUrl`, matching the main Hub use case.
-- **Global styles & i18n**: The Hub entry imports `web` theme SCSS, `virtual:uno.css`, and `vue-i18n` (currently `zh-CN` strings) to drive those components.
-- **Extension**: Aggregated feeds **omit** posts with `extension` (filtered in `src/composables/useHubMergeFeed.ts`); Hub does not show Extension cards or related wrappers.
-
-## Cross-origin (CORS)
-
-When the browser on `hub.ech0.app` calls each instance, `**/api/`* and `/healthz`** (among others) must allow the Hub origin (e.g. `Access-Control-Allow-Origin: https://hub.ech0.app`). If you cannot change the instance, use a **reverse proxy** on the Hub domain (same-origin avoids CORS).
-
-## Development & build
+## 开发命令
 
 ```bash
 pnpm install
@@ -89,19 +39,4 @@ pnpm build
 pnpm preview
 ```
 
-- Local dev defaults to `http://localhost:5173`; add that origin to instance CORS for debugging.
-
-## Stack
-
-Vue 3, TypeScript, Vite, `vue-router`, `vite-plugin-pwa`, `vue-i18n`, UnoCSS; shares some UI with `web/` in this repo (see above).
-
-## Aggregation flow (summary)
-
-1. `GET /hub.json` → instance list.
-2. `GET {url}/healthz` → candidates with version ≥ 4.4.0.
-3. For each candidate, `POST {url}/api/echo/query` with a body matching the main project’s `EchoQueryDto`; success when `code === 1` and `data.items` is the post array (see `internal/model/common/result.go`).
-4. Merge results, sort by `created_at` descending; surface failures or partial errors in the UI.
-
-## Repository layout
-
-This directory is the `hub/` package in the monorepo. It shares Git history with the main Ech0 (Go backend) project but builds and deploys independently.
+技术栈包括 Vue 3、TypeScript、Vite、vue-router、vite-plugin-pwa、vue-i18n 和 UnoCSS，并复用 `web/` 中的部分主题与内容组件。

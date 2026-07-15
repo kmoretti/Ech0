@@ -1,115 +1,114 @@
-name: 🐛 Bug Report
-description: Report a reproducible problem in Ech0 (backend, frontend, or deployment).
-title: "🐛 [Bug] "
+name: Bug 反馈
+description: 反馈可稳定复现的后端、前端或部署问题。
+title: "[Bug] "
 labels:
   - bug
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to file a bug report. Please fill in as much as you can — the more reproducible the report, the faster it gets fixed.
+        感谢反馈。请尽量提供完整、可复现的信息，以便快速定位问题。
 
-        Before submitting:
-        - Search existing issues to avoid duplicates.
-        - For security vulnerabilities, **do not** open a public issue — see `SECURITY.md`.
+        提交前请先搜索现有 Issue，避免重复提交。安全漏洞请勿公开反馈，请通过仓库的私密漏洞报告功能提交。
 
   - type: textarea
     id: summary
     attributes:
-      label: Summary
-      description: A clear, one-paragraph description of the bug.
-      placeholder: When I do X, Y happens instead of Z.
+      label: 问题描述
+      description: 简要说明发生了什么，以及你认为正确的表现是什么。
+      placeholder: 执行某项操作后出现了……，预期应该……
     validations:
       required: true
 
   - type: textarea
     id: steps
     attributes:
-      label: Steps to reproduce
-      description: Minimal, ordered steps. Include any sample data or curl/HTTP requests if relevant.
+      label: 复现步骤
+      description: 请按顺序提供最少且完整的复现步骤，必要时附上请求或测试数据。
       placeholder: |
-        1. Start the server with `make run`
-        2. POST `/api/echo` with body `...`
-        3. Open `/` in the browser
-        4. See the error
+        1. 启动服务
+        2. 打开某个页面
+        3. 执行某项操作
+        4. 出现错误
     validations:
       required: true
 
   - type: textarea
     id: expected
     attributes:
-      label: Expected behavior
+      label: 预期表现
     validations:
       required: true
 
   - type: textarea
     id: actual
     attributes:
-      label: Actual behavior
-      description: Paste error messages, stack traces, or screenshots if helpful.
+      label: 实际表现
+      description: 可附上错误信息、控制台堆栈或截图。
     validations:
       required: true
 
   - type: input
     id: version
     attributes:
-      label: Ech0 version
-      description: Output of `ech0 version`, the Docker image tag, or commit SHA.
-      placeholder: v4.4.0 / docker:latest / commit abcdef0
+      label: 版本信息
+      description: 请填写 Docker 镜像标签、提交哈希或 `ech0 version` 输出。
+      placeholder: latest / v1.0.0 / commit abcdef0
     validations:
       required: true
 
   - type: dropdown
     id: deployment
     attributes:
-      label: Deployment
+      label: 部署方式
       options:
-        - Binary (go build / make run)
         - Docker
         - Docker Compose
-        - Built from source (dev)
-        - Other
+        - 本地源码运行
+        - 自行构建二进制文件
+        - 其他
     validations:
       required: true
 
   - type: dropdown
     id: area
     attributes:
-      label: Area
+      label: 问题范围
       multiple: true
       options:
-        - Backend / API
-        - Frontend / UI
-        - Auth / Access tokens
-        - Storage (local / S3)
-        - Webhook / Agent / Events
-        - Migration / Backup
+        - 后端 / API
+        - 前端 / 界面
+        - 登录 / 权限
+        - 本地存储 / S3
+        - 说说 / 评论
         - Hub / Connect
-        - Docs
-        - Other
+        - 数据迁移 / 备份
+        - Docker / GitHub Actions
+        - 文档
+        - 其他
     validations:
       required: true
 
   - type: input
     id: env
     attributes:
-      label: Environment
-      description: OS, browser (for UI bugs), Go version if building from source.
-      placeholder: macOS 14.5 / Chrome 124 / Go 1.27.0
+      label: 运行环境
+      description: 操作系统、浏览器，以及源码构建时使用的 Go、Node.js 版本。
+      placeholder: Windows 11 / Chrome / Go 1.26.0 / Node.js 25
 
   - type: textarea
     id: logs
     attributes:
-      label: Relevant logs / config
-      description: Paste server logs or relevant `ECH0_*` env vars. Redact secrets (JWT, S3 keys, tokens).
+      label: 相关日志或配置
+      description: 请隐藏 JWT、S3 密钥、访问令牌及其他敏感信息。
       render: shell
 
   - type: checkboxes
     id: confirm
     attributes:
-      label: Checklist
+      label: 提交确认
       options:
-        - label: I searched existing issues and this is not a duplicate.
+        - label: 我已搜索现有 Issue，确认这不是重复问题。
           required: true
-        - label: I have redacted any secrets from logs and config above.
+        - label: 我已隐藏日志和配置中的密钥及个人信息。
           required: true

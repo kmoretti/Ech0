@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "requestFailed": "リクエストに失敗しました",
     "save": "保存",
@@ -34,13 +34,11 @@
     "mixedCategoryRejected": "1 つの Echo には同じ種類のファイルしか含められません",
     "categoryLockedHint": "種別を切り替えるには既存のファイルを削除してください",
     "singleMediaLimit": "音声 / 動画は 1 つの Echo につき 1 つまで。差し替えるには現在のファイルを削除してください",
-    "imageAddMethod": "保存方式を選択：",
+    "imageAddMethod": "追加方法：",
     "imageSourceExternal": "外部URL",
-    "imageSourceLocal": "ローカル",
-    "imageSourceObject": "S3",
     "imageLayout": "レイアウトを選択：",
     "imageSmartCompress": "スマート圧縮：",
-    "currentUploadMode": "現在の保存方式：",
+    "currentUploadMode": "現在の追加方法：",
     "uploadingSuffix": "、アップロード中...",
     "addMoreImages": "さらに追加",
     "layoutWaterfall": "ウォーターフォール",
@@ -162,7 +160,8 @@
     "unorderedList": "箇条書き",
     "codeBlock": "コードブロック",
     "addedLabel": "追加済み：",
-    "noContentAdded": "まだコンテンツが追加されていません"
+    "noContentAdded": "まだコンテンツが追加されていません",
+    "imageSourceUpload": "アップロード"
   },
   "commentManager": {
     "tabSetting": "コメント設定",
@@ -374,17 +373,6 @@
     "searchPlaceholder": "検索...",
     "rssTitle": "RSS"
   },
-  "zenMode": {
-    "tooltip": "禅モードに入る（没入ブラウズ）",
-    "exit": "禅モードを終了",
-    "openDetail": "詳細を開く",
-    "bwOn": "モノクロ表示に切り替え（カードをホバーで色が戻ります）",
-    "bwOff": "カラー表示に戻す",
-    "bwToastOn": "モノクロモードに切り替えました",
-    "bwToastOff": "カラーモードに切り替えました",
-    "empty": "コンテンツはまだありません",
-    "noMore": "これで全部です"
-  },
   "commandPalette": {
     "title": "クイック検索",
     "placeholder": "コンテンツを検索…",
@@ -420,9 +408,7 @@
     "home": "タイムライン",
     "panel": "設定",
     "publish": "投稿",
-    "plaza": "探索",
-    "status": "ステータス",
-    "tags": "タグ"
+    "plaza": "探索"
   },
   "homeBio": {
     "tagline": "ようこそ"
@@ -432,8 +418,7 @@
     "noMore": "これ以上データはありません",
     "noMoreFiltered": "これ以上データはありません",
     "loading": "読み込み中...",
-    "older": "以前",
-    "newer": "以降"
+    "older": "以前"
   },
   "dateTime": {
     "justNow": "たった今",
@@ -521,7 +506,9 @@
     "deleteConfirmDesc": "削除すると復元できません。慎重に操作してください",
     "deleteSuccess": "削除しました！",
     "exitUpdateModeFirst": "先に更新モードを終了してください！",
-    "openDetail": "詳細を開く"
+    "openDetail": "詳細を開く",
+    "commentsLabel": "コメント",
+    "commentCount": "{count} 件のコメント"
   },
   "userSetting": {
     "title": "ユーザーセンター",
@@ -536,7 +523,12 @@
     "passwordPlaceholder": "パスワードを入力してください",
     "avatarUploading": "アバターをアップロード中...",
     "avatarUploadSuccess": "アバターをアップロードしました！",
-    "uploadFailed": "アップロードに失敗しました。しばらくしてから再試行してください"
+    "uploadFailed": "アップロードに失敗しました。しばらくしてから再試行してください",
+    "resetAvatar": "デフォルトに戻す",
+    "resetAvatarConfirmTitle": "デフォルトのアバターに戻しますか？",
+    "resetAvatarConfirmDesc": "現在のカスタムアバターファイルは削除され、元に戻せません。",
+    "resetAvatarSuccess": "デフォルトのアバターに戻しました",
+    "resetAvatarDeleteFailed": "アバターは戻しましたが、古いファイルの削除に失敗しました。後でストレージ管理から削除してください。"
   },
   "userManager": {
     "title": "ユーザー管理",
@@ -573,11 +565,18 @@
     "defaultLocale": "既定の言語",
     "logoUploading": "サーバーロゴをアップロード中...",
     "logoUploadSuccess": "サーバーロゴをアップロードしました！",
-    "uploadFailed": "アップロードに失敗しました。しばらくしてから再試行してください"
+    "uploadFailed": "アップロードに失敗しました。しばらくしてから再試行してください",
+    "resetLogo": "デフォルトに戻す",
+    "resetLogoConfirmTitle": "デフォルトの Logo に戻しますか？",
+    "resetLogoConfirmDesc": "現在のカスタム Logo ファイルは削除され、元に戻せません。",
+    "resetLogoSuccess": "デフォルトの Logo に戻しました",
+    "resetLogoDeleteFailed": "Logo は戻しましたが、古いファイルの削除に失敗しました。後でストレージ管理から削除してください。"
   },
   "storageSetting": {
     "title": "オブジェクトストレージ設定",
     "enableS3": "S3 ストレージを有効化",
+    "localModeHint": "S3 が無効な場合、管理対象のアップロードはすべてローカルストレージに保存されます。",
+    "s3ExclusiveModeHint": "有効にすると、画像、添付ファイル、アバター、ロゴなどの管理対象アップロードはすべて S3 に送信され、ローカルには保存されません。",
     "enableSsl": "SSL を有効化",
     "s3Provider": "S3 プロバイダ",
     "usePathStyle": "Path-Style アクセス",
@@ -854,7 +853,8 @@
   },
   "settingManagement": {
     "tabSystem": "システム設定",
-    "tabAccessToken": "アクセストークン"
+    "tabAccessToken": "アクセストークン",
+    "tabTags": "タグ"
   },
   "migrationSetting": {
     "title": "データインポート",

@@ -32,6 +32,14 @@ type UserService struct {
 	bus            *busen.Bus
 }
 
+// NewUserService 创建并返回新的用户服务实�?
+//
+// 参数:
+//   - userRepository: 用户数据层接口实�?
+//   - durableKV: 持久化键值存储，用于�?setting 引擎直读系统设置（不依赖 SettingService�?
+//
+// 返回:
+//   - *UserService: 用户服务实现
 func NewUserService(
 	tx transaction.Transactor,
 	userRepository Repository,
@@ -48,6 +56,8 @@ func NewUserService(
 	}
 }
 
+// ensurePasswordLength 在写入前拦掉超过 bcrypt 72 字节上限的口令，返回可本地化的业务错误，
+// 避免 bcrypt.GenerateFromPassword 抛出裸英�?ErrPasswordTooLong 直达前端�?
 func ensurePasswordLength(password string) error {
 	if len(password) > cryptoUtil.MaxPasswordBytes {
 		return errors.New(commonModel.PASSWORD_TOO_LONG)
@@ -55,6 +65,13 @@ func ensurePasswordLength(password string) error {
 	return nil
 }
 
+// InitOwner 初始�?Owner 账号
+//
+// 参数:
+//   - registerDto: 注册数据传输对象，包含用户名和密�?
+//
+// 返回:
+//   - error: 初始化过程中的错误信�?
 func (userService *UserService) InitOwner(registerDto *authModel.RegisterDto) error {
 	if registerDto.Username == "" || registerDto.Password == "" {
 		return errors.New(commonModel.USERNAME_OR_PASSWORD_NOT_BE_EMPTY)
@@ -74,6 +91,7 @@ func (userService *UserService) InitOwner(registerDto *authModel.RegisterDto) er
 		}
 	}
 
+	// �?owner 初始密码�?bcrypt 哈希，落�?user_local_auth�?
 	if err := ensurePasswordLength(registerDto.Password); err != nil {
 		return err
 	}
@@ -100,6 +118,7 @@ func (userService *UserService) InitOwner(registerDto *authModel.RegisterDto) er
 			return commonModel.NewBizError(commonModel.ErrCodeInitOwnerExists, commonModel.OWNER_ALREADY_EXISTS)
 		}
 
+		// 检查用户是否已经存�?
 		existingUser, err := userService.userRepository.GetUserByUsername(ctx, registerDto.Username)
 		if err == nil && existingUser.ID != model.USER_NOT_EXISTS_ID {
 			return errors.New(commonModel.USERNAME_HAS_EXISTS)
@@ -129,11 +148,20 @@ func (userService *UserService) InitOwner(registerDto *authModel.RegisterDto) er
 		return err
 	}
 
+	// 发布用户注册事件（站点默认语言�?InitService 在编排层�?SettingService 落库，不在此处）�?
 	eventbus.Notify(context.Background(), userService.bus, event.UserCreated{User: owner})
 
 	return nil
 }
 
+// Register 用户注册
+// 注册普通用户，包括用户数量限制检查、注册权限检查等
+//
+// 参数:
+//   - registerDto: 注册数据传输对象，包含用户名和密�?
+//
+// 返回:
+//   - error: 注册过程中的错误信息
 func (userService *UserService) Register(registerDto *authModel.RegisterDto) error {
 	initialized, err := userService.userRepository.IsInitialized(context.Background())
 	if err != nil {
@@ -143,6 +171,7 @@ func (userService *UserService) Register(registerDto *authModel.RegisterDto) err
 		return commonModel.NewBizError(commonModel.ErrCodeInitInvalidState, commonModel.SIGNUP_FIRST)
 	}
 
+	// 检查用户数量是否超过限�?
 	users, err := userService.userRepository.GetAllUsers(context.Background())
 	if err != nil {
 		return err
@@ -151,6 +180,7 @@ func (userService *UserService) Register(registerDto *authModel.RegisterDto) err
 		return errors.New(commonModel.USER_COUNT_EXCEED_LIMIT)
 	}
 
+	// 对密码做 bcrypt 哈希，落�?user_local_auth（不再挂�?User 上）
 	if err := ensurePasswordLength(registerDto.Password); err != nil {
 		return err
 	}
@@ -173,11 +203,13 @@ func (userService *UserService) Register(registerDto *authModel.RegisterDto) err
 		Locale:   string(commonModel.DefaultLocale),
 	}
 
+	// 检查用户是否已经存�?
 	user, err := userService.userRepository.GetUserByUsername(context.Background(), newUser.Username)
 	if err == nil && user.ID != model.USER_NOT_EXISTS_ID {
 		return errors.New(commonModel.USERNAME_HAS_EXISTS)
 	}
 
+	// 检查是否开放注册（纯读，直�?setting 引擎�?durableKV，不依赖 SettingService�?
 	sysSetting, err := coreSetting.Get(context.Background(), userService.durableKV, coreSetting.System)
 	if err != nil {
 		return err
@@ -203,6 +235,15 @@ func (userService *UserService) Register(registerDto *authModel.RegisterDto) err
 	return nil
 }
 
+// UpdateUser 更新用户信息
+// 只有管理员可以更新用户信息，支持更新用户名、密码和头像
+//
+// 参数:
+//   - userid: 执行更新操作的用户ID（必须为管理员）
+//   - userdto: 用户信息数据传输对象，包含要更新的用户信�?
+//
+// 返回:
+//   - error: 更新过程中的错误信息
 func (userService *UserService) UpdateUser(ctx context.Context, userdto model.UserInfoDto) error {
 	userid := viewer.MustFromContext(ctx).UserID()
 	user, err := userService.userRepository.GetUserByID(ctx, userid)
@@ -214,6 +255,7 @@ func (userService *UserService) UpdateUser(ctx context.Context, userdto model.Us
 	}
 
 	if userdto.Username != "" && userdto.Username != user.Username {
+		// 检查用户名是否已存�?
 		existingUser, err := userService.userRepository.GetUserByUsername(ctx, userdto.Username)
 		if err == nil && existingUser.ID != user.ID {
 			return errors.New(commonModel.USERNAME_ALREADY_EXISTS)
@@ -221,6 +263,7 @@ func (userService *UserService) UpdateUser(ctx context.Context, userdto model.Us
 		user.Username = userdto.Username
 	}
 
+	// 检查是否需要更新密码（改密写入 user_local_auth，不再挂�?User 上）
 	var newPasswordHash string
 	if userdto.Password != "" {
 		if err := ensurePasswordLength(userdto.Password); err != nil {
@@ -234,8 +277,13 @@ func (userService *UserService) UpdateUser(ctx context.Context, userdto model.Us
 	}
 
 	avatarChanged := false
-	if userdto.Avatar != "" && userdto.Avatar != user.Avatar {
+	if userdto.ResetAvatar {
+		user.Avatar = ""
+		user.AvatarFileID = ""
+		avatarChanged = true
+	} else if userdto.Avatar != "" && userdto.Avatar != user.Avatar {
 		user.Avatar = userdto.Avatar
+		user.AvatarFileID = strings.TrimSpace(userdto.AvatarFileID)
 		avatarChanged = true
 	}
 	if userdto.Locale != "" {
@@ -251,6 +299,7 @@ func (userService *UserService) UpdateUser(ctx context.Context, userdto model.Us
 		if err := userService.userRepository.UpdateUser(txCtx, &user); err != nil {
 			return err
 		}
+		// 如有改密，写�?user_local_auth
 		if newPasswordHash != "" {
 			return userService.userRepository.UpsertLocalAuth(txCtx, &model.UserLocalAuth{
 				UserID:       user.ID,
@@ -273,8 +322,18 @@ func (userService *UserService) UpdateUser(ctx context.Context, userdto model.Us
 	return nil
 }
 
+// UpdateUserAdmin 更新用户的管理员权限
+// 只有 Owner 可以修改其他用户的管理员权限，不能修改自己和 Owner 的权�?
+//
+// 参数:
+//   - userid: 执行操作的用户ID（必须为管理员）
+//   - id: 要修改权限的用户ID
+//
+// 返回:
+//   - error: 更新过程中的错误信息
 func (userService *UserService) UpdateUserAdmin(ctx context.Context, id string) error {
 	userid := viewer.MustFromContext(ctx).UserID()
+	// 检查执行操作的用户是否�?Owner
 	operator, err := userService.userRepository.GetUserByID(ctx, userid)
 	if err != nil {
 		return err
@@ -283,11 +342,13 @@ func (userService *UserService) UpdateUserAdmin(ctx context.Context, id string) 
 		return errors.New(commonModel.ONLY_OWNER_CAN_MANAGE)
 	}
 
+	// 检查要修改权限的用户是否存�?
 	user, err := userService.userRepository.GetUserByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
+	// 检查是否尝试修改自己或 Owner 的权�?
 	if userid == user.ID || user.IsOwner {
 		return errors.New(commonModel.INVALID_PARAMS_BODY)
 	}
@@ -305,6 +366,12 @@ func (userService *UserService) UpdateUserAdmin(ctx context.Context, id string) 
 	return nil
 }
 
+// GetAllUsers 获取所有用户列�?
+// 返回�?Owner 外的所有用户（用户实体已不含密码字段，密码存于 user_local_auth�?
+//
+// 返回:
+//   - []model.User: 用户列表
+//   - error: 获取过程中的错误信息
 func (userService *UserService) GetAllUsers(ctx context.Context) ([]model.User, error) {
 	userid := viewer.MustFromContext(ctx).UserID()
 	caller, err := userService.userRepository.GetUserByID(ctx, userid)
@@ -348,6 +415,7 @@ func (userService *UserService) DeleteUser(ctx context.Context, id string) error
 	userid := viewer.MustFromContext(ctx).UserID()
 	var deletedUser model.User
 	err := userService.transactor.Run(ctx, func(txCtx context.Context) error {
+		// 检查执行操作的用户是否�?Owner
 		operator, err := userService.userRepository.GetUserByID(txCtx, userid)
 		if err != nil {
 			return err
@@ -356,6 +424,7 @@ func (userService *UserService) DeleteUser(ctx context.Context, id string) error
 			return errors.New(commonModel.ONLY_OWNER_CAN_MANAGE)
 		}
 
+		// 检查要删除的用户是否存�?
 		user, err := userService.userRepository.GetUserByID(txCtx, id)
 		if err != nil {
 			return err

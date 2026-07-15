@@ -44,6 +44,16 @@ func NewStorageManagerForTest(dataRoot string) *Manager {
 	}
 }
 
+// NewStorageManagerForTestWithConfig builds a Manager from an explicit config.
+// It is intentionally test-only and does not register global URL resolvers.
+func NewStorageManagerForTestWithConfig(cfg config.StorageConfig) *Manager {
+	return &Manager{
+		defaultCfg: cfg,
+		durableKV:  nil,
+		selector:   NewStorageSelector(cfg),
+	}
+}
+
 func (m *Manager) GetSelector() *StorageSelector {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

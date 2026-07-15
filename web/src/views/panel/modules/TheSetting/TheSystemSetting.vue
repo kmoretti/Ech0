@@ -44,6 +44,13 @@
           >
             {{ t('systemSetting.changeLogo') }}
           </BaseButton>
+          <BaseButton
+            v-if="editMode && hasCustomLogo"
+            class="rounded-md text-center w-auto text-align-center h-8 mt-2 md:ml-5"
+            @click="handleResetLogo"
+          >
+            {{ t('systemSetting.resetLogo') }}
+          </BaseButton>
         </div>
       </div>
 
@@ -262,27 +269,40 @@ import BaseEditCapsule from '@/components/common/BaseEditCapsule.vue'
 import { computed, ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { fetchUpdateSettings } from '@/service/api'
-import { FILE_CATEGORY, FILE_STORAGE_TYPE } from '@/constants/file'
+import { FILE_CATEGORY } from '@/constants/file'
 import { theToast } from '@/utils/toast'
 import { useSettingStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { resolveAvatarUrl } from '@/service/request/shared'
-import { useFileQueue } from '@/lib/file'
+import { deleteFileById, resolveManagedUploadStorageType, useFileQueue } from '@/lib/file'
 import { LOCALE_ENDONYMS, LOCALE_OPTIONS, type AppLocale } from '@/locales'
+import { useBaseDialog } from '@/composables/useBaseDialog'
 
 const settingStore = useSettingStore()
 const { t } = useI18n()
 const { getSystemSetting } = settingStore
-const { SystemSetting } = storeToRefs(settingStore)
+const { SystemSetting, S3Setting } = storeToRefs(settingStore)
 
 const editMode = ref<boolean>(false)
 const systemLogoSrc = computed(() => resolveAvatarUrl(SystemSetting.value?.server_logo))
+const hasCustomLogo = computed(() =>
+  Boolean(
+    SystemSetting.value?.server_logo_file_id ||
+      (SystemSetting.value?.server_logo &&
+        SystemSetting.value.server_logo !== '/favicon.ico' &&
+        SystemSetting.value.server_logo !== 'favicon.ico' &&
+        SystemSetting.value.server_logo !== '/Ech0.svg' &&
+        SystemSetting.value.server_logo !== 'Ech0.svg'),
+  ),
+)
+// 站点默认语言统一用 endonym 选项（与头部切换器、用户界面语言一致）。
 const localeOptions = LOCALE_OPTIONS
 const defaultLocaleLabel = computed(
   () =>
     LOCALE_ENDONYMS[SystemSetting.value?.default_locale as AppLocale] || LOCALE_ENDONYMS['zh-CN'],
 )
 const { enqueueUpload, waitForTask, clearFinishedUploads } = useFileQueue()
+const { openConfirm } = useBaseDialog()
 
 const handleUpdateSystemSetting = async () => {
   await fetchUpdateSettings(settingStore.SystemSetting)
@@ -297,6 +317,16 @@ const handleUpdateSystemSetting = async () => {
     })
 }
 
+const deleteFileBestEffort = async (fileId?: string) => {
+  const id = String(fileId || '').trim()
+  if (!id) return
+  try {
+    await deleteFileById(id, { silentError: true })
+  } catch {
+    theToast.warning(String(t('systemSetting.resetLogoDeleteFailed')))
+  }
+}
+
 const fileInput = ref<HTMLInputElement | null>(null)
 const handTriggerUpload = () => {
   if (fileInput.value) {
@@ -309,9 +339,10 @@ const handleUploadImage = async (event: Event) => {
   if (!file) return
 
   try {
+    await settingStore.getS3Setting()
     const taskId = enqueueUpload({
       file,
-      storageType: FILE_STORAGE_TYPE.LOCAL,
+      storageType: resolveManagedUploadStorageType(S3Setting.value.enable),
       category: FILE_CATEGORY.IMAGE,
     })
     const task = await theToast.promise(waitForTask(taskId), {
@@ -324,7 +355,7 @@ const handleUploadImage = async (event: Event) => {
       SystemSetting.value.server_logo = task.result.url
       SystemSetting.value.server_logo_file_id = task.result.id
     } else {
-      SystemSetting.value.server_logo = '/Ech0.svg'
+      SystemSetting.value.server_logo = '/favicon.ico'
       SystemSetting.value.server_logo_file_id = ''
     }
   } catch (err) {
@@ -335,8 +366,30 @@ const handleUploadImage = async (event: Event) => {
   }
 }
 
+const handleResetLogo = () => {
+  const oldFileId = SystemSetting.value.server_logo_file_id
+  openConfirm({
+    title: String(t('systemSetting.resetLogoConfirmTitle')),
+    description: String(t('systemSetting.resetLogoConfirmDesc')),
+    onConfirm: async () => {
+      const res = await fetchUpdateSettings({
+        ...settingStore.SystemSetting,
+        server_logo: '/favicon.ico',
+        server_logo_file_id: '',
+      })
+      if (res.code !== 1) return
+      SystemSetting.value.server_logo = '/favicon.ico'
+      SystemSetting.value.server_logo_file_id = ''
+      await deleteFileBestEffort(oldFileId)
+      await getSystemSetting()
+      theToast.success(String(t('systemSetting.resetLogoSuccess')))
+    },
+  })
+}
+
 onMounted(() => {
   getSystemSetting()
+  void settingStore.getS3Setting()
 })
 </script>
 

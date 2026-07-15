@@ -1,83 +1,64 @@
-# Contributing to Ech0
+# 参与贡献
 
-Thank you for your interest in contributing to Ech0.
+提笔摘星是基于 [lin-snow/Ech0](https://github.com/lin-snow/Ech0) 打造的个人定制版本，主要服务清羽飞扬的实际使用需求。通用功能建议也可以优先反馈给上游项目。
 
-To keep collaboration smooth, please read this document and follow the conventions below.
+## 沟通方式
 
-## Communication and collaboration
+- 可复现的问题请使用 GitHub Issues。
+- 开放性想法和使用问题请使用 GitHub Discussions。
+- 安全漏洞请按照 [SECURITY.md](./SECURITY.md) 私密提交，不要创建公开 Issue。
 
-- **Bug reports:** use GitHub Issues.
-- **Feature discussion:** prefer GitHub Discussions.
-- **Security vulnerabilities:** do not file public issues; follow the private disclosure process in `SECURITY.md`.
+## 开发环境
 
-## Development environment
+后端要求 Go `1.26.0+` 和可用于 CGO 的 C 工具链；前端要求 Node.js `25.5.0+` 与 pnpm `10+`。
 
-### Backend
-
-- Go `1.27.0+`
-- A working C toolchain (CGO is used, e.g. for SQLite)
-
-Common commands (repository root):
+常用命令：
 
 ```bash
-just run
-just dev
-just check     # backend fmt/lint + web format/lint + i18n (mandatory before a PR)
+make run
+make dev
+make check
+make wire-check
+go build ./...
+pnpm -C web build
 ```
 
-### Frontend
-
-- Node.js `26.0.0+`
-- pnpm `10+`
-
-Common commands (`web` directory):
+前端开发可在 `web/` 目录执行：
 
 ```bash
 pnpm install
 pnpm dev
-pnpm build
 pnpm lint
 ```
 
-## Contribution workflow
+## 提交流程
 
-1. Fork this repository and create a feature branch (e.g. `feat/xxx`, `fix/xxx`).
-2. Keep changes focused: one PR should ideally address one kind of change.
-3. **Before opening a PR, run `just check` from the repository root** (required; see “Pre-submission checks”).
-4. Open a Pull Request with a clear description of context, approach, and verification.
+1. 从 `main` 创建用途明确的分支，例如 `feat/xxx` 或 `fix/xxx`。
+2. 每个 Pull Request 尽量只处理一种问题，避免混入无关重构和格式化。
+3. 按修改范围运行测试、构建和格式检查。
+4. 在 Pull Request 中说明修改目的、主要变化、验证方式和兼容性影响。
 
-## Pre-submission checks
+## 必要检查
 
-Before opening a PR:
+提交前至少运行：
 
-- **Run `just check` once from the repository root** (backend `golangci-lint` fmt/lint, `web` format/lint, and i18n guardrails). This is **mandatory**; fix any reported issues before you submit.
-- Ensure the backend still builds (`go build ./...`).
-- Ensure the frontend still builds (`pnpm build` from the `web` directory).
-- Add or update tests when behavior changes (when applicable).
-- Update documentation when changes affect users or deployment.
-- **Regenerate Swagger/OpenAPI** when HTTP routes, request/response shapes, or `swag` annotations change: from the repository root run `swag init -g internal/server/server.go -o internal/swagger`, then commit the updated files under `internal/swagger/`.
+```bash
+make check
+make wire-check
+go build ./...
+pnpm -C web build
+```
 
-## Pull Request guidelines
+修改接口路由、请求或响应结构时运行 `make swagger`；修改 Wire 构造器、绑定或 provider set 时运行 `make wire`。前端不得硬编码界面文本，需要使用 vue-i18n，并确保 `pnpm i18n:check` 通过。
 
-Your PR description should include:
+## 代码规范
 
-- **Purpose** (why the change is needed).
-- **What changed** (main edits).
-- **How you verified** (how to confirm it works).
-- **Impact** (compatibility, migration, rollback notes if relevant).
+- 遵循现有的 handler → service → repository → database 分层。
+- 跨领域导入使用项目既有的 `xxxHandler`、`xxxService`、`xxxRepository`、`xxxModel`、`xxxUtil` 别名。
+- `.go`、`.ts`、`.vue` 文件需要保留 SPDX 头。
+- 用户可见变化应记录到 `CHANGELOG.md` 的 `[Unreleased]`。
+- 不要提交密钥、令牌、个人数据、数据库文件或上传目录。
 
-For large changes, consider splitting into smaller, reviewable PRs.
+## 开源许可
 
-## Releasing
-
-Maintainers cutting a new release should follow the documented procedure in [`docs/dev/release-process.md`](docs/dev/release-process.md). User-visible changes per release are tracked in [`CHANGELOG.md`](CHANGELOG.md); add an entry under `[Unreleased]` whenever your PR introduces a change a self-hoster needs to know about.
-
-## Code style
-
-- Match existing project style and layout; avoid introducing patterns that conflict with current conventions.
-- Avoid unrelated refactors and large-scale formatting-only changes.
-- Follow existing naming conventions (e.g. layered package aliases).
-
-## License
-
-By contributing code to Ech0, you agree that your contributions are licensed under the project’s current open-source license (AGPL-3.0).
+提交代码即表示你同意该贡献按照本项目当前的 AGPL-3.0 许可证发布。

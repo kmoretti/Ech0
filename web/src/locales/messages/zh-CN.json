@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "requestFailed": "请求失败",
     "save": "保存",
@@ -34,13 +34,11 @@
     "mixedCategoryRejected": "一条 Echo 只能包含同一类型的文件",
     "categoryLockedHint": "已有文件，需先移除后才能切换类型",
     "singleMediaLimit": "音频 / 视频每条 Echo 只能有一个，替换前请先移除当前文件",
-    "imageAddMethod": "选择存储方式：",
+    "imageAddMethod": "添加方式：",
     "imageSourceExternal": "直链",
-    "imageSourceLocal": "本地存储",
-    "imageSourceObject": "S3存储",
     "imageLayout": "选择布局方式：",
     "imageSmartCompress": "智能压缩：",
-    "currentUploadMode": "当前存储方式为",
+    "currentUploadMode": "当前添加方式为",
     "uploadingSuffix": "，正在上传中...",
     "addMoreImages": "添加更多附件",
     "layoutWaterfall": "瀑布流",
@@ -162,7 +160,8 @@
     "unorderedList": "无序列表",
     "codeBlock": "代码块",
     "addedLabel": "已添加：",
-    "noContentAdded": "尚未添加内容"
+    "noContentAdded": "尚未添加内容",
+    "imageSourceUpload": "上传"
   },
   "commentManager": {
     "tabSetting": "评论设置",
@@ -374,17 +373,6 @@
     "searchPlaceholder": "搜索...",
     "rssTitle": "RSS"
   },
-  "zenMode": {
-    "tooltip": "进入禅模式（沉浸浏览）",
-    "exit": "退出禅模式",
-    "openDetail": "打开详情",
-    "bwOn": "切换为黑白模式（hover 卡片恢复彩色）",
-    "bwOff": "恢复彩色",
-    "bwToastOn": "已切换到黑白模式",
-    "bwToastOff": "已切换到彩色模式",
-    "empty": "暂无内容",
-    "noMore": "已经到底了"
-  },
   "commandPalette": {
     "title": "快速搜索",
     "placeholder": "搜索内容…",
@@ -420,9 +408,7 @@
     "home": "动态",
     "panel": "设置",
     "publish": "发布",
-    "plaza": "探索",
-    "status": "状态",
-    "tags": "标签"
+    "plaza": "探索"
   },
   "homeBio": {
     "tagline": "欢迎光临"
@@ -432,8 +418,7 @@
     "noMore": "没有更多数据了",
     "noMoreFiltered": "没有更多数据了",
     "loading": "加载中...",
-    "older": "之前",
-    "newer": "之后"
+    "older": "溯往拾遗"
   },
   "dateTime": {
     "justNow": "刚刚",
@@ -521,7 +506,9 @@
     "deleteConfirmDesc": "删除后将无法恢复，请谨慎操作",
     "deleteSuccess": "删除成功！",
     "exitUpdateModeFirst": "请先退出更新模式！",
-    "openDetail": "查看详情"
+    "openDetail": "查看详情",
+    "commentsLabel": "评论",
+    "commentCount": "{count} 条评论"
   },
   "userSetting": {
     "title": "用户中心",
@@ -536,7 +523,12 @@
     "passwordPlaceholder": "请输入密码",
     "avatarUploading": "头像上传中...",
     "avatarUploadSuccess": "头像上传成功！",
-    "uploadFailed": "上传失败，请稍后再试"
+    "uploadFailed": "上传失败，请稍后再试",
+    "resetAvatar": "恢复默认头像",
+    "resetAvatarConfirmTitle": "恢复默认头像？",
+    "resetAvatarConfirmDesc": "恢复后将删除当前自定义头像文件，且无法撤销。",
+    "resetAvatarSuccess": "已恢复默认头像",
+    "resetAvatarDeleteFailed": "头像已恢复，但旧头像文件删除失败，请稍后在存储管理中清理"
   },
   "userManager": {
     "title": "用户管理",
@@ -573,11 +565,18 @@
     "defaultLocale": "默认语言",
     "logoUploading": "服务器 Logo 上传中...",
     "logoUploadSuccess": "服务器 Logo 上传成功！",
-    "uploadFailed": "上传失败，请稍后再试"
+    "uploadFailed": "上传失败，请稍后再试",
+    "resetLogo": "恢复默认 Logo",
+    "resetLogoConfirmTitle": "恢复默认 Logo？",
+    "resetLogoConfirmDesc": "恢复后将删除当前自定义 Logo 文件，且无法撤销。",
+    "resetLogoSuccess": "已恢复默认 Logo",
+    "resetLogoDeleteFailed": "Logo 已恢复，但旧 Logo 文件删除失败，请稍后在存储管理中清理"
   },
   "storageSetting": {
     "title": "对象存储设置",
     "enableS3": "启用S3存储",
+    "localModeHint": "关闭 S3 时，所有托管上传都会保存到本地存储。",
+    "s3ExclusiveModeHint": "开启后，图片、附件、头像和 Logo 等托管上传将全部通过 S3，不再上传到本地。",
     "enableSsl": "启用SSL",
     "s3Provider": "S3 服务",
     "usePathStyle": "Path-Style 访问",
@@ -854,7 +853,8 @@
   },
   "settingManagement": {
     "tabSystem": "系统设置",
-    "tabAccessToken": "访问令牌"
+    "tabAccessToken": "访问令牌",
+    "tabTags": "标签管理"
   },
   "migrationSetting": {
     "title": "数据导入",
