@@ -7,15 +7,15 @@ import privacyMd from "../../content/privacy.md?raw";
 
 export function meta({ data }: Route.MetaArgs) {
   if (!data) {
-    return [{ title: "Privacy — Ech0" }];
+    return [{ title: "隐私 - 提笔摘星" }];
   }
   return [
-    { title: `${data.title} — Ech0` },
+    { title: `${data.title} - 提笔摘星` },
     {
       name: "description",
       content: data.description || data.title,
     },
-    { property: "og:title", content: `${data.title} — Ech0` },
+    { property: "og:title", content: `${data.title} - 提笔摘星` },
     { property: "og:url", content: absoluteUrl("/privacy") },
   ];
 }

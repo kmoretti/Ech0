@@ -6,6 +6,12 @@ import { ref } from 'vue'
 import { useFetch } from '@vueuse/core'
 import { theToast } from '@/utils/toast'
 import { timeValueToMs } from '@/utils/timeValue'
+import {
+  HOME_HUB_FEED_CACHE_KEY,
+  HOME_HUB_FEED_CACHE_TTL,
+  readHomeCache,
+  writeHomeCache,
+} from '@/utils/home-cache'
 import { useConnectStore } from './connect'
 import { i18n } from '@/locales'
 
@@ -16,6 +22,14 @@ interface HubState {
   currentPage: number // 独立分页
   hasMore: boolean
   isLoading: boolean
+}
+
+type HubCachePayload = {
+  echoList: App.Api.Hub.Echo[]
+  hubList: App.Api.Hub.HubList
+  hubinfoList: App.Api.Hub.HubInfoList
+  hubInfoEntries: [string, App.Api.Hub.HubItemInfo][]
+  hasMore: boolean
 }
 
 export const useHubStore = defineStore('hubStore', () => {
@@ -35,16 +49,66 @@ export const useHubStore = defineStore('hubStore', () => {
   const echoList = ref<App.Api.Hub.Echo[]>([]) // 存储Echo列表（展示列表）
   const existingIds = ref<Set<string>>(new Set()) // 已存在的 Echo ID，用于去重
 
-  const isPreparing = ref<boolean>(true) // 是否正在准备数据
+  const isPreparing = ref<boolean>(false) // 是否正在准备数据
   const isLoading = ref<boolean>(false) // 是否正在加载数据
   const hasTriedInitialLoad = ref<boolean>(false) // 是否已尝试过首次加载（用于空态展示）
   const pageSize = ref<number>(10) // 每个 Hub 每次请求的数量
-  const batchSize = ref<number>(10) // 每次归并取数的数量
+  const batchSize = ref<number>(50) // 瀑布流每次归并 50 条，避免一次渲染全部远端数据
   const hasMore = ref<boolean>(true) // 是否还有更多数据可加载
 
   /**
    * actions
    */
+
+  const restoreHubFeedCache = () => {
+    const cached = readHomeCache<HubCachePayload>(HOME_HUB_FEED_CACHE_KEY, HOME_HUB_FEED_CACHE_TTL)
+    if (!cached?.fresh || !Array.isArray(cached.data.echoList)) return false
+
+    echoList.value = cached.data.echoList
+    hubList.value = cached.data.hubList ?? []
+    hubinfoList.value = cached.data.hubinfoList ?? []
+    hubInfoMap.value = new Map(cached.data.hubInfoEntries ?? [])
+    existingIds.value = new Set(echoList.value.map((echo) => `${echo.server_url}-${echo.id}`))
+    hasMore.value = cached.data.hasMore
+    hasTriedInitialLoad.value = true
+    isPreparing.value = false
+    isLoading.value = false
+    return true
+  }
+
+  const writeHubFeedCache = () => {
+    writeHomeCache<HubCachePayload>(
+      HOME_HUB_FEED_CACHE_KEY,
+      {
+        echoList: echoList.value,
+        hubList: hubList.value,
+        hubinfoList: hubinfoList.value,
+        hubInfoEntries: Array.from(hubInfoMap.value.entries()),
+        hasMore: hasMore.value,
+      },
+      HOME_HUB_FEED_CACHE_TTL,
+    )
+  }
+
+  const resetHubFeed = () => {
+    hubinfoList.value = []
+    hubInfoMap.value.clear()
+    hubStates.value.clear()
+    echoList.value = []
+    existingIds.value.clear()
+    hasMore.value = true
+    hasTriedInitialLoad.value = false
+    isPreparing.value = false
+    isLoading.value = false
+  }
+
+  const prepareHubFeed = async (options: { force?: boolean } = {}) => {
+    if (!options.force && restoreHubFeedCache()) return
+    resetHubFeed()
+    await getHubList()
+    await getHubInfoList()
+    await loadEchoListPage()
+  }
 
   // 1. 获取hubList
   const getHubList = async () => {
@@ -222,7 +286,7 @@ export const useHubStore = defineStore('hubStore', () => {
         server_name: hubInfoMap.value.get(hubUrl)?.server_name || 'Ech0',
         server_url: hubUrl,
         virtual_key: `${hubUrl}-${echo.id}`,
-        logo: hubInfoMap.value.get(hubUrl)?.logo || '/Ech0.svg',
+        logo: hubInfoMap.value.get(hubUrl)?.logo || '/favicon.ico',
       }))
 
       // 按时间降序排序后追加到缓冲池
@@ -318,6 +382,7 @@ export const useHubStore = defineStore('hubStore', () => {
       if (!hasMore.value && echoList.value.length > 0) {
         theToast.info(String(i18n.global.t('hub.noMoreData')))
       }
+      writeHubFeedCache()
     } finally {
       isLoading.value = false
       hasTriedInitialLoad.value = true
@@ -336,6 +401,8 @@ export const useHubStore = defineStore('hubStore', () => {
     pageSize,
     batchSize,
     hasMore,
+    prepareHubFeed,
+    resetHubFeed,
     getHubList,
     getHubInfoList,
     loadEchoListPage,

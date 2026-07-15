@@ -32,10 +32,11 @@ export function fetchCreateExternalFile(dto: App.Api.File.CreateExternalFileDto)
 }
 
 // 删除文件
-export function fetchDeleteFile(file: App.Api.File.FileDeleteDto) {
+export function fetchDeleteFile(file: App.Api.File.FileDeleteDto, silentError = false) {
   return request({
     url: `/file/${file.id}`,
     method: 'DELETE',
+    silentError,
   })
 }
 

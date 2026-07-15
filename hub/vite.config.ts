@@ -43,8 +43,6 @@ export default defineConfig({
       /** 与 web/public 同套 PNG/ico（hub/public 内为拷贝） */
       includeAssets: [
         'favicon.ico',
-        'favicon.svg',
-        'logo.svg',
         'icons.svg',
         'android-chrome-192x192.png',
         'android-chrome-512x512.png',

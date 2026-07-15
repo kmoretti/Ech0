@@ -27,6 +27,13 @@
         </h2>
         <BaseSwitch v-model="S3Setting.enable" :disabled="!storageEditMode" />
       </div>
+      <p class="mb-3 text-xs leading-relaxed text-[var(--color-text-muted)]">
+        {{
+          S3Setting.enable
+            ? t('storageSetting.s3ExclusiveModeHint')
+            : t('storageSetting.localModeHint')
+        }}
+      </p>
 
       <!-- 使用 SSL -->
       <div class="flex flex-row items-center justify-start text-[var(--color-text-secondary)] h-10">

@@ -25,7 +25,7 @@
           @pointerup="onPointerUp"
           @pointercancel="onPointerUp"
         >
-          <img class="about-sticker__img" src="/Ech0.svg" alt="" draggable="false" />
+          <img class="about-sticker__img" src="/favicon.ico" alt="" draggable="false" />
         </span>
 
         <div class="about-colophon__body">

@@ -8,15 +8,15 @@ import { absoluteUrl } from "../../site";
 
 export function meta({ data }: Route.MetaArgs) {
   if (!data?.title) {
-    return [{ title: "Documentation — Ech0" }];
+    return [{ title: "文档 - 提笔摘星" }];
   }
   return [
-    { title: `${data.title} — Ech0 Docs` },
+    { title: `${data.title} - 提笔摘星文档` },
     {
       name: "description",
-      content: data.description || `${data.title} — Ech0 documentation.`,
+      content: data.description || `${data.title} - 提笔摘星文档。`,
     },
-    { property: "og:title", content: `${data.title} — Ech0 Docs` },
+    { property: "og:title", content: `${data.title} - 提笔摘星文档` },
     { property: "og:url", content: absoluteUrl(`/docs/${data.slug}`) },
   ];
 }

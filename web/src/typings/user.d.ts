@@ -13,6 +13,7 @@ declare namespace App {
         is_admin: boolean
         is_owner?: boolean
         avatar?: string
+        avatar_file_id?: string
         locale: string
       }
 
@@ -24,6 +25,7 @@ declare namespace App {
         is_owner?: boolean
         avatar: string
         avatar_file_id?: string
+        reset_avatar?: boolean
         locale: string
       }
     }

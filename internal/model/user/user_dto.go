@@ -7,7 +7,7 @@ package model
 //
 // swagger:model UserInfoDto
 type UserInfoDto struct {
-	// 用户名
+	// 用户�?
 	// example: linsnow
 	Username string `json:"username"`
 
@@ -34,6 +34,9 @@ type UserInfoDto struct {
 	// 头像文件ID（用于确认临时文件转正）
 	// example: 0195e2a7-54a9-7bcf-8df5-6d81d671f5c7
 	AvatarFileID string `json:"avatar_file_id"`
+
+	// ResetAvatar restores the built-in default avatar.
+	ResetAvatar bool `json:"reset_avatar"`
 
 	// 语言偏好
 	// example: zh-CN

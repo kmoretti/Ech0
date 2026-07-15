@@ -60,6 +60,15 @@ const owner = computed(() => githubUrlSegments.value.slice(-2)[0] ?? '')
 const repo = computed(() => githubUrlSegments.value.slice(-2)[1] ?? '')
 const cardData = ref<App.Api.Ech0.GithubCardData>()
 const repoKey = computed(() => `${owner.value}/${repo.value}`)
+const isGithubCardData = (data: unknown): data is App.Api.Ech0.GithubCardData => {
+  return Boolean(
+    data &&
+      typeof data === 'object' &&
+      'name' in data &&
+      'owner' in data &&
+      'stargazers_count' in data,
+  )
+}
 
 const loadGithubRepo = async () => {
   if (!owner.value || !repo.value) return
@@ -74,7 +83,10 @@ const loadGithubRepo = async () => {
 
   if (!githubRepoInFlight.has(repoKey.value)) {
     const task = fetchGetGithubRepo({ owner: owner.value, repo: repo.value })
-      .then((res) => res ?? null)
+      .then((res) => {
+        if (isGithubCardData(res)) return res
+        return null
+      })
       .catch(() => null)
       .finally(() => {
         githubRepoInFlight.delete(repoKey.value)

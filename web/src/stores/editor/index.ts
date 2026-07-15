@@ -227,6 +227,7 @@ export const useEditorStore = defineStore('editorStore', () => {
             if (res.code === 1) {
               resetHomeTimelineState()
               clearEditor()
+              echoStore.invalidateEchosCache()
               echoStore.refreshEchos()
               setMode(Mode.ECH0)
               echoStore.getTags()
@@ -266,6 +267,8 @@ export const useEditorStore = defineStore('editorStore', () => {
               echoStore.echoToUpdate = null
               setMode(Mode.ECH0)
               echoStore.getTags()
+              echoStore.invalidateEchosCache()
+              echoStore.refreshEchos()
               // 不重置分页 / 不跳回顶部：返回当前页，时间线重挂载会按 ?page 重新拉取，
               // 服务器返回的数据已含本次编辑结果，用户原地即可看到刚编辑的那条。
               backToTimelineTab()

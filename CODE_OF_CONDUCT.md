@@ -1,128 +1,26 @@
-# Contributor Covenant Code of Conduct
+# 社区行为准则
 
-## Our Pledge
+本仓库是个人维护的开源项目。参与 Issue、Discussions、Pull Request 和代码评审时，请保持专业、友善和尊重。
 
-We as members, contributors, and leaders pledge to make participation in our
-community a harassment-free experience for everyone, regardless of age, body
-size, visible or invisible disability, ethnicity, sex characteristics, gender
-identity and expression, level of experience, education, socio-economic status,
-nationality, personal appearance, race, religion, or sexual identity
-and orientation.
+## 基本原则
 
-We pledge to act and interact in ways that contribute to an open, welcoming,
-diverse, inclusive, and healthy community.
+- 尊重不同的观点、经验和技术背景。
+- 围绕事实、复现信息和代码本身讨论问题。
+- 接受建设性反馈，并为自己的错误负责。
+- 不发布他人的隐私信息、密钥、令牌或其他敏感数据。
+- 不进行骚扰、侮辱、人身攻击、歧视或持续干扰讨论的行为。
 
-## Our Standards
+## 适用范围
 
-Examples of behavior that contributes to a positive environment for our
-community include:
+本准则适用于当前仓库的 Issues、Discussions、Pull Requests、代码评审和其他与项目直接相关的公开交流空间。
 
-- Demonstrating empathy and kindness toward other people
-- Being respectful of differing opinions, viewpoints, and experiences
-- Giving and gracefully accepting constructive feedback
-- Accepting responsibility and apologizing to those affected by our mistakes,
-  and learning from the experience
-- Focusing on what is best not just for us as individuals, but for the
-  overall community
+## 处理方式
 
-Examples of unacceptable behavior include:
+维护者可以编辑、隐藏或删除不符合准则的内容，并根据严重程度限制相关账号参与仓库互动。安全漏洞或包含敏感信息的问题应通过 [SECURITY.md](./SECURITY.md) 中的私密渠道提交。
 
-- The use of sexualized language or imagery, and sexual attention or
-  advances of any kind
-- Trolling, insulting or derogatory comments, and personal or political attacks
-- Public or private harassment
-- Publishing others' private information, such as a physical or email
-  address, without their explicit permission
-- Other conduct which could reasonably be considered inappropriate in a
-  professional setting
+项目反馈入口：
 
-## Enforcement Responsibilities
+- https://github.com/LiuShen-Fork/Ech0/issues
+- https://github.com/LiuShen-Fork/Ech0/discussions
 
-Community leaders are responsible for clarifying and enforcing our standards of
-acceptable behavior and will take appropriate and fair corrective action in
-response to any behavior that they deem inappropriate, threatening, offensive,
-or harmful.
-
-Community leaders have the right and responsibility to remove, edit, or reject
-comments, commits, code, wiki edits, issues, and other contributions that are
-not aligned to this Code of Conduct, and will communicate reasons for moderation
-decisions when appropriate.
-
-## Scope
-
-This Code of Conduct applies within all community spaces, and also applies when
-an individual is officially representing the community in public spaces.
-Examples of representing our community include using an official e-mail address,
-posting via an official social media account, or acting as an appointed
-representative at an online or offline event.
-
-## Enforcement
-
-Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at:
-
-- GitHub Issues: https://github.com/lin-snow/Ech0/issues
-- GitHub Discussions: https://github.com/lin-snow/Ech0/discussions
-
-All complaints will be reviewed and investigated promptly and fairly.
-
-All community leaders are obligated to respect the privacy and security of the
-reporter of any incident.
-
-## Enforcement Guidelines
-
-Community leaders will follow these Community Impact Guidelines in determining
-the consequences for any action they deem in violation of this Code of Conduct:
-
-### 1. Correction
-
-**Community Impact**: Use of inappropriate language or other behavior deemed
-unprofessional or unwelcome in the community.
-
-**Consequence**: A private, written warning from community leaders, providing
-clarity around the nature of the violation and an explanation of why the
-behavior was inappropriate. A public apology may be requested.
-
-### 2. Warning
-
-**Community Impact**: A violation through a single incident or series
-of actions.
-
-**Consequence**: A warning with consequences for continued behavior. No
-interaction with the people involved, including unsolicited interaction with
-those enforcing the Code of Conduct, for a specified period of time. This
-includes avoiding interactions in community spaces as well as external channels
-like social media. Violating these terms may lead to a temporary or
-permanent ban.
-
-### 3. Temporary Ban
-
-**Community Impact**: A serious violation of community standards, including
-sustained inappropriate behavior.
-
-**Consequence**: A temporary ban from any sort of interaction or public
-communication with the community for a specified period of time. No public or
-private interaction with the people involved, including unsolicited interaction
-with those enforcing the Code of Conduct, is allowed during this period.
-Violating these terms may lead to a permanent ban.
-
-### 4. Permanent Ban
-
-**Community Impact**: Demonstrating a pattern of violation of community
-standards, including sustained inappropriate behavior, harassment of an
-individual, or aggression toward or disparagement of classes of individuals.
-
-**Consequence**: A permanent ban from any sort of public interaction within
-the community.
-
-## Attribution
-
-This Code of Conduct is adapted from the Contributor Covenant, version 2.1,
-available at:
-https://www.contributor-covenant.org/version/2/1/code_of_conduct.html
-
-Community Impact Guidelines were inspired by
-https://github.com/mozilla/diversity
-
-For answers to common questions about this code of conduct, see:
-https://www.contributor-covenant.org/faq
+本准则参考 Contributor Covenant 2.1 的基本原则，并按照个人维护仓库的实际情况进行了精简。

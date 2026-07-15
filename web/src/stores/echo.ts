@@ -4,6 +4,26 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { fetchQueryEchos, fetchGetTags, fetchGetEchoById, fetchCreateTag } from '@/service/api'
+import {
+  HOME_CACHE_TTL,
+  HOME_ECHO_CACHE_PREFIX,
+  invalidateEchoQueryCache,
+  invalidateHomeCaches,
+  readHomeCache,
+  refreshHomeCacheInBackground,
+  writeHomeCache,
+} from '@/utils/home-cache'
+
+type EchoCachePayload = {
+  total: number
+  items: App.Api.Ech0.Echo[]
+}
+
+const isEchoCachePayload = (value: unknown): value is EchoCachePayload => {
+  if (!value || typeof value !== 'object') return false
+  const payload = value as Partial<EchoCachePayload>
+  return typeof payload.total === 'number' && Array.isArray(payload.items)
+}
 
 export const useEchoStore = defineStore('echoStore', () => {
   const normalizeEchoId = (echo: App.Api.Ech0.Echo): string => String(echo?.id ?? '').trim()
@@ -14,9 +34,9 @@ export const useEchoStore = defineStore('echoStore', () => {
 
   const echoList = ref<App.Api.Ech0.Echo[]>([]) // 当前页展示的 Echo 列表
   const echoIndexMap = ref(new Map<string, number>()) // id → echoList 下标，用于快速定位
-  const isLoading = ref<boolean>(true)
+  const isLoading = ref<boolean>(false)
   const total = ref<number>(0) // 当前查询条件下的总条数
-  const pageSize = ref<number>(7) // 每页数量
+  const pageSize = ref<number>(50) // 首页瀑布流默认批量，避免一次渲染全部数据
   const currentPage = ref<number>(1) // 当前页码（从 1 开始）
   const searchValue = ref<string>('')
   const searchingMode = computed(() => searchValue.value.length > 0)
@@ -85,6 +105,44 @@ export const useEchoStore = defineStore('echoStore', () => {
     return params
   }
 
+  const normalizeItems = (items: App.Api.Ech0.Echo[] = []) =>
+    items.map((item) => ({
+      ...item,
+      id: normalizeEchoId(item),
+    }))
+
+  const rebuildIndexMap = (items: App.Api.Ech0.Echo[]) => {
+    const nextIndex = new Map<string, number>()
+    items.forEach((item, idx) => {
+      if (item.id) nextIndex.set(item.id, idx)
+    })
+    echoIndexMap.value = nextIndex
+  }
+
+  const cacheKeyForParams = (params: App.Api.Ech0.EchoQueryParams) =>
+    `${HOME_ECHO_CACHE_PREFIX}${JSON.stringify(params)}`
+
+  const readQueryCache = (params: App.Api.Ech0.EchoQueryParams) => {
+    return readHomeCache<EchoCachePayload>(cacheKeyForParams(params))
+  }
+
+  const writeQueryCache = (
+    params: App.Api.Ech0.EchoQueryParams,
+    payload: EchoCachePayload,
+  ) => {
+    writeHomeCache(cacheKeyForParams(params), payload, HOME_CACHE_TTL)
+  }
+
+  const refreshQueryCacheInBackground = (params: App.Api.Ech0.EchoQueryParams) =>
+    refreshHomeCacheInBackground(cacheKeyForParams(params), HOME_CACHE_TTL, async () => {
+      const res = await fetchQueryEchos(params)
+      if (res.code !== 1) return null
+      return {
+        total: res.data.total,
+        items: normalizeItems(res.data.items ?? []),
+      }
+    })
+
   const resetDateRange = () => {
     dateFrom.value = null
     dateTo.value = null
@@ -111,25 +169,80 @@ export const useEchoStore = defineStore('echoStore', () => {
    * 同一查询条件并发调用复用同一个 Promise，避免重复请求。
    */
   let pendingFetch: Promise<void> | null = null
-  async function fetchCurrentPage() {
+  async function fetchCurrentPage(options: { force?: boolean } = {}) {
     if (pendingFetch) return pendingFetch
 
+    const params = buildQueryParams()
+    const cached = options.force ? null : readQueryCache(params)
+    if (cached && isEchoCachePayload(cached.data)) {
+      total.value = cached.data.total
+      echoList.value = normalizeItems(cached.data.items)
+      rebuildIndexMap(echoList.value)
+      isLoading.value = false
+      if (!cached.fresh) void refreshQueryCacheInBackground(params)
+      return
+    }
+
     isLoading.value = true
-    pendingFetch = fetchQueryEchos(buildQueryParams())
+    pendingFetch = fetchQueryEchos(params)
       .then((res) => {
         if (res.code === 1) {
           total.value = res.data.total
-          const items = (res.data.items ?? []).map((item) => ({
-            ...item,
-            id: normalizeEchoId(item),
-          }))
+          const items = normalizeItems(res.data.items ?? [])
           echoList.value = items
-          const nextIndex = new Map<string, number>()
-          items.forEach((item, idx) => {
-            if (item.id) nextIndex.set(item.id, idx)
-          })
-          echoIndexMap.value = nextIndex
+          rebuildIndexMap(items)
+          writeQueryCache(params, { total: res.data.total, items })
         }
+      })
+      .catch((error) => {
+        console.warn('[Echo] failed to fetch current page', error)
+      })
+      .finally(() => {
+        isLoading.value = false
+        pendingFetch = null
+      })
+
+    return pendingFetch
+  }
+
+  async function loadNextPage() {
+    if (pendingFetch || currentPage.value >= totalPages.value) return
+
+    const previousPage = currentPage.value
+    currentPage.value += 1
+    const params = buildQueryParams()
+    const cached = readQueryCache(params)
+    if (cached && isEchoCachePayload(cached.data)) {
+      total.value = cached.data.total
+      const knownIds = new Set(echoList.value.map((item) => normalizeEchoId(item)))
+      const appended = normalizeItems(cached.data.items).filter(
+        (item) => item.id && !knownIds.has(item.id),
+      )
+      echoList.value = [...echoList.value, ...appended]
+      rebuildIndexMap(echoList.value)
+      if (!cached.fresh) void refreshQueryCacheInBackground(params)
+      return
+    }
+
+    isLoading.value = true
+    pendingFetch = fetchQueryEchos(params)
+      .then((res) => {
+        if (res.code !== 1) {
+          currentPage.value = previousPage
+          return
+        }
+
+        total.value = res.data.total
+        const knownIds = new Set(echoList.value.map((item) => normalizeEchoId(item)))
+        const pageItems = normalizeItems(res.data.items ?? [])
+        const appended = pageItems.filter((item) => item.id && !knownIds.has(item.id))
+        echoList.value = [...echoList.value, ...appended]
+        rebuildIndexMap(echoList.value)
+        writeQueryCache(params, { total: res.data.total, items: pageItems })
+      })
+      .catch((error) => {
+        currentPage.value = previousPage
+        throw error
       })
       .finally(() => {
         isLoading.value = false
@@ -156,7 +269,7 @@ export const useEchoStore = defineStore('echoStore', () => {
     total.value = 0
     echoList.value = []
     echoIndexMap.value = new Map()
-    return fetchCurrentPage()
+    return fetchCurrentPage({ force: true })
   }
 
   /** 清空列表但不发起请求（用于登出 / 卸载等场景）。 */
@@ -165,6 +278,10 @@ export const useEchoStore = defineStore('echoStore', () => {
     total.value = 0
     echoList.value = []
     echoIndexMap.value = new Map()
+  }
+
+  const invalidateEchosCache = () => {
+    invalidateHomeCaches()
   }
 
   /** 仅重置分页指针与列表，不触发加载（搜索场景由调用方控制加载时机）。 */
@@ -189,6 +306,7 @@ export const useEchoStore = defineStore('echoStore', () => {
       if (targetEcho) {
         targetEcho.fav_count = (targetEcho.fav_count || 0) + delta
         echoList.value[idx] = { ...targetEcho }
+        invalidateEchoQueryCache()
       }
     }
   }
@@ -235,6 +353,7 @@ export const useEchoStore = defineStore('echoStore', () => {
   const createTag = async (name: string) => {
     const res = await fetchCreateTag(name)
     if (res.code === 1) {
+      invalidateEchosCache()
       await getTags()
       return res.data
     }
@@ -285,6 +404,7 @@ export const useEchoStore = defineStore('echoStore', () => {
 
     // actions
     fetchCurrentPage,
+    loadNextPage,
     goToPage,
     refreshEchos,
     clearEchos,
@@ -294,6 +414,7 @@ export const useEchoStore = defineStore('echoStore', () => {
     resetVisibilityFilter,
     removeSelectedTag,
     updateEcho,
+    invalidateEchosCache,
     updateLikeCount,
     prefetchEcho,
     getTags,

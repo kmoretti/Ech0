@@ -3,10 +3,7 @@
 <template>
   <div v-if="AgentSetting.enable" class="px-2">
     <div class="widget bg-transparent! w-full max-w-[19rem] mx-auto rounded-md p-4">
-      <div class="recent-head mb-2">
-        <div class="recent-icon-chip">
-          <RecentIcon class="w-8 h-8" />
-        </div>
+      <div class="recent-head mb-3">
         <div class="recent-title-wrap">
           <div class="recent-title">Recent</div>
           <div class="recent-title-accent">AI</div>
@@ -29,11 +26,21 @@
 <script setup lang="ts">
 import { fetchGetRecent } from '@/service/api'
 import { onMounted, ref } from 'vue'
-import RecentIcon from '@/components/icons/recent.vue'
 import { TheMdPreview } from '@/components/advanced/md'
 import { useSettingStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import {
+  HOME_CACHE_TTL,
+  HOME_RECENT_CACHE_KEY,
+  readHomeCache,
+  refreshHomeCacheInBackground,
+  writeHomeCache,
+} from '@/utils/home-cache'
+
+type RecentCachePayload = {
+  recent: string
+}
 
 const settingStore = useSettingStore()
 const { AgentSetting } = storeToRefs(settingStore)
@@ -44,11 +51,27 @@ const loading = ref<boolean>(true)
 
 onMounted(() => {
   if (AgentSetting.value.enable) {
-    fetchGetRecent()
-      .then((res) => {
-        if (res.code === 1) {
-          recent.value = res.data
-        }
+    const fetchRecentPayload = async (): Promise<RecentCachePayload | null> => {
+      const res = await fetchGetRecent()
+      if (res.code !== 1) return null
+      return { recent: res.data }
+    }
+
+    const cached = readHomeCache<RecentCachePayload>(HOME_RECENT_CACHE_KEY)
+    if (cached) {
+      recent.value = cached.data.recent
+      loading.value = false
+      if (!cached.fresh) {
+        void refreshHomeCacheInBackground(HOME_RECENT_CACHE_KEY, HOME_CACHE_TTL, fetchRecentPayload)
+      }
+      return
+    }
+
+    fetchRecentPayload()
+      .then((payload) => {
+        if (!payload) return
+        recent.value = payload.recent
+        writeHomeCache(HOME_RECENT_CACHE_KEY, payload, HOME_CACHE_TTL)
       })
       .finally(() => {
         loading.value = false
@@ -60,18 +83,7 @@ onMounted(() => {
 .recent-head {
   display: flex;
   align-items: end;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.recent-icon-chip {
-  width: 64px;
-  height: 64px;
-  border-radius: 9999px;
-  color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
 }
 
 .recent-title-wrap {
@@ -104,14 +116,7 @@ onMounted(() => {
   border: 1px solid var(--color-border-subtle);
   background-color: var(--recent-card-bg);
   box-shadow: 0 8px 18px rgb(20 20 20 / 4%);
-  padding: 14px 12px 12px;
-  transform: rotate(-1.1deg);
-  transform-origin: top center;
-  transition: transform 220ms ease;
-}
-
-.recent-card:hover {
-  transform: rotate(-0.4deg);
+  padding: 15px 13px 12px;
 }
 
 .recent-card::before {
@@ -119,7 +124,7 @@ onMounted(() => {
   position: absolute;
   left: 50%;
   top: -7px;
-  transform: translateX(-50%) rotate(-1.5deg);
+  transform: translateX(-50%);
   width: 42px;
   height: 12px;
   border-radius: 2px;
