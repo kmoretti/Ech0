@@ -1,7 +1,7 @@
 {
-  "name": "Ech0",
-  "short_name": "Ech0",
-  "description": "Ech0 is a new-generation open-source self-hosted platform designed for individual users. It is ultra-lightweight and low-cost, helping you easily publish and share ideas, writings, and links. With a clean, intuitive interface and powerful command-line tools, content management becomes simple and flexible. Your data is fully owned and controlled by you.",
+  "name": "提笔摘星",
+  "short_name": "提笔摘星",
+  "description": "提笔摘星是一个轻量、低成本、可自托管的个人内容发布平台，用于记录想法、文字与链接。它提供简洁直观的界面，让内容管理更灵活，数据完全由你掌控。",
   "start_url": "/",
   "id": "/",
   "scope": "/",

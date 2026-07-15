@@ -11,7 +11,7 @@ type SeoSystemSetting = {
 }
 
 const DEFAULT_SITE_TITLE = 'Ech0'
-const DEFAULT_OG_IMAGE = '/Ech0.png'
+const DEFAULT_OG_IMAGE = '/web-app-manifest-512x512.png'
 const WEBSITE_JSONLD_ID = 'website-jsonld'
 const DEFAULT_SEO_DESCRIPTION =
   'Ech0 is a next-generation open-source self-hosted platform built for individuals. It is lightweight and low-cost, making it easy to publish and share your ideas, writing, and links.'

@@ -76,6 +76,7 @@ func (settingService *SettingService) UpdateSetting(
 		var setting model.SystemSetting
 		setting.SiteTitle = newSetting.SiteTitle
 		setting.ServerLogo = newSetting.ServerLogo
+		setting.ServerLogoFileID = strings.TrimSpace(newSetting.ServerLogoFileID)
 		setting.ServerName = newSetting.ServerName
 		setting.ServerURL = urlUtil.TrimURL(newSetting.ServerURL)
 		setting.AllowRegister = newSetting.AllowRegister

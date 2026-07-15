@@ -1,52 +1,45 @@
-<!--
-Thanks for contributing to Ech0!
-Please keep this PR focused on a single change. For larger work, split into smaller reviewable PRs.
--->
+## 变更说明
 
-## Summary
+<!-- 为什么需要这项修改？具体做了什么？可使用 Closes #123 / Refs #123 关联 Issue。 -->
 
-<!-- Why is this change needed? What does it do? Link related issues with "Closes #123" / "Refs #123". -->
+## 变更类型
 
-## Type of change
+- [ ] Bug 修复
+- [ ] 新功能 / 功能增强
+- [ ] 重构，不改变现有行为
+- [ ] 文档
+- [ ] 构建 / CI / 依赖维护
+- [ ] 不兼容变更
 
-<!-- Tick all that apply. -->
+## 涉及范围
 
-- [ ] Bug fix
-- [ ] Feature / enhancement
-- [ ] Refactor (no behavior change)
-- [ ] Docs
-- [ ] Build / CI / chore
-- [ ] Breaking change
-
-## Area
-
-<!-- Tick all that apply. -->
-
-- [ ] Backend / API
-- [ ] Frontend / UI
-- [ ] Auth / Access tokens
-- [ ] Storage (local / S3)
-- [ ] Webhook / Agent / Events
-- [ ] Migration / Backup
+- [ ] 后端 / API
+- [ ] 前端 / 界面
+- [ ] 登录 / 权限
+- [ ] 本地存储 / S3
+- [ ] 说说 / 评论
 - [ ] Hub / Connect
-- [ ] Docs
+- [ ] 数据迁移 / 备份
+- [ ] Docker / GitHub Actions
+- [ ] 文档
 
-## How to verify
+## 验证方式
 
-<!-- Steps a reviewer can follow to confirm the change. Include curl/HTTP requests, UI steps, or test commands. -->
+<!-- 提供可复现的验证步骤、页面操作、请求示例或测试命令。 -->
 
-## Impact
+## 影响说明
 
-<!-- Compatibility, migration, rollback, config / env var changes, breaking notes. Write "None" if not applicable. -->
+<!-- 说明兼容性、迁移方式、配置变化和回滚方式；没有影响请填写“无”。 -->
 
-## Pre-submission checklist
+## 提交前检查
 
-- [ ] `just check` passes locally.
-- [ ] `go build ./...` passes.
-- [ ] `pnpm build` passes (when frontend is touched).
-- [ ] Tests added / updated when behavior changed.
-- [ ] `just wire` re-run when DI providers/bindings changed; `wire_gen.go` committed.
-- [ ] `just openapi` re-run when routes or request/response shapes changed; `internal/openapi/openapi.yaml` committed.
-- [ ] Docs updated when changes affect users or deployment.
-- [ ] No hardcoded UI strings — i18n keys used; `pnpm i18n:check` passes.
-- [ ] No secrets, tokens, or personal data in diffs, logs, or screenshots.
+- [ ] 已运行 `make check`。
+- [ ] 已运行 `make wire-check`。
+- [ ] 已运行 `go build ./...`。
+- [ ] 修改前端时已运行 `pnpm -C web build`。
+- [ ] 行为发生变化时已补充或更新测试。
+- [ ] 修改依赖注入后已运行 `make wire` 并提交 `wire_gen.go`。
+- [ ] 修改接口或数据结构后已运行 `make swagger` 并提交 `internal/swagger/`。
+- [ ] 面向用户或部署方式的变化已更新文档。
+- [ ] 前端新增文本已使用 i18n，并通过 `pnpm i18n:check`。
+- [ ] 差异、日志和截图中不包含密钥、令牌或个人数据。

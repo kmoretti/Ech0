@@ -3,13 +3,15 @@
 
 export const localStg = {
   setItem<T>(key: string, obj: T) {
-    localStorage.setItem(key, JSON.stringify(obj))
+    try {
+      localStorage.setItem(key, JSON.stringify(obj))
+    } catch {}
   },
 
   getItem<T>(key: string): T | null {
-    const item = localStorage.getItem(key)
-    if (!item) return null
     try {
+      const item = localStorage.getItem(key)
+      if (!item) return null
       return JSON.parse(item) as T
     } catch {
       return null
@@ -17,10 +19,14 @@ export const localStg = {
   },
 
   removeItem(key: string) {
-    localStorage.removeItem(key)
+    try {
+      localStorage.removeItem(key)
+    } catch {}
   },
 
   clear() {
-    localStorage.clear()
+    try {
+      localStorage.clear()
+    } catch {}
   },
 }

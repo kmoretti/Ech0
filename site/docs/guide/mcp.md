@@ -211,5 +211,5 @@ curl -X POST "https://你的域名/mcp" \
 
 ## 延伸阅读
 
-- 仓库内实现说明：[internal/mcp/README.md](https://github.com/lin-snow/Ech0/blob/main/internal/mcp/README.md)
+- 仓库内实现说明：[internal/mcp/README.md](https://github.com/LiuShen-Fork/Ech0/blob/main/internal/mcp/README.md)
 - [访问令牌](/docs/guide/accesstoken) · [事件推送](/docs/guide/webhook) · [评论系统](/docs/guide/comment)

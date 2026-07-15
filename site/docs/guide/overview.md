@@ -17,7 +17,7 @@ Ech0 是**自托管的个人微博客**：内容在一条**时间线**上展示�
 
 1. **想先跑起来**：按 [快速上手](/docs/start/getting-started) 从 Docker 到首次登录走一遍（约 10 分钟）。
 2. **想直接部署**：看 [安装部署](/docs/start/installation)（Docker / Compose / 二进制 / Helm）。
-3. **遇到问题**：先查 [常见问题](/docs/start/faq)，再搜 [GitHub Issues](https://github.com/lin-snow/Ech0/issues)。
+3. **遇到问题**：先查 [常见问题](/docs/start/faq)，再搜 [GitHub Issues](https://github.com/LiuShen-Fork/Ech0/issues)。
 
 ---
 

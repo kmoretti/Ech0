@@ -5,11 +5,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useInitStore } from '@/stores/init'
 import { useUserStore } from '@/stores/user'
 import { useEchoStore } from '@/stores/echo'
+import { localStg } from '@/utils/storage'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior(to, _from, savedPosition) {
-    if (to.name === 'home' || to.name === 'zen') {
+    if (to.name === 'home') {
       return false
     }
     if (savedPosition) {
@@ -148,17 +149,6 @@ const router = createRouter({
       },
     },
     {
-      path: '/zen',
-      name: 'zen',
-      component: () => import('../views/zen/ZenView.vue'),
-      meta: {
-        title: 'Zen',
-        description: 'Browse all echos in an immersive masonry view.',
-        optionalAuth: true,
-        noindex: true,
-      },
-    },
-    {
       path: '/echo/:echoId',
       name: 'echo',
       component: () => import('../views/echo/EchoView.vue'),
@@ -218,13 +208,13 @@ router.beforeEach(async (to) => {
     await userStore.init()
   }
 
-  const needRedirect = localStorage.getItem('needLoginRedirect')
+  const needRedirect = localStg.getItem<boolean>('needLoginRedirect')
 
   if (
     (to.meta.requiresAuth && !userStore.isLogin) ||
-    (to.meta.optionalAuth && !userStore.isLogin && needRedirect === 'true')
+    (to.meta.optionalAuth && !userStore.isLogin && needRedirect === true)
   ) {
-    localStorage.removeItem('needLoginRedirect')
+    localStg.removeItem('needLoginRedirect')
     return { name: 'auth' }
   }
 

@@ -55,6 +55,21 @@ func newFileFix(t *testing.T) *fileFix {
 	return &fileFix{svc: svc, common: common, repo: repo, db: db, mgr: mgr}
 }
 
+func newObjectFileFix(t *testing.T) *fileFix {
+	t.Helper()
+	db := helpers.NewTestDB(t)
+	repo := fileRepository.NewFileRepository(func() *gorm.DB { return db })
+	tx := transaction.NewGormTransactor(func() *gorm.DB { return db })
+	mgr := helpers.NewTestObjectStorage(t)
+	bus := helpers.NewTestBus(t)
+	common := commonmock.NewMockCommonRepository(t)
+	svc := fileService.NewFileService(tx, common, repo, mgr, func() *busen.Bus { return bus })
+	return &fileFix{svc: svc, common: common, repo: repo, db: db, mgr: mgr}
+}
+
+// expectAdmin registers a single user lookup that resolves to an admin user.
+// One expectation matches any number of calls, so callers that invoke several
+// admin-gated methods on the same fixture only register it once.
 func (f *fileFix) expectAdmin() {
 	f.common.EXPECT().
 		GetUserByUserId(mock.Anything, fileTestUserID).
@@ -210,6 +225,22 @@ func TestFileService_UploadFile(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "local", dto.StorageType)
 		assert.True(t, storedExists(t, fix.mgr, dto.Key))
+	})
+
+	t.Run("object mode rejects local upload fallback", func(t *testing.T) {
+		fix := newObjectFileFix(t)
+		require.True(t, fix.mgr.GetSelector().ObjectEnabled())
+		fix.expectAdmin()
+
+		_, err := fix.svc.UploadFile(
+			fix.adminCtx(),
+			makeFileHeader(t, "photo.png", pngBytes(t, 4, 4)),
+			storage.CategoryImage,
+			storage.StorageTypeLocal,
+		)
+		require.Error(t, err)
+		assert.Equal(t, commonModel.NO_FILE_STORAGE_ERROR, err.Error())
+		assert.Equal(t, int64(0), countFiles(t, fix.db))
 	})
 
 	t.Run("non-admin is denied", func(t *testing.T) {

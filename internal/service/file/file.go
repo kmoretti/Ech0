@@ -143,6 +143,9 @@ func (s *FileService) UploadFile(
 		targetStorageType = storage.StorageTypeLocal
 	}
 	selector := s.getSelector()
+	if selector.ObjectEnabled() && targetStorageType != storage.StorageTypeObject {
+		return commonModel.FileDto{}, errors.New(commonModel.NO_FILE_STORAGE_ERROR)
+	}
 	if err := selector.Put(context.Background(), targetStorageType, key, uploadReader, opts...); err != nil {
 		return commonModel.FileDto{}, err
 	}

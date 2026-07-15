@@ -27,6 +27,7 @@ export const useUserStore = defineStore('userStore', () => {
       theToast.success(String(i18n.global.t('auth.loginSuccess')))
 
       const echoStore = useEchoStore()
+      echoStore.invalidateEchosCache()
       echoStore.clearEchos()
 
       router.push({ name: 'home' })
@@ -42,6 +43,7 @@ export const useUserStore = defineStore('userStore', () => {
       theToast.success(String(i18n.global.t('auth.loginSuccess')))
 
       const echoStore = useEchoStore()
+      echoStore.invalidateEchosCache()
       echoStore.clearEchos()
 
       router.push({ name: 'home' })
@@ -71,6 +73,7 @@ export const useUserStore = defineStore('userStore', () => {
     user.value = null
 
     const echoStore = useEchoStore()
+    echoStore.invalidateEchosCache()
     echoStore.refreshEchos()
 
     localStg.setItem('needLoginRedirect', true)

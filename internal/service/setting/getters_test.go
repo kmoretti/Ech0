@@ -4,6 +4,7 @@
 package service_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -366,7 +367,14 @@ func TestUpdateSetting(t *testing.T) {
 			CommonGetUserByUserId(mock.Anything, mock.Anything).
 			Return(helpers.NewUser(helpers.AsAdmin), nil).
 			Once()
-		d.kv.EXPECT().Set(mock.Anything, commonModel.SystemSettingsKey, mock.Anything).Return(nil).Once()
+		d.kv.EXPECT().Set(mock.Anything, commonModel.SystemSettingsKey, mock.Anything).
+			Run(func(_ context.Context, _ string, raw string) {
+				var saved settingModel.SystemSetting
+				require.NoError(t, json.Unmarshal([]byte(raw), &saved))
+				assert.Equal(t, "logo-file-1", saved.ServerLogoFileID)
+			}).
+			Return(nil).
+			Once()
 		d.kv.EXPECT().Set(mock.Anything, commonModel.ServerURLKey, mock.Anything).Return(nil).Once()
 		file.EXPECT().ConfirmTempFiles(mock.Anything, []string{"logo-file-1"}).Return(nil).Once()
 

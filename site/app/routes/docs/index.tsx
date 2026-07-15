@@ -5,10 +5,10 @@ import { absoluteUrl } from "../../site";
 
 export function meta(_args: Route.MetaArgs) {
   return [
-    { title: "Documentation — Ech0" },
+    { title: "文档 - 提笔摘星" },
     {
       name: "description",
-      content: "Ech0 documentation: deployment, features, and policies.",
+      content: "提笔摘星文档：部署、功能与使用说明。",
     },
   ];
 }

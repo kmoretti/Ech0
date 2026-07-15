@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
-  <div
-    class="hub-echo-card relative w-full max-w-sm bg-[var(--color-bg-surface)] h-auto p-3 sm:p-3.5 shadow rounded-md mx-auto"
+  <article
+    class="hub-echo-card relative w-full bg-[var(--color-bg-surface)] h-auto p-3 sm:p-3.5 shadow rounded-[8px]"
   >
     <div class="flex flex-row items-center justify-between gap-2 mt-1 mb-3">
       <div class="flex flex-row items-center gap-2 min-w-0">
@@ -36,7 +36,7 @@
         class="flex-none opacity-70 hover:opacity-100 transition-opacity"
       >
         <img
-          src="/Ech0.svg"
+          src="/favicon.ico"
           alt="Ech0"
           loading="lazy"
           decoding="async"
@@ -45,10 +45,10 @@
       </a>
     </div>
 
-    <div class="hub-echo-body py-1.5">
+    <div class="hub-echo-body py-1.5" :class="{ 'hub-echo-body--clamped': isLongContent }">
       <template v-if="isContentLeadingEcho(props.echo)">
         <div class="mb-2.5">
-          <TheMdPreview :content="props.echo.content" />
+          <TheMdPreview :content="previewContent" />
         </div>
 
         <TheMediaPlayer :echo="props.echo" :baseUrl="echo.server_url" :layout="props.echo.layout" />
@@ -58,7 +58,7 @@
         <TheMediaPlayer :echo="props.echo" :baseUrl="echo.server_url" :layout="props.echo.layout" />
 
         <div class="mt-2.5">
-          <TheMdPreview :content="props.echo.content" />
+          <TheMdPreview :content="previewContent" />
         </div>
       </template>
 
@@ -66,6 +66,16 @@
         <TheExtensionRenderer :echo="props.echo" />
       </div>
     </div>
+
+    <a
+      v-if="isLongContent"
+      :href="`${echo.server_url}/echo/${echo.id}`"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="hub-echo-more"
+    >
+      {{ t('echoCard.openDetail') }}
+    </a>
 
     <div class="mt-1 flex items-center justify-between gap-2">
       <div class="min-w-0 truncate whitespace-nowrap text-xs text-[var(--color-text-muted)]">
@@ -88,7 +98,7 @@
         </span>
       </div>
     </div>
-  </div>
+  </article>
 </template>
 
 <script setup lang="ts">
@@ -116,6 +126,11 @@ const props = defineProps<{
   echo: Echo
 }>()
 const { t } = useI18n()
+const isLongContent = computed(() => Array.from(props.echo.content || '').length > 200)
+const previewContent = computed(() => {
+  if (!isLongContent.value) return props.echo.content
+  return `${Array.from(props.echo.content || '').slice(0, 200).join('')}...`
+})
 
 const fav_count = ref<number>(props.echo.fav_count)
 const server_url = computed(() => props.echo.server_url)
@@ -194,6 +209,34 @@ const handleLikeEcho = async () => {
   margin-bottom: 0;
 }
 
+.hub-echo-body--clamped {
+  position: relative;
+  max-height: 18rem;
+  overflow: hidden;
+}
+
+.hub-echo-body--clamped::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 5rem;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--color-bg-surface));
+}
+
+.hub-echo-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0;
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+/* Gallery 各 layout 内部硬编码了 w-[88%] mx-auto + mb-4，
+   在 hub 卡片里需要拉满到与正文同宽，并去掉外层多余的下边距（外部已用 mt/mb 控制） */
 .hub-echo-body :deep(.image-gallery-container) > div {
   width: 100%;
   margin-left: 0;

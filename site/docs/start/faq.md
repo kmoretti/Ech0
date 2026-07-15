@@ -3,7 +3,7 @@ title: 常见问题
 description: 与 README 对齐的问答；部署、权限、存储与集成
 ---
 
-以下与仓库根目录 **README.zh.md → 常见问题** 对应，便于官网与仓库说法一致。若这里没有你的情况，可到 [GitHub Discussions](https://github.com/lin-snow/Ech0/discussions) 搜索或提问。
+以下内容用于补充仓库根目录 **README.md**。若这里没有你的情况，可到当前仓库的 [GitHub Discussions](https://github.com/LiuShen-Fork/Ech0/discussions) 搜索或提问。
 
 ---
 
@@ -31,7 +31,7 @@ description: 与 README 对齐的问答；部署、权限、存储与集成
 
 ### 存储结构、换桶、本地⇄对象迁移？
 
-见仓库 **[存储迁移指南](https://github.com/lin-snow/Ech0/blob/main/docs/usage/storage-migration.md)**，操作前务必备份。
+见当前仓库的 **[存储迁移指南](https://github.com/LiuShen-Fork/Ech0/blob/main/docs/usage/storage-migration.md)**，操作前务必备份。
 
 ---
 

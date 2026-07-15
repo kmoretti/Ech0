@@ -7,9 +7,9 @@
     </h2>
 
     <div class="mb-3 flex items-center gap-2">
-      <span class="shrink-0 whitespace-nowrap text-[var(--color-text-secondary)]">{{
-        t('editor.mediaTypeLabel')
-      }}</span>
+      <span class="shrink-0 whitespace-nowrap text-[var(--color-text-secondary)]">
+        {{ t('editor.mediaTypeLabel') }}
+      </span>
       <BaseSegmented
         class="media-type-seg"
         :modelValue="effectiveCategory"
@@ -18,7 +18,7 @@
       />
     </div>
 
-    <div v-if="!fileUploading" class="flex items-center gap-2 mb-3">
+    <div v-if="!fileUploading && storageSettingLoaded" class="flex items-center gap-2 mb-3">
       <div class="flex items-center gap-2">
         <span class="text-[var(--color-text-secondary)]">{{ t('editor.imageAddMethod') }}</span>
         <BaseButton
@@ -30,15 +30,8 @@
         <BaseButton
           :icon="Upload"
           class="w-7 h-7 sm:w-7 sm:h-7 rounded-md"
-          @click="handleSetFileSource(FILE_STORAGE_TYPE.LOCAL)"
-          :tooltip="t('editor.imageSourceLocal')"
-        />
-        <BaseButton
-          v-if="S3Setting.enable"
-          :icon="Bucket"
-          class="w-7 h-7 sm:w-7 sm:h-7 rounded-md"
-          @click="handleSetFileSource(FILE_STORAGE_TYPE.OBJECT)"
-          :tooltip="t('editor.imageSourceObject')"
+          @click="handleSetFileSource(defaultManagedUploadStorageType)"
+          :tooltip="t('editor.imageSourceUpload')"
         />
       </div>
     </div>
@@ -68,11 +61,9 @@
       {{ t('editor.currentUploadMode') }}
       <span class="font-bold">
         {{
-          fileToAdd.storage_type === FILE_STORAGE_TYPE.EXTERNAL
+          uploadSourceDisplayMode === 'external'
             ? t('editor.imageSourceExternal')
-            : fileToAdd.storage_type === FILE_STORAGE_TYPE.LOCAL
-              ? t('editor.imageSourceLocal')
-              : t('editor.imageSourceObject')
+            : t('editor.imageSourceUpload')
         }}</span
       >
       {{ !fileUploading ? '' : t('editor.uploadingSuffix') }}
@@ -80,7 +71,11 @@
 
     <div class="my-1">
       <TheUploader
-        v-if="fileToAdd.storage_type !== FILE_STORAGE_TYPE.EXTERNAL && !singleClipFull"
+        v-if="
+          storageSettingLoaded &&
+          fileToAdd.storage_type !== FILE_STORAGE_TYPE.EXTERNAL &&
+          !singleClipFull
+        "
         :key="effectiveCategory"
         :fileStorageType="fileToAdd.storage_type"
         :fileCategory="effectiveCategory"
@@ -119,14 +114,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useEditorStore, useSettingStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { ImageLayout } from '@/enums/enums'
 import { FILE_CATEGORY, FILE_STORAGE_TYPE, type FileCategory } from '@/constants/file'
 import Url from '@/components/icons/url.vue'
 import Upload from '@/components/icons/upload.vue'
-import Bucket from '@/components/icons/bucket.vue'
 import Addmore from '@/components/icons/addmore.vue'
 import BaseButton from '@/components/common/BaseButton.vue'
 import BaseSegmented from '@/components/common/BaseSegmented.vue'
@@ -136,14 +130,21 @@ import BaseInput from '@/components/common/BaseInput.vue'
 import TheUploader from '@/components/advanced/TheUploader.vue'
 import { localStg } from '@/utils/storage'
 import { useI18n } from 'vue-i18n'
+import { resolveManagedUploadStorageType, resolveUploadSourceDisplayMode } from '@/lib/file'
 
 const IMAGE_MAX_FILE_SIZE = 20 * 1024 * 1024
 const AUDIO_MAX_FILE_SIZE = 20 * 1024 * 1024
 const VIDEO_MAX_FILE_SIZE = 64 * 1024 * 1024
+const IMAGE_MAX_FILES = 9
 
 const editorStore = useEditorStore()
 const { fileToAdd, filesToAdd, fileUploading, echoToAdd, effectiveCategory } =
   storeToRefs(editorStore)
+const settingStore = useSettingStore()
+const { S3Setting } = storeToRefs(settingStore)
+const enableCompressor = ref<boolean>(false)
+const storageSettingLoaded = ref<boolean>(false)
+const { t } = useI18n()
 
 const singleClipFull = computed(
   () =>
@@ -151,16 +152,31 @@ const singleClipFull = computed(
       effectiveCategory.value === FILE_CATEGORY.VIDEO) &&
     filesToAdd.value.length > 0,
 )
-const settingStore = useSettingStore()
-const { S3Setting } = storeToRefs(settingStore)
-const enableCompressor = ref<boolean>(false)
-const { t } = useI18n()
+
+const defaultManagedUploadStorageType = computed(() =>
+  resolveManagedUploadStorageType(S3Setting.value.enable),
+)
+const uploadSourceDisplayMode = computed(() =>
+  resolveUploadSourceDisplayMode(fileToAdd.value.storage_type),
+)
 
 const handleSetFileSource = (source: App.Api.File.StorageType) => {
   fileToAdd.value.storage_type = source
-
-  localStg.setItem('file_storage_type', source)
+  if (source !== FILE_STORAGE_TYPE.EXTERNAL) {
+    localStg.setItem('file_storage_type', source)
+  }
 }
+
+onMounted(async () => {
+  try {
+    await settingStore.getS3Setting()
+    if (fileToAdd.value.storage_type !== FILE_STORAGE_TYPE.EXTERNAL) {
+      handleSetFileSource(resolveManagedUploadStorageType(S3Setting.value.enable))
+    }
+  } finally {
+    storageSettingLoaded.value = true
+  }
+})
 
 const mediaTypeOptions = computed<{ label: string; value: FileCategory }[]>(() => [
   { label: String(t('editor.mediaTypeImage')), value: FILE_CATEGORY.IMAGE },
@@ -179,6 +195,7 @@ const acceptedTypes = computed<string[]>(() => {
       return ['image/*']
   }
 })
+
 const maxFileSize = computed<number>(() => {
   switch (effectiveCategory.value) {
     case FILE_CATEGORY.AUDIO:
@@ -190,7 +207,6 @@ const maxFileSize = computed<number>(() => {
   }
 })
 
-const IMAGE_MAX_FILES = 9
 const maxFiles = computed<number>(() =>
   effectiveCategory.value === FILE_CATEGORY.IMAGE ? IMAGE_MAX_FILES : 1,
 )

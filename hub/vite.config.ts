@@ -39,8 +39,6 @@ export default defineConfig({
       injectRegister: 'auto',
       includeAssets: [
         'favicon.ico',
-        'favicon.svg',
-        'logo.svg',
         'icons.svg',
         'android-chrome-192x192.png',
         'android-chrome-512x512.png',
