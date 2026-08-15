@@ -30,6 +30,7 @@ func registerCopilot(api huma.API, h *handler.Bundle, revoker authService.TokenR
 		Path:        "/agent/recent",
 		Summary:     "获取作者近况的 AI 总结",
 		Tags:        []string{"Copilot"},
+		Middlewares: noCache(),
 	}, h.CopilotHandler.GetRecent)
 
 	route(api, secured(revoker, authModel.ScopeAdminSettings), huma.Operation{

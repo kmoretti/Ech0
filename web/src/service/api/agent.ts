@@ -8,5 +8,6 @@ export function fetchGetRecent() {
   return request<string>({
     url: '/agent/recent',
     method: 'GET',
+    cache: 'no-store',
   })
 }

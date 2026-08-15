@@ -87,7 +87,13 @@ func (settingService *SettingService) UpdateAgentSettings(
 		// 负数视为未配置，归零走保守默认。
 		ContextWindow: max(0, newSetting.ContextWindow),
 	}
-	return coreSetting.Set(ctx, settingService.durableKV, coreSetting.Agent, setting)
+	if err := coreSetting.Set(ctx, settingService.durableKV, coreSetting.Agent, setting); err != nil {
+		return err
+	}
+	if err := settingService.durableKV.Delete(ctx, string(agent.GEN_RECENT)); err != nil {
+		return err
+	}
+	return settingService.durableKV.Delete(ctx, string(agent.GEN_RECENT_DIRTY))
 }
 
 // TestAgentConnection 用提交的 Agent 配置发起一次最小探活（不落库），验证 LLM 是否真正可用。

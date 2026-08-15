@@ -4,9 +4,11 @@
 package router
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,6 +33,7 @@ import (
 	"github.com/lin-snow/ech0/internal/middleware"
 	authModel "github.com/lin-snow/ech0/internal/model/auth"
 	userModel "github.com/lin-snow/ech0/internal/model/user"
+	copilotService "github.com/lin-snow/ech0/internal/service/copilot"
 	jwtUtil "github.com/lin-snow/ech0/internal/util/jwt"
 	"github.com/lin-snow/ech0/internal/visitor"
 	"gorm.io/driver/sqlite"
@@ -69,6 +72,35 @@ func TestSetupRouter_RegistersKeyRoutes(t *testing.T) {
 			t.Fatalf("expected route missing: %s %s", expected.method, expected.path)
 		}
 	}
+}
+
+func TestSetupRouter_RecentDisablesHTTPStorage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	initTestDatabase(t)
+
+	engine := gin.New()
+	h := buildTestHandlers()
+	h.CopilotHandler = copilotHandler.NewCopilotHandler(recentSummaryStub{}, nil)
+	SetupRouter(engine, h, buildTestMWDeps())
+
+	req := httptest.NewRequest(http.MethodGet, "/api/agent/recent", nil)
+	rec := httptest.NewRecorder()
+	engine.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, rec.Code)
+	}
+	if got := rec.Header().Get("Cache-Control"); !strings.Contains(got, "no-store") {
+		t.Fatalf("expected no-store cache control, got %q", got)
+	}
+}
+
+type recentSummaryStub struct{}
+
+var _ copilotService.SummaryService = recentSummaryStub{}
+
+func (recentSummaryStub) GetRecent(context.Context) (string, error) {
+	return "recent summary", nil
 }
 
 // TestSetupRouter_EnvelopeContract 锁住 Huma 端点的响应信封契约：handler 返回

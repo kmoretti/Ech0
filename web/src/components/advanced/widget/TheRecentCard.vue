@@ -42,28 +42,29 @@ const settingStore = useSettingStore()
 const { AgentSetting } = storeToRefs(settingStore)
 const { t } = useI18n()
 
-const recent = ref<string>(String(t('recentCard.mysteriousRecent')))
+const fallbackRecent = String(t('recentCard.mysteriousRecent'))
+const recent = ref<string>(fallbackRecent)
+
+const isUsableRecent = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0 && value !== fallbackRecent
 
 onMounted(() => {
-  if (AgentSetting.value.enable) {
-    const fetchRecentPayload = async (): Promise<RecentCachePayload | null> => {
-      const res = await fetchGetRecent()
-      if (res.code !== 1) return null
-      return { recent: res.data }
-    }
+  if (!AgentSetting.value.enable) return
 
-    const cached = readHomeCache<RecentCachePayload>(HOME_RECENT_CACHE_KEY)
-    if (cached) {
-      recent.value = cached.data.recent
-    }
-
-    fetchRecentPayload()
-      .then((payload) => {
-        if (!payload) return
-        recent.value = payload.recent
-        writeHomeCache(HOME_RECENT_CACHE_KEY, payload, HOME_CACHE_TTL)
-      })
+  const cached = readHomeCache<RecentCachePayload>(HOME_RECENT_CACHE_KEY)
+  if (cached && isUsableRecent(cached.data.recent)) {
+    recent.value = cached.data.recent
   }
+
+  void fetchGetRecent()
+    .then((res) => {
+      if (res.code !== 1 || !isUsableRecent(res.data)) return
+      recent.value = res.data
+      writeHomeCache(HOME_RECENT_CACHE_KEY, { recent: res.data }, HOME_CACHE_TTL)
+    })
+    .catch((err) => {
+      console.error(err)
+    })
 })
 </script>
 <style scoped>

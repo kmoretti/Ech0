@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lin-snow/ech0/internal/agent"
 	authModel "github.com/lin-snow/ech0/internal/model/auth"
 	commonModel "github.com/lin-snow/ech0/internal/model/common"
 	settingModel "github.com/lin-snow/ech0/internal/model/setting"
@@ -394,7 +395,7 @@ func TestUpdateSnapshotScheduleSetting(t *testing.T) {
 	})
 }
 
-func TestUpdateAgentSettings_NormalizesProtocol(t *testing.T) {
+func TestUpdateAgentSettings_NormalizesProtocolAndInvalidatesRecent(t *testing.T) {
 	d := newDeps(t)
 	d.expectAdmin()
 	d.kv.EXPECT().
@@ -404,6 +405,8 @@ func TestUpdateAgentSettings_NormalizesProtocol(t *testing.T) {
 		})).
 		Return(nil).
 		Once()
+	d.kv.EXPECT().Delete(mock.Anything, string(agent.GEN_RECENT)).Return(nil).Once()
+	d.kv.EXPECT().Delete(mock.Anything, string(agent.GEN_RECENT_DIRTY)).Return(nil).Once()
 
 	err := d.build().UpdateAgentSettings(helpers.CtxAsUser(testUserID), &settingModel.AgentSettingDto{
 		Protocol: "gemini", Model: "m", ApiKey: "k", BaseURL: "https://api.example.com/",

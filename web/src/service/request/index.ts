@@ -14,6 +14,7 @@ interface RequestOptions {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   timeout?: number
   silentError?: boolean
+  cache?: RequestCache
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data?: any
 }
@@ -72,6 +73,7 @@ export const request = async <T>(requestOptions: RequestOptions): Promise<App.Ap
       body: requestOptions.data,
       timeout: requestOptions.timeout,
       credentials: 'include',
+      cache: requestOptions.cache,
     })
 
   let res = await doRequest()
