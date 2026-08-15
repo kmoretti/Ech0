@@ -41,6 +41,31 @@
   border: 0;
   border-top: 1px solid var(--color-border-subtle);
 }
+.echo-markdown .markdown-image-link {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.75rem 0;
+}
+
+.echo-markdown .markdown-image {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 32rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.echo-markdown .markdown-image-fallback {
+  display: inline-block;
+  padding: 0.5rem 0.65rem;
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
 
 .echo-markdown ul,
 .echo-markdown ol {

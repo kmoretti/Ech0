@@ -1,4 +1,4 @@
-﻿{
+{
   "common": {
     "requestFailed": "Request failed",
     "save": "Save",
@@ -998,7 +998,8 @@
     "collapse": "Collapse",
     "copy": "Copy",
     "copied": "Copied",
-    "taskCheckboxLabel": "Task checkbox"
+    "taskCheckboxLabel": "Task checkbox",
+    "imageLoadFailed": "Image failed to load. Click to open the original."
   },
   "baseSelect": {
     "empty": "No options",

@@ -1,4 +1,4 @@
-﻿{
+{
   "common": {
     "requestFailed": "Anfrage fehlgeschlagen",
     "save": "Speichern",
@@ -998,7 +998,8 @@
     "collapse": "Einklappen",
     "copy": "Kopieren",
     "copied": "Kopiert",
-    "taskCheckboxLabel": "Aufgaben-Kontrollkästchen"
+    "taskCheckboxLabel": "Aufgaben-Kontrollkästchen",
+    "imageLoadFailed": "Bild konnte nicht geladen werden. Klicken, um das Original zu öffnen."
   },
   "baseSelect": {
     "empty": "Keine Optionen",

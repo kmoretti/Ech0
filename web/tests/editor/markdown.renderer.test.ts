@@ -59,6 +59,18 @@ describe('renderMarkdown renderer behaviors', () => {
     expect(html).toContain('code-block')
   })
 
+  it('将 Markdown 图片渲染为可访问的响应式图片链接', async () => {
+    const html = await renderMarkdown('![preview](https://cdn.example.com/image.jpg)')
+
+    expect(html).toContain('class="markdown-image-link"')
+    expect(html).toContain('href="https://cdn.example.com/image.jpg"')
+    expect(html).toContain('target="_blank"')
+    expect(html).toContain('rel="noopener noreferrer"')
+    expect(html).toContain('class="markdown-image"')
+    expect(html).toContain('loading="lazy"')
+    expect(html).toContain('decoding="async"')
+  })
+
   it('对原始 HTML 输入保持转义，避免脚本注入', async () => {
     const html = await renderMarkdown('<script>alert("xss")</script>')
 

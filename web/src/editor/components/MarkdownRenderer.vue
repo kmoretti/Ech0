@@ -44,6 +44,7 @@ const collapseLabel = computed(() => String(t('markdown.collapse')))
 const copyLabel = computed(() => String(t('markdown.copy')))
 const copiedLabel = computed(() => String(t('markdown.copied')))
 const taskCheckboxLabel = computed(() => String(t('markdown.taskCheckboxLabel')))
+const imageLoadFailedLabel = computed(() => String(t('markdown.imageLoadFailed')))
 const html = ref('')
 const rendererReady = ref(Boolean(renderMarkdownFn))
 let renderSequence = 0
@@ -70,6 +71,19 @@ const renderContent = async () => {
 
   rendererReady.value = true
   html.value = rendered
+}
+
+function onRootError(event: Event) {
+  const target = event.target
+  if (!(target instanceof HTMLImageElement) || !target.matches('.markdown-image')) return
+
+  const link = target.closest<HTMLAnchorElement>('.markdown-image-link')
+  if (!link || !rootRef.value?.contains(link)) return
+
+  const fallback = document.createElement('span')
+  fallback.className = 'markdown-image-fallback'
+  fallback.textContent = imageLoadFailedLabel.value
+  link.replaceChildren(fallback)
 }
 
 function onRootClick(event: Event) {
@@ -127,10 +141,12 @@ function onRootClick(event: Event) {
 
 onMounted(() => {
   rootRef.value?.addEventListener('click', onRootClick)
+  rootRef.value?.addEventListener('error', onRootError, true)
 })
 
 onBeforeUnmount(() => {
   rootRef.value?.removeEventListener('click', onRootClick)
+  rootRef.value?.removeEventListener('error', onRootError, true)
 })
 
 watch(

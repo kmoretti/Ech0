@@ -1,4 +1,4 @@
-﻿{
+{
   "common": {
     "requestFailed": "リクエストに失敗しました",
     "save": "保存",
@@ -998,7 +998,8 @@
     "collapse": "折りたたむ",
     "copy": "コピー",
     "copied": "コピー済み",
-    "taskCheckboxLabel": "タスクチェックボックス"
+    "taskCheckboxLabel": "タスクチェックボックス",
+    "imageLoadFailed": "画像を読み込めません。クリックして元の画像を開きます。"
   },
   "baseSelect": {
     "empty": "選択肢はありません",

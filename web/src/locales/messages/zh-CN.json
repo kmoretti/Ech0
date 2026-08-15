@@ -1,4 +1,4 @@
-﻿{
+{
   "common": {
     "requestFailed": "请求失败",
     "save": "保存",
@@ -998,7 +998,8 @@
     "collapse": "收起",
     "copy": "复制",
     "copied": "已复制",
-    "taskCheckboxLabel": "任务复选框"
+    "taskCheckboxLabel": "任务复选框",
+    "imageLoadFailed": "图片无法加载，点击尝试打开原图"
   },
   "baseSelect": {
     "empty": "暂无选项",

@@ -187,6 +187,28 @@ markdown.renderer.rules.link_open = (...args: Parameters<LinkOpenRule>) => {
   return originalLinkOpen(tokens, idx, options, env, self)
 }
 
+type ImageRule = NonNullable<MarkdownIt['renderer']['rules']['image']>
+
+const originalImage: ImageRule =
+  markdown.renderer.rules.image ??
+  ((tokens, idx, options, _env, self) => self.renderToken(tokens, idx, options))
+
+markdown.renderer.rules.image = (...args: Parameters<ImageRule>) => {
+  const [tokens, idx, options, env, self] = args
+  const token = tokens[idx]
+  const src = token.attrGet('src') ?? ''
+
+  token.attrJoin('class', 'markdown-image')
+  token.attrSet('loading', 'lazy')
+  token.attrSet('decoding', 'async')
+
+  const image = originalImage(tokens, idx, options, env, self)
+  if (!/^https?:\/\//i.test(src)) return image
+
+  const href = escapeHtml(src)
+  return '<a class="markdown-image-link" href="' + href + '" target="_blank" rel="noopener noreferrer">' + image + '</a>'
+}
+
 export async function renderMarkdown(
   source: string,
   labels?: {
