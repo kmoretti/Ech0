@@ -29,6 +29,36 @@ describe('renderMarkdown renderer behaviors', () => {
     expect(html).toContain('收起&lt;更少&gt;')
   })
 
+  it('渲染卡片中常用的 Markdown 语法，包括水平分割线', async () => {
+    const source = [
+      '# Title',
+      '',
+      'A **bold** and *italic* [link](https://example.com) with `inline code`.',
+      '',
+      '- first item',
+      '- second item',
+      '',
+      '> quote',
+      '',
+      '---',
+      '',
+      '```ts',
+      'const answer = 42',
+      '```',
+    ].join('\n')
+    const html = await renderMarkdown(source)
+
+    expect(html).toContain('<h1>Title</h1>')
+    expect(html).toContain('<strong>bold</strong>')
+    expect(html).toContain('<em>italic</em>')
+    expect(html).toContain('<a href="https://example.com"')
+    expect(html).toContain('<code>inline code</code>')
+    expect(html).toContain('<ul>')
+    expect(html).toContain('<blockquote>')
+    expect(html).toContain('<hr>')
+    expect(html).toContain('code-block')
+  })
+
   it('对原始 HTML 输入保持转义，避免脚本注入', async () => {
     const html = await renderMarkdown('<script>alert("xss")</script>')
 

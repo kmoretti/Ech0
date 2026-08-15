@@ -116,7 +116,7 @@
       <div class="echo-card-body px-4 py-3" :class="{ 'echo-card-body--clamped': isLongMasonryContent }">
         <template v-if="isContentLeadingEcho(props.echo)">
           <div class="mx-auto w-11/12 pl-1 mb-3">
-            <TheMdPreview :content="previewContent" />
+            <TheMdPreview :content="props.echo.content" />
           </div>
 
           <div :class="{ 'mx-auto w-11/12 pl-1': isAvEcho }">
@@ -138,7 +138,7 @@
           </div>
 
           <div class="mx-auto w-11/12 pl-1 mt-3">
-            <TheMdPreview :content="previewContent" />
+            <TheMdPreview :content="props.echo.content" />
           </div>
         </template>
 
@@ -231,10 +231,6 @@ const props = defineProps<{
 const isLongMasonryContent = computed(
   () => props.variant === 'masonry' && Array.from(props.echo.content || '').length > 200,
 )
-const previewContent = computed(() => {
-  if (!isLongMasonryContent.value) return props.echo.content
-  return `${Array.from(props.echo.content || '').slice(0, 200).join('')}...`
-})
 
 // 音视频作为「正文级」区块，与正文同宽对齐；图片保持满宽铺满卡片。
 const isAvEcho = computed(
