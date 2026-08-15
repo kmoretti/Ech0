@@ -61,7 +61,7 @@ const hubStore = useHubStore()
 const settingStore = useSettingStore()
 const themeStore = useThemeStore()
 const userStore = useUserStore()
-const { SystemSetting } = storeToRefs(settingStore)
+const { AgentSetting, SystemSetting } = storeToRefs(settingStore)
 const {
   echoList: hubEchoList,
   isLoading: hubIsLoading,
@@ -160,11 +160,11 @@ const activeEchoList = computed(() => (props.exploreMode ? hubEchoList.value : e
 const feedItems = computed<FeedItem[]>(() => {
   const fixed = new Map<number, RawFeedItem>([
     [1, { key: 'site', type: 'site' }],
-    [2, { key: 'ai-summary', type: 'ai-summary' }],
     [statusSlots.value[0] ?? 4, { key: 'heatmap', type: 'heatmap' }],
     [statusSlots.value[1] ?? 7, { key: 'connect', type: 'connect' }],
     [statusSlots.value[2] ?? 11, { key: 'activity', type: 'activity' }],
   ])
+  if (AgentSetting.value.enable) fixed.set(2, { key: 'ai-summary', type: 'ai-summary' })
   const result: RawFeedItem[] = []
   let echoIndex = 0
   let position = 1
