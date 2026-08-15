@@ -15,7 +15,7 @@ export const HOME_HEATMAP_CACHE_KEY = 'home:heatmap-cache:v1'
 export const HOME_ACTIVITY_CACHE_KEY = 'home:activity-heatmap-cache:v1'
 export const HOME_RECENT_CACHE_KEY = 'home:recent-summary-cache:v1'
 export const HOME_CONNECT_LIST_CACHE_KEY = 'home:connect-list-cache:v1'
-export const HOME_CONNECT_INFO_CACHE_KEY = 'home:connect-info-cache:v1'
+export const HOME_CONNECT_INFO_CACHE_KEY = 'home:connect-info-cache:v2'
 export const HOME_HUB_FEED_CACHE_KEY = 'home:hub-feed-cache:v1'
 
 const HOME_DERIVED_CACHE_KEYS = [
@@ -65,11 +65,14 @@ export const readHomeCache = <T>(
   if (!cached || typeof cached.timestamp !== 'number') return null
   const ttl = typeof cached.ttl === 'number' ? cached.ttl : fallbackTtl
   const isEnvelope = cached.version === HOME_CACHE_VERSION && typeof cached.ttl === 'number'
-  const data = isEnvelope && 'data' in cached
-    ? cached.data
-    : Object.fromEntries(
-        Object.entries(cached).filter(([field]) => !['timestamp', 'ttl', 'version'].includes(field)),
-      )
+  const data =
+    isEnvelope && 'data' in cached
+      ? cached.data
+      : Object.fromEntries(
+          Object.entries(cached).filter(
+            ([field]) => !['timestamp', 'ttl', 'version'].includes(field),
+          ),
+        )
 
   return {
     data: data as T,
@@ -101,6 +104,11 @@ export const invalidateEchoQueryCache = () => {
 
 export const invalidateHomeCommentsCache = () => {
   localStg.removeItem(HOME_COMMENTS_CACHE_KEY)
+}
+
+export const invalidateHomeConnectCaches = () => {
+  localStg.removeItem(HOME_CONNECT_LIST_CACHE_KEY)
+  localStg.removeItem(HOME_CONNECT_INFO_CACHE_KEY)
 }
 
 export const invalidateHomeDerivedCaches = () => {

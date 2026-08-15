@@ -145,7 +145,7 @@ const { openConfirm } = useBaseDialog()
 
 const connectStore = useConnectStore()
 const { t } = useI18n()
-const { getConnect } = connectStore
+const { getConnect, getConnectInfo, invalidateConnectCaches } = connectStore
 const { connects } = storeToRefs(connectStore)
 const connectsEdit = ref<boolean>(false)
 const connectUrl = ref<string>('')
@@ -236,6 +236,12 @@ const refreshConnectData = async () => {
   await refreshConnectivityStatus()
 }
 
+const refreshConnectDataAfterMutation = async () => {
+  invalidateConnectCaches()
+  await Promise.all([getConnect({ force: true }), getConnectInfo({ force: true })])
+  await refreshConnectivityStatus()
+}
+
 const handleAddConnect = async () => {
   if (isSubmitting.value) return
   connectUrlError.value = ''
@@ -256,7 +262,7 @@ const handleAddConnect = async () => {
         connectUrl.value = ''
         connectUrlError.value = ''
         connectsEdit.value = false
-        refreshConnectData()
+        void refreshConnectDataAfterMutation()
       }
     })
     .finally(() => {
@@ -273,7 +279,7 @@ const handleDisconnect = async (connect_id: string) => {
       await fetchDeleteConnect(connect_id).then((res) => {
         if (res.code === 1) {
           theToast.success(res.msg)
-          refreshConnectData()
+          void refreshConnectDataAfterMutation()
         }
       })
     },

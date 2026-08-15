@@ -9,9 +9,9 @@ import {
   HOME_CONNECT_LIST_CACHE_TTL,
   HOME_CONNECT_LIST_CACHE_KEY,
   HOME_CONNECT_STATUS_CACHE_TTL,
+  invalidateHomeConnectCaches,
   isHomeCacheFresh,
   readHomeCache,
-  refreshHomeCacheInBackground,
   writeHomeCache,
 } from '@/utils/home-cache'
 
@@ -48,6 +48,18 @@ export const useConnectStore = defineStore('connectStore', () => {
     return res.data
   }
 
+  const updateConnects = (data: App.Api.Connect.Connected[]) => {
+    connects.value = data
+    connectsFetchedAt.value = Date.now()
+    writeHomeCache(HOME_CONNECT_LIST_CACHE_KEY, data, HOME_CONNECT_LIST_CACHE_TTL)
+  }
+
+  const updateConnectsInfo = (data: App.Api.Connect.Connect[]) => {
+    connectsInfo.value = data
+    connectsInfoFetchedAt.value = Date.now()
+    writeHomeCache(HOME_CONNECT_INFO_CACHE_KEY, data, HOME_CONNECT_STATUS_CACHE_TTL)
+  }
+
   async function getConnect(options?: { force?: boolean }) {
     const force = Boolean(options?.force)
     if (!force && isHomeCacheFresh(connectsFetchedAt.value, HOME_CONNECT_LIST_CACHE_TTL)) return
@@ -62,11 +74,13 @@ export const useConnectStore = defineStore('connectStore', () => {
       connects.value = cachedConnects
       connectsFetchedAt.value = cached.timestamp
       if (!cached.fresh) {
-        void refreshHomeCacheInBackground(
-          HOME_CONNECT_LIST_CACHE_KEY,
-          HOME_CONNECT_LIST_CACHE_TTL,
-          fetchConnectListPayload,
-        )
+        void fetchConnectListPayload()
+          .then((data) => {
+            if (data) updateConnects(data)
+          })
+          .catch((err) => {
+            console.error(err)
+          })
       }
       return
     }
@@ -74,11 +88,7 @@ export const useConnectStore = defineStore('connectStore', () => {
 
     connectsInFlight.value = fetchConnectListPayload()
       .then((data) => {
-        if (data) {
-          connects.value = data
-          connectsFetchedAt.value = Date.now()
-          writeHomeCache(HOME_CONNECT_LIST_CACHE_KEY, data, HOME_CONNECT_LIST_CACHE_TTL)
-        }
+        if (data) updateConnects(data)
       })
       .catch((err) => {
         console.error(err)
@@ -88,6 +98,12 @@ export const useConnectStore = defineStore('connectStore', () => {
       })
 
     return connectsInFlight.value
+  }
+
+  const invalidateConnectCaches = () => {
+    invalidateHomeConnectCaches()
+    connectsFetchedAt.value = 0
+    connectsInfoFetchedAt.value = 0
   }
 
   const getConnectInfo = async (options?: { force?: boolean }) => {
@@ -108,11 +124,13 @@ export const useConnectStore = defineStore('connectStore', () => {
       connectsInfoFetchedAt.value = cached.timestamp
       loading.value = false
       if (!cached.fresh) {
-        void refreshHomeCacheInBackground(
-          HOME_CONNECT_INFO_CACHE_KEY,
-          HOME_CONNECT_STATUS_CACHE_TTL,
-          fetchConnectInfoPayload,
-        )
+        void fetchConnectInfoPayload()
+          .then((data) => {
+            if (data) updateConnectsInfo(data)
+          })
+          .catch((err) => {
+            console.error(err)
+          })
       }
       return
     }
@@ -121,11 +139,7 @@ export const useConnectStore = defineStore('connectStore', () => {
     loading.value = true
     connectsInfoInFlight.value = fetchConnectInfoPayload()
       .then((data) => {
-        if (data) {
-          connectsInfo.value = data
-          connectsInfoFetchedAt.value = Date.now()
-          writeHomeCache(HOME_CONNECT_INFO_CACHE_KEY, data, HOME_CONNECT_STATUS_CACHE_TTL)
-        }
+        if (data) updateConnectsInfo(data)
       })
       .catch((err) => {
         console.error(err)
@@ -144,5 +158,6 @@ export const useConnectStore = defineStore('connectStore', () => {
     loading,
     getConnect,
     getConnectInfo,
+    invalidateConnectCaches,
   }
 })
