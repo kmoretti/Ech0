@@ -18,7 +18,7 @@ export function absoluteUrl(path: string): string {
   return `${base}${p}`;
 }
 
-export const SITE_NAME = "提笔摘星";
+export const SITE_NAME = "克喵のEch0";
 
 export const DEFAULT_DESCRIPTION =
-  "清羽飞扬基于 Ech0 打造的个人个性化说说程序，用于记录想法、文字、图片与链接。";
+  "克喵Moretti 基于 Ech0 打造的自用版本，用于记录想法、文字、图片与链接。";

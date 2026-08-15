@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import type { Route } from "./+types/home";
 import { absoluteUrl, DEFAULT_DESCRIPTION, SITE_NAME, siteUrl } from "../site";
 
-const PAGE_TITLE = `${SITE_NAME} - 清羽飞扬自用个性化说说程序`;
+const PAGE_TITLE = `${SITE_NAME} - 克喵Moretti自用个性化说说程序`;
 const OG_IMAGE_PATH = "/screenshot.png";
 const OG_IMAGE_WIDTH = 1412;
 const OG_IMAGE_HEIGHT = 1131;
@@ -18,9 +18,9 @@ export function meta(_args: Route.MetaArgs) {
     {
       name: "keywords",
       content:
-        "提笔摘星, Ech0, 清羽飞扬, 个人说说, 微博客, 自托管, RSS, 个人网站",
+        "克喵のEch0, Ech0, 克喵Moretti, 个人说说, 微博客, 自托管, RSS, 个人网站",
     },
-    { name: "author", content: "清羽飞扬" },
+    { name: "author", content: "克喵Moretti" },
     { name: "application-name", content: SITE_NAME },
     { name: "robots", content: "index, follow" },
     { name: "theme-color", content: "#f6f4f0" },
@@ -38,7 +38,7 @@ export function meta(_args: Route.MetaArgs) {
     { property: "og:image:height", content: String(OG_IMAGE_HEIGHT) },
     {
       property: "og:image:alt",
-      content: "提笔摘星个人说说界面预览",
+      content: "克喵の个人说说界面预览",
     },
     { property: "og:locale", content: "en_US" },
     { name: "twitter:card", content: "summary_large_image" },
@@ -47,7 +47,7 @@ export function meta(_args: Route.MetaArgs) {
     { name: "twitter:image", content: imageUrl },
     {
       name: "twitter:image:alt",
-      content: "提笔摘星个人说说界面预览",
+      content: "克喵の个人说说界面预览",
     },
   ];
 }
@@ -99,9 +99,9 @@ function buildHomeJsonLd() {
         screenshot: imageUrl,
         applicationCategory: "WebApplication",
         operatingSystem: "Linux, Docker, self-hosted",
-        license: "https://github.com/LiuShen-Fork/Ech0/blob/main/LICENSE",
-        codeRepository: "https://github.com/LiuShen-Fork/Ech0",
-        sameAs: ["https://github.com/LiuShen-Fork/Ech0"],
+        license: "https://github.com/kmoretti/Ech0/blob/main/LICENSE",
+        codeRepository: "https://github.com/kmoretti/Ech0",
+        sameAs: ["https://github.com/kmoretti/Ech0"],
         offers: {
           "@type": "Offer",
           price: "0",
@@ -125,13 +125,13 @@ export default function Home() {
         >
           <img
             src="/favicon.ico"
-            alt="提笔摘星"
+            alt="克喵のEch0"
             width={28}
             height={28}
             className="size-7 shrink-0 rounded-sm"
           />
           <span className="text-[0.95rem] font-medium tracking-tight">
-            提笔摘星
+            克喵のEch0
           </span>
         </a>
         <Link
@@ -147,7 +147,7 @@ export default function Home() {
         <div className="overflow-hidden rounded-xl shadow-[0_16px_40px_-12px_rgba(33,32,28,0.12)] ring-1 ring-sand-6/70">
           <img
             src="/screenshot.png"
-            alt="提笔摘星界面预览"
+            alt="克喵のEch0界面预览"
             className="block w-full align-middle"
             width={1412}
             height={1131}
@@ -163,11 +163,11 @@ export default function Home() {
         {/* Hero: headline → positioning → CTA */}
         <section className="flex flex-col items-center gap-8 text-center">
           <h1 className="max-w-[22ch] font-serif text-[1.65rem] font-normal leading-[1.2] tracking-[-0.02em] text-sand-12 sm:text-[1.75rem]">
-            提笔摘星
+            克喵のEch0
           </h1>
 
           <p className="max-w-[26ch] font-serif text-[0.9375rem] font-normal leading-[1.45] tracking-[0.01em] text-sand-11">
-            清羽飞扬自用的个性化说说程序。
+            克喵Moretti自用的个性化说说程序。
           </p>
 
           <div className="flex flex-col items-center gap-3">
@@ -188,7 +188,7 @@ export default function Home() {
         {/* Narrative + value (editorial layout below the fold) */}
         <section className={`${dashedSection} text-left`}>
           <h2 className="font-serif text-[1.2rem] font-semibold leading-snug tracking-[-0.02em] text-sand-12">
-            为什么是提笔摘星？
+            为什么是克喵のEch0？
           </h2>
           <p className="mt-5 font-serif text-base italic leading-snug text-sand-11">
             一条真正属于自己的时间线。
@@ -197,7 +197,7 @@ export default function Home() {
             <p>
               If you want a corner of the web that feels like{" "}
               <em className="not-italic font-medium text-sand-12">yours</em>—not
-              someone else&rsquo;s feed, not a rented profile—提笔摘星是一个小而完整的
+              someone else&rsquo;s feed, not a rented profile—克喵のEch0是一个小而完整的
               自托管说说程序：用于记录想法、文字、图片与链接，运行在你自己掌控的环境中。
             </p>
             <p>
@@ -209,7 +209,7 @@ export default function Home() {
 
         <section className={dashedSection}>
           <h2 className="font-serif text-[1.2rem] font-semibold leading-snug tracking-[-0.02em] text-sand-12">
-            提笔摘星能做什么？
+            克喵のEch0能做什么？
           </h2>
           <ol className="mt-6 list-decimal space-y-5 pl-[1.35rem] text-[0.9375rem] leading-[1.6] text-sand-11 marker:font-serif marker:text-[0.95rem] marker:text-sand-11 sm:pl-6">
             <li>

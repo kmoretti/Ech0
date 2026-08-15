@@ -1,6 +1,6 @@
 # 参与贡献
 
-提笔摘星是基于 [lin-snow/Ech0](https://github.com/lin-snow/Ech0) 打造的个人定制版本，主要服务清羽飞扬的实际使用需求。通用功能建议也可以优先反馈给上游项目。
+克喵のEch0是基于 [lin-snow/Ech0](https://github.com/lin-snow/Ech0) 打造的个人定制版本，主要服务克喵Moretti的实际使用需求。通用功能建议也可以优先反馈给上游项目。
 
 ## 沟通方式
 

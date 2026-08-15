@@ -61,7 +61,7 @@ const getServiceBaseUrl = () => {
 }
 
 export const DEFAULT_SITE_ICON_URL = '/favicon.ico'
-export const DEFAULT_USER_AVATAR_URL = '/default-avatar.jpg'
+export const DEFAULT_USER_AVATAR_URL = '/default-avatar.png'
 
 export const resolveAvatarUrl = (rawUrl?: string, fallback = DEFAULT_SITE_ICON_URL) => {
   const value = (rawUrl || '').trim()

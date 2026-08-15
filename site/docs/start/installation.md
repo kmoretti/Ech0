@@ -1,6 +1,6 @@
 ---
 title: 安装部署
-description: 使用自建 Docker Hub 镜像或源码部署提笔摘星
+description: 使用自建 Docker Hub 镜像或源码部署克喵のEch0
 ---
 
 本定制仓库只保留 Docker Hub 镜像构建流程，不提供上游的 Release 二进制、Helm 仓库和自动安装脚本。推荐先通过 GitHub Actions 构建自己的多架构镜像，再使用 Docker 或 Docker Compose 部署。

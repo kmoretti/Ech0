@@ -1,6 +1,6 @@
-# 提笔摘星文档站
+# 克喵のEch0文档站
 
-该目录包含提笔摘星 / Ech0 定制版的静态文档站。项目使用 React Router 7、React 19、Vite、Tailwind CSS v4 和 Markdown 文档，不使用服务端渲染。
+该目录包含克喵のEch0 / Ech0 定制版的静态文档站。项目使用 React Router 7、React 19、Vite、Tailwind CSS v4 和 Markdown 文档，不使用服务端渲染。
 
 ## 目录结构
 

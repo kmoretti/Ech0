@@ -495,7 +495,7 @@ onBeforeUnmount(() => {
             <span v-else>{{ siteFooterContent || '\u00a0' }}</span>
             <a :href="projectUrl" target="_blank" rel="noopener noreferrer" class="site-card__github">
               <Github />
-              <span>Liu-Ech0</span>
+              <span>Ech0</span>
             </a>
           </footer>
         </article>
