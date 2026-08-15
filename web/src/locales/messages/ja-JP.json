@@ -1027,7 +1027,8 @@
     "like": "いいね",
     "alreadyLiked": "既にいいね済みです",
     "likeFailed": "いいねに失敗しました",
-    "likeSuccess": "いいねしました"
+    "likeSuccess": "いいねしました",
+    "imagePreviewTruncated": "画像プレビューは省略されています。詳細で確認してください。"
   },
   "imageGallery": {
     "previewImage": "画像 {index} をプレビュー",

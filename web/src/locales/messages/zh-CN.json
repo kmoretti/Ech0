@@ -1027,7 +1027,8 @@
     "like": "点赞",
     "alreadyLiked": "你已经点赞过",
     "likeFailed": "点赞失败",
-    "likeSuccess": "点赞成功"
+    "likeSuccess": "点赞成功",
+    "imagePreviewTruncated": "图片预览已省略，查看详情"
   },
   "imageGallery": {
     "previewImage": "预览图片{index}",

@@ -1027,7 +1027,8 @@
     "like": "Like",
     "alreadyLiked": "You have already liked this",
     "likeFailed": "Like failed",
-    "likeSuccess": "Liked successfully"
+    "likeSuccess": "Liked successfully",
+    "imagePreviewTruncated": "Image omitted from preview. Open detail to view it."
   },
   "imageGallery": {
     "previewImage": "Preview image {index}",

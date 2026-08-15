@@ -36,7 +36,7 @@
         class="flex-none opacity-70 hover:opacity-100 transition-opacity"
       >
         <img
-          src="/favicon.ico"
+          :src="ECHO_FAVICON_URL"
           alt="Ech0"
           loading="lazy"
           decoding="async"
@@ -48,7 +48,7 @@
     <div class="hub-echo-body py-1.5" :class="{ 'hub-echo-body--clamped': isLongContent }">
       <template v-if="isContentLeadingEcho(props.echo)">
         <div class="mb-2.5">
-          <TheMdPreview :content="previewContent" />
+          <TheMdPreview :content="preview.content" />
         </div>
 
         <TheMediaPlayer :echo="props.echo" :baseUrl="echo.server_url" :layout="props.echo.layout" />
@@ -58,7 +58,7 @@
         <TheMediaPlayer :echo="props.echo" :baseUrl="echo.server_url" :layout="props.echo.layout" />
 
         <div class="mt-2.5">
-          <TheMdPreview :content="previewContent" />
+          <TheMdPreview :content="preview.content" />
         </div>
       </template>
 
@@ -73,8 +73,13 @@
       target="_blank"
       rel="noopener noreferrer"
       class="hub-echo-more"
+      :class="{ 'hub-echo-more--image-placeholder': preview.hasTruncatedMarkdownImage }"
     >
-      {{ t('echoCard.openDetail') }}
+      <template v-if="preview.hasTruncatedMarkdownImage">
+        <ImageIcon aria-hidden="true" class="w-4 h-4" />
+        {{ t('hubEcho.imagePreviewTruncated') }}
+      </template>
+      <template v-else>{{ t('echoCard.openDetail') }}</template>
     </a>
 
     <div class="mt-1 flex items-center justify-between gap-2">
@@ -104,6 +109,7 @@
 <script setup lang="ts">
 import Verified from '@/components/icons/verified.vue'
 import GrayLike from '@/components/icons/graylike.vue'
+import ImageIcon from '@/components/icons/image.vue'
 import { TheMdPreview } from '@/components/advanced/md'
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { isContentLeadingEcho } from '@/utils/echo'
@@ -126,10 +132,33 @@ const props = defineProps<{
   echo: Echo
 }>()
 const { t } = useI18n()
-const isLongContent = computed(() => Array.from(props.echo.content || '').length > 200)
-const previewContent = computed(() => {
-  if (!isLongContent.value) return props.echo.content
-  return `${Array.from(props.echo.content || '').slice(0, 200).join('')}...`
+const CONTENT_PREVIEW_LIMIT = 200
+const ECHO_FAVICON_URL = '/favicon.ico'
+const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\([^)]*\)/g
+
+const isLongContent = computed(
+  () => Array.from(props.echo.content || '').length > CONTENT_PREVIEW_LIMIT,
+)
+const preview = computed(() => {
+  const content = props.echo.content || ''
+  const characters = Array.from(content)
+  if (characters.length <= CONTENT_PREVIEW_LIMIT) {
+    return { content, hasTruncatedMarkdownImage: false }
+  }
+
+  const truncatedImage = Array.from(content.matchAll(MARKDOWN_IMAGE_PATTERN)).find((match) => {
+    const start = Array.from(content.slice(0, match.index)).length
+    const end = start + Array.from(match[0]).length
+    return start < CONTENT_PREVIEW_LIMIT && end > CONTENT_PREVIEW_LIMIT
+  })
+  const previewEnd = truncatedImage
+    ? Array.from(content.slice(0, truncatedImage.index)).length
+    : CONTENT_PREVIEW_LIMIT
+
+  return {
+    content: `${characters.slice(0, previewEnd).join('')}...`,
+    hasTruncatedMarkdownImage: Boolean(truncatedImage),
+  }
 })
 
 const fav_count = ref<number>(props.echo.fav_count)
@@ -235,6 +264,15 @@ const handleLikeEcho = async () => {
   font-size: 0.75rem;
   font-weight: 600;
   border-top: 1px solid var(--color-border-subtle);
+}
+
+.hub-echo-more--image-placeholder {
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
 }
 
 /* Gallery 各 layout 内部硬编码了 w-[88%] mx-auto + mb-4，

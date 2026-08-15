@@ -1027,7 +1027,8 @@
     "like": "Gefällt mir",
     "alreadyLiked": "Du hast bereits reagiert",
     "likeFailed": "Gefällt-mir fehlgeschlagen",
-    "likeSuccess": "Gefällt mir!"
+    "likeSuccess": "Gefällt mir!",
+    "imagePreviewTruncated": "Bildvorschau ausgelassen. In der Detailansicht ansehen."
   },
   "imageGallery": {
     "previewImage": "Bild {index} anzeigen",
