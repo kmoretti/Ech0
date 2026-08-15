@@ -508,7 +508,6 @@
     "deleteSuccess": "删除成功！",
     "exitUpdateModeFirst": "请先退出更新模式！",
     "openDetail": "查看详情",
-    "commentsLabel": "评论",
     "commentCount": "{count} 条评论"
   },
   "userSetting": {
@@ -1073,8 +1072,7 @@
     "tweetView": "在 X 上查看原帖"
   },
   "recentCard": {
-    "mysteriousRecent": "作者最近很神秘～",
-    "generating": "生成中..."
+    "mysteriousRecent": "作者最近很神秘～"
   },
   "websocket": {
     "invalidMessage": "收到无效的 WebSocket 消息"

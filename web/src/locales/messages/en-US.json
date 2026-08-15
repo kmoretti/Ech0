@@ -508,7 +508,6 @@
     "deleteSuccess": "Deleted successfully",
     "exitUpdateModeFirst": "Please exit update mode first",
     "openDetail": "Open detail",
-    "commentsLabel": "Comments",
     "commentCount": "{count} comments"
   },
   "userSetting": {
@@ -1073,8 +1072,7 @@
     "tweetView": "View original post on X"
   },
   "recentCard": {
-    "mysteriousRecent": "The author has been mysterious lately~",
-    "generating": "Generating..."
+    "mysteriousRecent": "The author has been mysterious lately~"
   },
   "websocket": {
     "invalidMessage": "Received invalid WebSocket message"

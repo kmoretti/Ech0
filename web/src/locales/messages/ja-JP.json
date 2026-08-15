@@ -508,7 +508,6 @@
     "deleteSuccess": "削除しました！",
     "exitUpdateModeFirst": "先に更新モードを終了してください！",
     "openDetail": "詳細を開く",
-    "commentsLabel": "コメント",
     "commentCount": "{count} 件のコメント"
   },
   "userSetting": {
@@ -1073,8 +1072,7 @@
     "tweetView": "X で元の投稿を表示"
   },
   "recentCard": {
-    "mysteriousRecent": "作者は最近ミステリアス〜",
-    "generating": "生成中..."
+    "mysteriousRecent": "作者は最近ミステリアス〜"
   },
   "websocket": {
     "invalidMessage": "無効な WebSocket メッセージを受信しました"
