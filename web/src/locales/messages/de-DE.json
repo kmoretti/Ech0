@@ -508,6 +508,7 @@
     "deleteSuccess": "Gelöscht",
     "exitUpdateModeFirst": "Bitte zuerst den Bearbeitungsmodus verlassen",
     "openDetail": "Detail öffnen",
+    "imagePreviewTruncated": "Bildvorschau ausgelassen. Detailansicht öffnen.",
     "commentCount": "{count} Kommentare"
   },
   "userSetting": {

@@ -508,6 +508,7 @@
     "deleteSuccess": "删除成功！",
     "exitUpdateModeFirst": "请先退出更新模式！",
     "openDetail": "查看详情",
+    "imagePreviewTruncated": "图片预览已省略，查看详情",
     "commentCount": "{count} 条评论"
   },
   "userSetting": {

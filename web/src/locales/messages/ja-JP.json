@@ -508,6 +508,7 @@
     "deleteSuccess": "削除しました！",
     "exitUpdateModeFirst": "先に更新モードを終了してください！",
     "openDetail": "詳細を開く",
+    "imagePreviewTruncated": "画像プレビューは省略されています。詳細を確認してください。",
     "commentCount": "{count} 件のコメント"
   },
   "userSetting": {

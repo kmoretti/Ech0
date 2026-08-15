@@ -113,10 +113,22 @@
     </div>
 
     <div class="timeline-content">
-      <div class="echo-card-body px-4 py-3" :class="{ 'echo-card-body--clamped': isLongMasonryContent }">
+      <div
+        class="echo-card-body px-4 py-3"
+        :class="{ 'echo-card-body--clamped': isLongMasonryContent }"
+      >
         <template v-if="isContentLeadingEcho(props.echo)">
           <div class="mx-auto w-11/12 pl-1 mb-3">
-            <TheMdPreview :content="props.echo.content" />
+            <TheMdPreview :content="preview.content" />
+            <button
+              v-if="preview.hasTruncatedMarkdownImage"
+              type="button"
+              class="echo-card-image-placeholder"
+              @click="handleExpandEcho(echo.id)"
+            >
+              <ImageIcon aria-hidden="true" class="w-4 h-4 shrink-0" />
+              <span>{{ t('echoCard.imagePreviewTruncated') }}</span>
+            </button>
           </div>
 
           <div :class="{ 'mx-auto w-11/12 pl-1': isAvEcho }">
@@ -138,7 +150,16 @@
           </div>
 
           <div class="mx-auto w-11/12 pl-1 mt-3">
-            <TheMdPreview :content="props.echo.content" />
+            <TheMdPreview :content="preview.content" />
+            <button
+              v-if="preview.hasTruncatedMarkdownImage"
+              type="button"
+              class="echo-card-image-placeholder"
+              @click="handleExpandEcho(echo.id)"
+            >
+              <ImageIcon aria-hidden="true" class="w-4 h-4 shrink-0" />
+              <span>{{ t('echoCard.imagePreviewTruncated') }}</span>
+            </button>
           </div>
         </template>
 
@@ -199,6 +220,7 @@ import Roll from '@/components/icons/roll.vue'
 import Lock from '@/components/icons/lock.vue'
 import More from '@/components/icons/more.vue'
 import EditEcho from '@/components/icons/editecho.vue'
+import ImageIcon from '@/components/icons/image.vue'
 import Open from '@/components/icons/open.vue'
 import TheEchoMeta from '@/components/advanced/echo/cards/TheEchoMeta.vue'
 import { useRouter } from 'vue-router'
@@ -228,9 +250,35 @@ const props = defineProps<{
   comments?: App.Api.Comment.CommentItem[]
 }>()
 
+const CONTENT_PREVIEW_LIMIT = 200
+const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\([^)]*\)/g
+
 const isLongMasonryContent = computed(
-  () => props.variant === 'masonry' && Array.from(props.echo.content || '').length > 200,
+  () =>
+    props.variant === 'masonry' &&
+    Array.from(props.echo.content || '').length > CONTENT_PREVIEW_LIMIT,
 )
+const preview = computed(() => {
+  const content = props.echo.content || ''
+  if (!isLongMasonryContent.value) {
+    return { content, hasTruncatedMarkdownImage: false }
+  }
+
+  const truncatedImage = Array.from(content.matchAll(MARKDOWN_IMAGE_PATTERN)).find((match) => {
+    const start = Array.from(content.slice(0, match.index)).length
+    const end = start + Array.from(match[0]).length
+    return start < CONTENT_PREVIEW_LIMIT && end > CONTENT_PREVIEW_LIMIT
+  })
+  if (!truncatedImage) {
+    return { content, hasTruncatedMarkdownImage: false }
+  }
+
+  const imageStart = Array.from(content.slice(0, truncatedImage.index)).length
+  return {
+    content: `${Array.from(content).slice(0, imageStart).join('')}...`,
+    hasTruncatedMarkdownImage: true,
+  }
+})
 
 // 音视频作为「正文级」区块，与正文同宽对齐；图片保持满宽铺满卡片。
 const isAvEcho = computed(
@@ -445,6 +493,41 @@ onBeforeUnmount(() => {
   font-size: 0.75rem;
   font-weight: 600;
   border-top: 1px solid var(--color-border-subtle);
+}
+
+.echo-card-image-placeholder {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  margin: 0.75rem 0;
+  padding: 0.5rem 0.65rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  text-align: center;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.echo-card-image-placeholder > span {
+  overflow-wrap: anywhere;
+}
+
+.echo-card-image-placeholder:hover,
+.echo-card-image-placeholder:focus-visible {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.echo-card-image-placeholder:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .echo-card-meta {
