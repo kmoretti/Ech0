@@ -120,15 +120,10 @@
         <template v-if="isContentLeadingEcho(props.echo)">
           <div class="mx-auto w-11/12 pl-1 mb-3">
             <TheMdPreview :content="preview.content" />
-            <button
-              v-if="preview.hasTruncatedMarkdownImage"
-              type="button"
-              class="echo-card-image-placeholder"
-              @click="handleExpandEcho(echo.id)"
-            >
+            <div v-if="preview.hasTruncatedMarkdownImage" class="echo-card-image-placeholder">
               <ImageIcon aria-hidden="true" class="w-4 h-4 shrink-0" />
               <span>{{ t('echoCard.imagePreviewTruncated') }}</span>
-            </button>
+            </div>
           </div>
 
           <div :class="{ 'mx-auto w-11/12 pl-1': isAvEcho }">
@@ -151,15 +146,10 @@
 
           <div class="mx-auto w-11/12 pl-1 mt-3">
             <TheMdPreview :content="preview.content" />
-            <button
-              v-if="preview.hasTruncatedMarkdownImage"
-              type="button"
-              class="echo-card-image-placeholder"
-              @click="handleExpandEcho(echo.id)"
-            >
+            <div v-if="preview.hasTruncatedMarkdownImage" class="echo-card-image-placeholder">
               <ImageIcon aria-hidden="true" class="w-4 h-4 shrink-0" />
               <span>{{ t('echoCard.imagePreviewTruncated') }}</span>
-            </button>
+            </div>
           </div>
         </template>
 
@@ -275,7 +265,7 @@ const preview = computed(() => {
 
   const imageStart = Array.from(content.slice(0, truncatedImage.index)).length
   return {
-    content: `${Array.from(content).slice(0, imageStart).join('')}...`,
+    content: Array.from(content).slice(0, imageStart).join(''),
     hasTruncatedMarkdownImage: true,
   }
 })
@@ -510,24 +500,10 @@ onBeforeUnmount(() => {
   font-size: 0.875rem;
   line-height: 1.4;
   text-align: center;
-  transition:
-    border-color 150ms ease,
-    color 150ms ease;
 }
 
 .echo-card-image-placeholder > span {
   overflow-wrap: anywhere;
-}
-
-.echo-card-image-placeholder:hover,
-.echo-card-image-placeholder:focus-visible {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-}
-
-.echo-card-image-placeholder:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
 }
 
 .echo-card-meta {

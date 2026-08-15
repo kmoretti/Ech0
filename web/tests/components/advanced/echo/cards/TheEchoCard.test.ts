@@ -105,13 +105,16 @@ describe('TheEchoCard', () => {
     const image = `![preview](https://cdn.example.test/${'x'.repeat(64)}.jpg)`
     const wrapper = mountCard(`${beforeImage}${image} after the image`, 'grid')
 
-    expect(previewContent(wrapper)).toBe(`${beforeImage}...`)
+    expect(previewContent(wrapper)).toBe(beforeImage)
     expect(previewContent(wrapper)).not.toContain('![preview]')
 
     const placeholder = wrapper.get('.echo-card-image-placeholder')
+    expect(placeholder.element.tagName).toBe('DIV')
     expect(placeholder.text()).toContain('echoCard.imagePreviewTruncated')
     await placeholder.trigger('click')
+    expect(routerPush).not.toHaveBeenCalled()
 
+    await wrapper.get('.echo-card-more').trigger('click')
     expect(routerPush).toHaveBeenCalledWith({
       name: 'echo',
       params: { echoId: 'echo-1' },
@@ -123,7 +126,7 @@ describe('TheEchoCard', () => {
     const image = `![preview](https://cdn.example.test/${'x'.repeat(64)}.jpg)`
     const wrapper = mountCard(`${beforeImage}${image}`)
 
-    expect(previewContent(wrapper)).toBe(`${beforeImage}...`)
+    expect(previewContent(wrapper)).toBe(beforeImage)
     expect(wrapper.get('div.mt-3').find('.echo-card-image-placeholder').exists()).toBe(true)
   })
 

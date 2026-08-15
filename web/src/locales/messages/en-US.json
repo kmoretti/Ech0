@@ -508,7 +508,7 @@
     "deleteSuccess": "Deleted successfully",
     "exitUpdateModeFirst": "Please exit update mode first",
     "openDetail": "Open detail",
-    "imagePreviewTruncated": "Image preview omitted. Open detail to view it.",
+    "imagePreviewTruncated": "Image preview omitted.",
     "commentCount": "{count} comments"
   },
   "userSetting": {
