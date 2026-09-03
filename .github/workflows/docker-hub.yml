@@ -16,6 +16,8 @@ name: Release and Docker
     tags:
       - "v*"
 
+run-name: Release ${{ inputs.version || github.ref_name }}
+
 permissions:
   contents: write
 
@@ -59,11 +61,6 @@ jobs:
           fi
           if ! printf '%s' "${VERSION}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
             echo "::error::Invalid version '${VERSION}'. Expected X.Y.Z or X.Y.Z-prerelease."
-            exit 1
-          fi
-          SOURCE_VERSION="$(sed -nE 's/^[[:space:]]*Version[[:space:]]*=[[:space:]]*"([^"]+)"/\1/p' internal/version/version.go | head -n1)"
-          if [ -z "${SOURCE_VERSION}" ] || [ "${VERSION}" != "${SOURCE_VERSION}" ]; then
-            echo "::error::Release ${VERSION} does not match internal/version.Version ${SOURCE_VERSION}."
             exit 1
           fi
           echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
@@ -137,7 +134,8 @@ jobs:
           set -euo pipefail
           GIT_COMMIT="$(git rev-parse --short HEAD)"
           BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          LDFLAGS="-linkmode external -extldflags '-static' -X github.com/lin-snow/ech0/internal/version.Commit=${GIT_COMMIT} -X github.com/lin-snow/ech0/internal/version.BuildTime=${BUILD_TIME}"
+          RELEASE_VERSION="${{ needs.prepare.outputs.version }}"
+          LDFLAGS="-linkmode external -extldflags '-static' -X github.com/lin-snow/ech0/internal/version.Version=${RELEASE_VERSION} -X github.com/lin-snow/ech0/internal/version.Commit=${GIT_COMMIT} -X github.com/lin-snow/ech0/internal/version.BuildTime=${BUILD_TIME}"
           if [ "${GOARCH}" = "arm64" ]; then
             export CC="zig cc -target aarch64-linux-musl"
             export CXX="zig c++ -target aarch64-linux-musl"
