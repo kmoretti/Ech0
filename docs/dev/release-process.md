@@ -11,7 +11,7 @@ just bump 4.6.5                             # edits internal/version/version.go
 $EDITOR CHANGELOG.md                                    # rename [Unreleased] → [4.6.5] - YYYY-MM-DD; add a fresh empty [Unreleased]
 git commit -am 'chore(release): v4.6.5'
 git tag -a v4.6.5 -m 'Release v4.6.5'
-git push origin main v4.6.5                             # tag push triggers .github/workflows/release.yml
+git push origin main v4.6.5                             # tag push triggers .github/workflows/docker-hub.yml
 gh release view v4.6.5                                  # verify artifacts after CI completes
 ```
 
@@ -25,20 +25,17 @@ Ech0 follows [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html):
 - **MINOR** (`X.Y.Z` → `X.(Y+1).0`) — backwards-compatible new features.
 - **PATCH** (`X.Y.Z` → `X.Y.(Z+1)`) — backwards-compatible bug fixes.
 
-Pre-release tags (`v5.0.0-rc.1`, `v5.0.0-beta.1`) are used for major bumps where you want real users to test before the stable promotion. The `internal/version.Version` const must include the suffix verbatim (`Version = "5.0.0-rc.1"`) — the CI guard verifies this.
+Pre-release tags (`v5.0.0-rc.1`, `v5.0.0-beta.1`) are used for major bumps where you want real users to test before the stable promotion. The release workflow accepts the same suffix in its version input and injects the selected version into release binaries.
 
 ## The single source of truth
 
-The version is declared **once** in [`internal/version/version.go`](../../internal/version/version.go):
+The default version is declared **once** in [`internal/version/version.go`](../../internal/version/version.go):
 
 ```go
-const (
-    Version = "4.6.4"
-    ...
-)
+var Version = "4.6.4"
 ```
 
-Everywhere else (`/hello`, `/healthz`, the About page, `ech0 version`, MCP server identification, connect federation) reads from this single const. Build-time metadata (`Commit`, `BuildTime`) is injected via `-ldflags -X` from the justfile / Dockerfile / release workflow.
+Everywhere else (`/hello`, `/healthz`, the About page, `ech0 version`, MCP server identification, connect federation) reads from this single variable. Build-time metadata (`Version`, `Commit`, `BuildTime`) is injected via `-ldflags -X` from the release workflow when a release version is supplied.
 
 **Never edit the version string in any other file.** If you find a hardcoded version anywhere, that is a bug to fix, not a place to also bump.
 
@@ -114,38 +111,38 @@ git tag -a vX.Y.Z -m 'Release vX.Y.Z'
 - Use **annotated** tags (`-a`), not lightweight ones — annotated tags carry author, date, and message, and are first-class objects.
 - If you have a GPG or SSH signing key configured, use `git tag -s` instead. GitHub will display a "Verified" badge on signed tags, which lets downstream operators distinguish authentic releases from impersonations.
 
-The tag must point at the same commit that contains the bump (i.e. tag immediately after committing). The CI guard refuses to build a release where the tag and `version.go` disagree.
+For automated releases, the tag and runtime version are taken from the workflow version input. The source value remains the development/default version used for local builds.
 
 ## Pushing and triggering the release
 
 ```bash
-git push origin main         # publish the chore(release) commit
-git push origin vX.Y.Z       # push the tag separately to trigger release.yml
+git push origin main
+git push origin vX.Y.Z       # optional: tag push also triggers the workflow
 ```
+
+Alternatively, run **Release and Docker** from the Actions tab and enter `X.Y.Z` or `vX.Y.Z`. The workflow title includes the selected version, then publishes the GitHub Release and Docker Hub image together.
 
 Pushing the tag is the act that commits to the release publicly:
 
-- [`.github/workflows/release.yml`](../../.github/workflows/release.yml) fires on `tags: v*`.
-- `verify-version` runs first; if `Version != tag`, the workflow fails fast.
-- `build` then produces `linux/amd64` and `linux/arm64` static binaries with `Commit` and `BuildTime` ldflags-injected.
-- `prepare-release` packages them as `tar.gz` and creates a **draft** GitHub release.
-- `build-docker` pushes multi-arch images to GHCR and Docker Hub, tagged `vX.Y.Z` and `latest`.
+- [`.github/workflows/docker-hub.yml`](../../.github/workflows/docker-hub.yml) fires on `tags: v*` or manual dispatch.
+- The workflow validates the supplied semantic version and injects it, along with `Commit` and `BuildTime`, into the binaries.
+- It packages the binaries as `tar.gz`, creates the GitHub Release, and pushes multi-arch Docker Hub images tagged `vX.Y.Z` and optionally `latest`.
 
 After the workflow completes:
 
 1. **Verify the artifacts.**
    ```bash
-   gh release view vX.Y.Z              # check files, draft status
+   gh release view vX.Y.Z              # check files and release notes
    gh run watch                        # if still running
    ```
    Download the linux/amd64 binary, run `./ech0 version`, and sanity-check that the version + commit hash match what you tagged.
 
-2. **Promote the draft release to published.** GitHub release notes default to auto-generated PR titles since the last release; replace them with the relevant `[X.Y.Z]` section from `CHANGELOG.md`.
+2. **Review the published release notes.** GitHub generates initial notes automatically; replace them with the relevant `[X.Y.Z]` section from `CHANGELOG.md` when needed.
 
 3. **Pull the Docker image** to confirm:
    ```bash
-   docker pull ghcr.io/lin-snow/ech0:vX.Y.Z
-   docker run --rm ghcr.io/lin-snow/ech0:vX.Y.Z version
+   docker pull docker.io/<DOCKERHUB_USERNAME>/ech0:vX.Y.Z
+   docker run --rm docker.io/<DOCKERHUB_USERNAME>/ech0:vX.Y.Z version
    ```
 
 ## Hot-fix releases

@@ -9,8 +9,6 @@ import (
 )
 
 const (
-	Version = "5.7.0"
-
 	// License is the SPDX identifier of the project license.
 	License = "AGPL-3.0-or-later"
 
@@ -20,6 +18,10 @@ const (
 
 	StartYear = 2025
 )
+
+// Version is the application release version. Release builds may override it
+// with -ldflags so fork-specific release numbers are reflected at runtime.
+var Version = "5.7.0"
 
 var Commit = "unknown"
 
