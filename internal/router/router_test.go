@@ -50,7 +50,6 @@ func TestSetupRouter_RegistersKeyRoutes(t *testing.T) {
 		method string
 		path   string
 	}{
-		// Huma type-first docs/spec（取代旧 /swagger）。
 		{method: http.MethodGet, path: "/api/docs"},
 		{method: http.MethodGet, path: "/api/openapi.json"},
 		{method: http.MethodPost, path: "/api/login"},
@@ -156,8 +155,6 @@ func TestSetupRouter_AuthGroupProtected(t *testing.T) {
 	}
 }
 
-// 锁住「公开可读 echo 接口匿名可达」契约：这些路由注册在 OptionalAuthRouterGroup，
-// 无 token 时应被放行（非 401），而非被强制鉴权拦截。若有人误把它们挪回强制组，此用例会失败。
 func TestSetupRouter_PublicEchoRoutesAllowAnonymous(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	initTestDatabase(t)

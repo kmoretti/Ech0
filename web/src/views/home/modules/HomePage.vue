@@ -127,7 +127,6 @@ const handleGlobalKeydown = (event: KeyboardEvent) => {
     paletteOpen.value = !paletteOpen.value
     return
   }
-  // Cmd/Ctrl+J 唤起对话快捷输入框（仅在对话可用时拦截，否则放行给浏览器）
   const isChatShortcut = withModifier && event.key === 'j'
   if (isChatShortcut && chatAvailable.value) {
     event.preventDefault()
@@ -149,7 +148,6 @@ const saveTimelineScrollPosition = () => {
   })
 }
 
-// 手机布局下滚动发生在 window 上，单独持久化以便恢复。
 const saveWindowScrollPosition = () => {
   if (windowScrollRaf !== null) return
   windowScrollRaf = window.requestAnimationFrame(() => {
@@ -173,9 +171,6 @@ const restoreTimelineScrollPosition = () => {
   }
 }
 
-// 空闲时预热下游 chunk：
-//   - EchoView：点击日期跳详情前提前下好
-//   - markdown core：避免慢网下首屏 echo 卡片显示原文 fallback 的过渡时长
 const prefetchHeavyChunks = () => {
   const trigger = () => {
     import('@/views/echo/EchoView.vue').catch(() => {})

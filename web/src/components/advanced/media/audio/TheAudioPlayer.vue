@@ -1,11 +1,5 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
-<!--
-  音频迷你播放器：一条 Echo 最多一个音频文件。用原生 <audio> 元素驱动，但隐藏其原生控件，
-  改用与项目暖色调一致的自绘控件——磨砂半透明卡片，上行放 Audio 标签与时间、下行放柔和的
-  播放/暂停键与整条进度条。刻意降低色彩浓度、不加按压缩放等动效，保持简洁安静的内联观感；
-  不做灯箱（音频没有可放大的画面）。
--->
 <template>
   <div v-if="src" class="audio-player">
     <audio
@@ -72,7 +66,6 @@ import Music from '@/components/icons/music.vue'
 const props = withDefaults(
   defineProps<{
     files?: App.Api.Ech0.FileObject[]
-    /** 联邦(hub)卡片场景下用于把相对 URL 解析到远端服务器。 */
     baseUrl?: string
   }>(),
   { files: () => [] },
@@ -80,7 +73,6 @@ const props = withDefaults(
 
 const { t } = useI18n()
 
-// 设计约束：一条 Echo 至多一个音频，直接取首个。
 const src = computed(() => {
   const file = (props.files || [])[0]
   if (!file) return ''
@@ -141,7 +133,6 @@ function onEnded() {
   padding: 0.65rem 0.8rem;
   border-radius: var(--radius-md);
 
-  /* 磨砂半透明卡片：淡描边 + 让底色透出来，降低整体浓度 */
   border: 1px solid color-mix(in srgb, var(--color-border-subtle) 55%, transparent);
   background: color-mix(in srgb, var(--color-bg-muted) 55%, transparent);
   backdrop-filter: blur(12px) saturate(1.1);
@@ -151,7 +142,6 @@ function onEnded() {
 }
 
 .audio-player:hover {
-  /* hover 只轻轻实一点，不变深 */
   border-color: var(--color-border-subtle);
   box-shadow: var(--shadow-soft);
 }
@@ -167,7 +157,6 @@ function onEnded() {
   gap: 0.5rem;
 }
 
-/* Audio 标签：暖色半透明小胶囊，标明这是音频 */
 .audio-player__tag {
   display: inline-flex;
   align-items: center;
@@ -217,7 +206,6 @@ function onEnded() {
   font-size: 1rem;
   color: var(--color-accent);
 
-  /* 柔和的暖色圆钮，替代原来浓重的实心赤陶；不加按压缩放，避免抖动 */
   background: color-mix(in srgb, var(--color-accent-soft) 65%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-accent) 16%, transparent);
   border-radius: 50%;

@@ -52,7 +52,7 @@ func TestOpenSQLite_AppliesConnectionParams(t *testing.T) {
 	if err := db.Raw("PRAGMA synchronous").Scan(&synchronous).Error; err != nil {
 		t.Fatalf("query synchronous failed: %v", err)
 	}
-	if synchronous != 1 { // 1 == NORMAL
+	if synchronous != 1 {
 		t.Fatalf("expected synchronous NORMAL(1), got %d", synchronous)
 	}
 }
@@ -64,6 +64,11 @@ func TestSnapshotTo_ProducesConsistentCopy(t *testing.T) {
 		t.Fatalf("openSQLite failed: %v", err)
 	}
 	SetDB(db)
+	t.Cleanup(func() {
+		if sqlDB, err := db.DB(); err == nil {
+			_ = sqlDB.Close()
+		}
+	})
 
 	if err := db.Exec("CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)").Error; err != nil {
 		t.Fatalf("create table failed: %v", err)
@@ -81,6 +86,11 @@ func TestSnapshotTo_ProducesConsistentCopy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open copy failed: %v", err)
 	}
+	copySQLDB, err := copyDB.DB()
+	if err != nil {
+		t.Fatalf("get copy sql db failed: %v", err)
+	}
+	defer copySQLDB.Close()
 	var v string
 	if err := copyDB.Raw("SELECT v FROM t LIMIT 1").Scan(&v).Error; err != nil {
 		t.Fatalf("query copy failed: %v", err)

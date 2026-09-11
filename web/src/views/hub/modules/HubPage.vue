@@ -5,7 +5,6 @@
     :class="{ 'hub-page--embedded': props.embedded }"
     class="w-full px-2 pb-4 py-2 mt-4 sm:mt-0 mb-10 sm:mb-0 mx-auto flex justify-center items-start"
   >
-    <!-- Ech0s Hub -->
     <div ref="mainColumn" class="mx-auto px-2 text-[var(--color-text-muted)] w-full">
       <template v-if="embedded">
         <div class="hub-embedded-nav">
@@ -24,7 +23,6 @@
         </h1>
 
         <div class="w-full max-w-sm mx-auto">
-          <!-- 返回首页 -->
           <BaseButton
             @click="router.push('/')"
             :class="getButtonClasses('', true)"
@@ -302,7 +300,6 @@ onMounted(async () => {
   bindScrollListenerForBackTop()
 })
 
-// scrollTarget 变化时重建 observer（root 可能变了）
 watch(
   () => props.scrollTarget,
   async () => {

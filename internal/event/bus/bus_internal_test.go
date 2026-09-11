@@ -15,9 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// recvWithin blocks until a value arrives on ch, failing the test if it does not
-// arrive within a generous safety window. It is a deterministic synchronization
-// point (not a fixed sleep) for asserting async delivery.
 func recvWithin[T any](t *testing.T, ch <-chan T) T {
 	t.Helper()
 	select {
@@ -37,8 +34,8 @@ func TestSafeTypeString(t *testing.T) {
 		want string
 	}{
 		{"nil", nil, ""},
-		{"int", reflect.TypeOf(0), "int"},
-		{"string", reflect.TypeOf(""), "string"},
+		{"int", reflect.TypeFor[int](), "int"},
+		{"string", reflect.TypeFor[string](), "string"},
 		{"pointer", reflect.TypeOf(&struct{}{}), "*struct {}"},
 	}
 	for _, tc := range cases {
@@ -76,15 +73,14 @@ func TestNew_DeliversSynchronously(t *testing.T) {
 	t.Cleanup(func() { _ = b.Close(context.Background()) })
 
 	var got int
-	unsub, err := busen.Subscribe(b, func(_ context.Context, e busen.Event[ping]) error {
+	unsub, err := b.Subscribe(func(_ context.Context, e busen.Event[ping]) error {
 		got = e.Value.n
 		return nil
 	})
 	require.NoError(t, err)
 	t.Cleanup(unsub)
 
-	// Default subscription is synchronous: handler has run by the time Publish returns.
-	require.NoError(t, busen.Publish(context.Background(), b, ping{n: 7}))
+	require.NoError(t, b.Publish(context.Background(), ping{n: 7}))
 	assert.Equal(t, 7, got)
 }
 
@@ -105,14 +101,14 @@ func TestAsyncParallel_EnablesAsyncDelivery(t *testing.T) {
 	t.Cleanup(func() { _ = b.Close(context.Background()) })
 
 	done := make(chan int, 1)
-	unsub, err := busen.Subscribe(b, func(_ context.Context, e busen.Event[ping]) error {
+	unsub, err := b.Subscribe(func(_ context.Context, e busen.Event[ping]) error {
 		done <- e.Value.n
 		return nil
 	}, opts...)
 	require.NoError(t, err)
 	t.Cleanup(unsub)
 
-	require.NoError(t, busen.Publish(context.Background(), b, ping{n: 42}))
+	require.NoError(t, b.Publish(context.Background(), ping{n: 42}))
 	assert.Equal(t, 42, recvWithin(t, done))
 }
 
@@ -124,33 +120,30 @@ func TestAsyncSequential_EnablesAsyncDelivery(t *testing.T) {
 	t.Cleanup(func() { _ = b.Close(context.Background()) })
 
 	done := make(chan int, 1)
-	unsub, err := busen.Subscribe(b, func(_ context.Context, e busen.Event[ping]) error {
+	unsub, err := b.Subscribe(func(_ context.Context, e busen.Event[ping]) error {
 		done <- e.Value.n
 		return nil
 	}, opts...)
 	require.NoError(t, err)
 	t.Cleanup(unsub)
 
-	require.NoError(t, busen.Publish(context.Background(), b, ping{n: 99}))
+	require.NoError(t, b.Publish(context.Background(), ping{n: 99}))
 	assert.Equal(t, 99, recvWithin(t, done))
 }
 
-// TestNew_HooksHandleErrorPaths drives a handler error and a handler panic
-// through a New() bus so the wired OnHandlerError / OnPublishDone / OnHandlerPanic
-// hooks run; they must log only and never let a panic escape Publish.
 func TestNew_HooksHandleErrorPaths(t *testing.T) {
 	t.Run("handler error is surfaced and logged", func(t *testing.T) {
 		b := New()
 		t.Cleanup(func() { _ = b.Close(context.Background()) })
 
 		sentinel := errors.New("handler failed")
-		unsub, err := busen.Subscribe(b, func(_ context.Context, _ busen.Event[ping]) error {
+		unsub, err := b.Subscribe(func(_ context.Context, _ busen.Event[ping]) error {
 			return sentinel
 		})
 		require.NoError(t, err)
 		t.Cleanup(unsub)
 
-		err = busen.Publish(context.Background(), b, ping{n: 1})
+		err = b.Publish(context.Background(), ping{n: 1})
 		require.Error(t, err)
 		assert.ErrorIs(t, err, sentinel)
 	})
@@ -159,7 +152,7 @@ func TestNew_HooksHandleErrorPaths(t *testing.T) {
 		b := New()
 		t.Cleanup(func() { _ = b.Close(context.Background()) })
 
-		unsub, err := busen.Subscribe(b, func(_ context.Context, _ busen.Event[ping]) error {
+		unsub, err := b.Subscribe(func(_ context.Context, _ busen.Event[ping]) error {
 			panic("boom in handler")
 		})
 		require.NoError(t, err)
@@ -167,7 +160,7 @@ func TestNew_HooksHandleErrorPaths(t *testing.T) {
 
 		var pubErr error
 		assert.NotPanics(t, func() {
-			pubErr = busen.Publish(context.Background(), b, ping{n: 2})
+			pubErr = b.Publish(context.Background(), ping{n: 2})
 		})
 		assert.ErrorIs(t, pubErr, busen.ErrHandlerPanic)
 	})

@@ -13,30 +13,25 @@ import (
 	settingModel "github.com/lin-snow/ech0/internal/model/setting"
 )
 
-// TestSiteKeysMatchSystemSetting 守卫「导出即转储」最脆弱的一环：Site 的 yaml 键名
-// 必须逐字等于 SystemSetting 的 json tag，只允许缺少行为开关 allow_register。
-// SystemSetting 新增字段而这里没跟上时，本用例失败——否则胶囊会静默漏字段。
 func TestSiteKeysMatchSystemSetting(t *testing.T) {
 	const behaviourOnly = "allow_register"
 
-	want := tagSet(t, reflect.TypeOf(settingModel.SystemSetting{}), "json")
+	want := tagSet(t, reflect.TypeFor[settingModel.SystemSetting](), "json")
 	delete(want, behaviourOnly)
-	got := tagSet(t, reflect.TypeOf(Site{}), "yaml")
+	got := tagSet(t, reflect.TypeFor[Site](), "yaml")
 
 	if !reflect.DeepEqual(want, got) {
 		t.Fatalf("capsule.Site 键集合与 SystemSetting 不一致\nSystemSetting(-allow_register): %v\nSite: %v", keys(want), keys(got))
 	}
 }
 
-// TestFileRefKeysAreFileColumns 守卫 files[] 与 File 列的 1:1 关系：胶囊里的每个键
-// 都必须是真实存在的 File 列，且被明确排除的运行时拓扑列不得混进来。
 func TestFileRefKeysAreFileColumns(t *testing.T) {
-	fileCols := tagSet(t, reflect.TypeOf(fileModel.File{}), "json")
+	fileCols := tagSet(t, reflect.TypeFor[fileModel.File](), "json")
 	excluded := map[string]struct{}{
 		"storage_type": {}, "provider": {}, "bucket": {}, "user_id": {}, "created_at": {},
 	}
 
-	for k := range tagSet(t, reflect.TypeOf(FileRef{}), "yaml") {
+	for k := range tagSet(t, reflect.TypeFor[FileRef](), "yaml") {
 		if _, ok := fileCols[k]; !ok {
 			t.Errorf("FileRef.%s 不是 File 的列", k)
 		}
@@ -49,8 +44,8 @@ func TestFileRefKeysAreFileColumns(t *testing.T) {
 func tagSet(t *testing.T, typ reflect.Type, tag string) map[string]struct{} {
 	t.Helper()
 	out := make(map[string]struct{}, typ.NumField())
-	for i := range typ.NumField() {
-		name, _, _ := strings.Cut(typ.Field(i).Tag.Get(tag), ",")
+	for field := range typ.Fields() {
+		name, _, _ := strings.Cut(field.Tag.Get(tag), ",")
 		if name == "" || name == "-" {
 			continue
 		}
@@ -67,8 +62,6 @@ func keys(m map[string]struct{}) []string {
 	return out
 }
 
-// TestEncodeDecodeEchoPreservesContent 锁定 spec §4.3：正文必须逐字往返，
-// 包括空正文、首尾换行，以及正文里自带 --- 围栏的情况。
 func TestEncodeDecodeEchoPreservesContent(t *testing.T) {
 	cases := map[string]string{
 		"empty":            "",
@@ -114,8 +107,6 @@ func TestEncodeDecodeEchoPreservesContent(t *testing.T) {
 	}
 }
 
-// TestDecodeEchoReportsUnknownFields 锁定 spec §8：未知字段不得让解析失败，
-// 但必须能被报出来（check 的警告来源）。
 func TestDecodeEchoReportsUnknownFields(t *testing.T) {
 	raw := []byte("---\nid: x\ncreated_at: 2026-01-01T00:00:00Z\nfuture_field: 42\n---\nbody\n")
 	doc, unknown, err := DecodeEcho(raw)
@@ -130,7 +121,6 @@ func TestDecodeEchoReportsUnknownFields(t *testing.T) {
 	}
 }
 
-// TestDecodeEchoRejectsTypeErrors 区分「未知字段」（警告）与「类型错」（硬错）。
 func TestDecodeEchoRejectsTypeErrors(t *testing.T) {
 	raw := []byte("---\nid: x\nfav_count: not-a-number\n---\n")
 	if _, _, err := DecodeEcho(raw); err == nil {
@@ -144,7 +134,6 @@ func TestDecodeEchoRequiresFrontmatter(t *testing.T) {
 	}
 }
 
-// TestMediaPath 锁定 spec §6：胶囊内位置是 key 的纯函数，与实例本地布局同构。
 func TestMediaPath(t *testing.T) {
 	cases := map[string]string{
 		"a.png":     "files/images/a.png",
@@ -173,7 +162,6 @@ func TestValidateKey(t *testing.T) {
 	}
 }
 
-// TestTimeRoundTrip 锁定 spec §11 的无损双射：Unix 秒 → RFC3339 UTC → Unix 秒。
 func TestTimeRoundTrip(t *testing.T) {
 	const sec int64 = 1_770_000_000
 	formatted := FormatUnix(sec)
@@ -188,7 +176,6 @@ func TestTimeRoundTrip(t *testing.T) {
 		t.Fatalf("round-trip drift: %d -> %q -> %d", sec, formatted, back)
 	}
 
-	// 输入侧接受任意合法偏移，语义是时刻。
 	offset, err := ParseTime("2026-02-01T08:00:00+08:00")
 	if err != nil {
 		t.Fatalf("parse offset: %v", err)
@@ -208,7 +195,6 @@ func TestTimeRoundTrip(t *testing.T) {
 
 func TestEchoPath(t *testing.T) {
 	got := EchoPath("0198f0a0-1111-7000-8000-000000000001", mustTime(t, "2026-08-02T23:30:00+08:00"))
-	// 2026-08-02T23:30+08:00 == 2026-08-02T15:30Z，年份与日期一律按 UTC 归档。
 	if want := "echoes/2026/2026-08-02-00000001.md"; got != want {
 		t.Fatalf("EchoPath = %q, want %q", got, want)
 	}

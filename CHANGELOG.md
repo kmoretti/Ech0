@@ -9,6 +9,90 @@ For releases prior to v4.6.5, see the [GitHub releases page](https://github.com/
 
 ## [Unreleased]
 
+
+## [5.7.0] - 2026-08-28
+
+### Fixed
+
+* **Copilot multi-select now clearly shows selected options.** Selected options use a distinct fill and checkmark instead of sharing the hover state, while the model's suggested option is marked with a dot.
+
+* **Copilot questions are now keyboard-navigable.** Options, submit, and back controls have visible focus states. Recorded answers also wrap correctly on narrow screens instead of being truncated.
+
+* **MCP compatibility restored.** `/mcp` now supports `2026-07-28`, `2025-11-25`, `2025-06-18`, and `2025-03-26` concurrently. Legacy clients can connect without sessions while retaining their protocol-specific transport and response formats.
+
+* **MCP Origin validation fixed.** Cross-origin browser requests are now rejected with `403`, protecting locally bound endpoints against DNS rebinding. Additional origins can be configured with `ECH0_WEB_CORS_ALLOWED_ORIGINS`.
+
+* **Insufficient MCP scopes now return `403`.** Authorization failures include `WWW-Authenticate` with the required scopes instead of being reported as tool errors or internal server errors.
+
+* **Resource templates are advertised correctly.** Parameterized URIs such as `ech0://posts/{id}` now appear in `resources/templates/list` instead of `resources/list`.
+
+* **MCP request validation tightened.** Missing required request metadata now returns `-32602` with HTTP `400`; `-32020` is reserved for actual transport header mismatches.
+
+* **Copilot no longer silently drops attachments.** Requests to create or modify unsupported images, files, and extension cards are now rejected explicitly instead of being reported as completed.
+
+### Changed
+
+* **Copilot questions and confirmations now feel native to the conversation.** They use the same accent-rule treatment as reasoning and retrieval traces instead of appearing as standalone cards. Confirmation details, including Echo content, now use the reading face instead of monospace.
+
+### Added
+
+* **MCP panel.** Extensions now has an MCP tab showing this instance's endpoint address, transport, token audience, supported protocol versions, and every available tool and resource grouped by permission. Destructive operations are marked in red, and clicking any name opens its type, required scope, and full description. The listing is derived from the MCP registry via `GET /api/mcp/manifest`, so it cannot drift from what the endpoint actually serves.
+
+* **Structured tool results.** JSON object results now include `structuredContent`, allowing clients to consume structured data without parsing the text response.
+
+* **Per-resource cache policies.** Static usage guides now use `public` caching with a 1-hour TTL, while site data remains `private` with a 30-second TTL.
+
+
+# [5.6.0] - 2026-08-27
+
+## Added
+
+* **Copilot Echo management.** Added `create_echo`, `update_echo`, `delete_echo`, and `ask_user` tools. Copilot can now create, edit, and delete Echos, with every mutation requiring explicit user confirmation before execution. Confirmation is enforced by the agent execution flow rather than relying on prompt instructions.
+
+  * Write confirmations show the affected Echo and, for edits, the old and new content.
+  * `ask_user` lets Copilot pause for user input when a decision cannot be made reliably by the agent, with up to 4 questions and 6 options per round.
+  * Answers are persisted with the turn and stale or duplicate responses are rejected.
+  * `ECH0_AGENT_ASK_TIMEOUT_SECONDS` controls how long a question can remain unanswered, defaulting to 300 seconds. Waiting for user input no longer consumes the model generation timeout.
+  * Added `ask` / `ask_closed` SSE events and `POST /api/chat/answer` for the interaction flow.
+
+* **OpenAI Responses API support.** Copilot Agent now supports the OpenAI Responses API alongside OpenAI Compatible and Anthropic protocols. It supports streaming, tool calling, retrieval, and image input.
+
+  * Compatible with OpenAI, Azure OpenAI, vLLM, Ollama, OpenRouter, and LiteLLM.
+  * Responses are sent with `store: false`, so they are not retained server-side.
+  * Provider failures are now surfaced with their original error code and message instead of becoming empty responses.
+
+## Changed
+
+* **Copilot activity stream redesigned.** Reasoning, retrieval, and run status are now presented as a single collapsible activity timeline instead of separate widgets.
+
+  * Reasoning shows live and final durations.
+  * Retrieval is grouped into a single activity with its queries and coverage.
+  * Activities automatically expand while running and collapse when settled.
+  * Added copy and regenerate actions for completed answers.
+  * Reduced-motion preferences are respected.
+
+* **Echo search results now include real IDs.** `search_echos` results expose each Echo's UUID instead of only its positional marker, preventing the model from accidentally passing values such as `1` to write tools. Write operations also validate UUIDs before execution.
+
+* **Bare domains are no longer auto-linked.** Addresses such as `ech0.cc` are now rendered as plain text unless explicitly linked. This also reduces false-positive links in filenames and CJK text.
+
+* **Node.js 26 is now required.** The frontend toolchain and documentation have been updated accordingly.
+
+* **`just` is now the only task runner.** Removed the legacy `Makefile` and consolidated repository and sub-project commands into `just` modules. CI and documentation have been updated as well.
+
+* **Dependencies updated.** Updated Go, frontend, and site dependencies, including React Router 8. The `brace-expansion` security advisory has also been patched across the affected projects.
+
+## Internal
+
+* **Go 1.27.0.** The backend, Docker images, CI workflows, and development documentation now use Go 1.27.0+.
+* **UUID generation migrated to the standard library.** Existing UUIDv5 behavior remains compatible with previously published capsule data.
+* **Bus APIs modernized.** `busen` now uses generic methods on `*Bus`, simplifying publish/subscribe call sites.
+* **Go 1.27 modernizations applied.** Updated 52 backend files using the latest standard-library and language patterns provided by `go fix`.
+* **Improved concurrency testing.** Added fake-clock coverage for retry backoff and goroutine leak detection across concurrency-sensitive packages.
+* **JSON performance benchmarked.** On a representative 57 KB timeline payload, Go 1.27 reduced JSON decode time from 319 µs to 192 µs and allocations from 1317 / 88 KB to 458 / 61 KB, while encode time increased from 57 µs to 74 µs.
+* **Static analysis improved.** Cleared pre-existing `staticcheck` findings and brought `golangci-lint` to a clean state.
+
+
+
 ## [5.5.0] - 2026-08-02
 
 Ech0 gets a way out. **Capsules** turn everything you have written into a self-contained

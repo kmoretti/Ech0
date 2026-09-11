@@ -67,8 +67,6 @@ func TestParseDay(t *testing.T) {
 		t.Fatalf("invalid → %d, want 0", got)
 	}
 
-	// 时区：同一日历日在不同时区切出的日界不同（用户视角的「这一天」按其时区算）。
-	// Asia/Shanghai (UTC+8) 的 2026-01-15 00:00 = UTC 2026-01-14 16:00。
 	sh, err := time.LoadLocation("Asia/Shanghai")
 	if err != nil {
 		t.Fatalf("load location: %v", err)
@@ -127,5 +125,20 @@ func TestFormatSearchResults(t *testing.T) {
 	}
 	if !strings.Contains(got, "[音乐分享]") {
 		t.Fatalf("extension text should be appended: %q", got)
+	}
+}
+
+// The Echo's real id has to reach the model, because update_echo and
+// delete_echo are unusable without it. Before this, the only handle in the tool
+// output was the positional 【N】, so "edit the first one" arrived as id "1" and
+// resolved to nothing.
+func TestFormatSearchResults_CarriesTheEchoID(t *testing.T) {
+	const id = "019ce0ea-82dd-774f-ae2d-5445512d42ad"
+	got := formatSearchResults([]embeddingModel.SearchResult{
+		{EchoID: id, Content: "今天读了三体", EchoCreated: time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC).Unix()},
+	}, nil, time.UTC)
+
+	if !strings.Contains(got, "id="+id) {
+		t.Fatalf("the Echo id is not in the tool output: %q", got)
 	}
 }

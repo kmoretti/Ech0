@@ -23,6 +23,19 @@ type RPCError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    any    `json:"data,omitempty"`
+
+	httpStatus int
+	challenge  string
+}
+
+func (e *RPCError) withHTTPStatus(status int) *RPCError {
+	e.httpStatus = status
+	return e
+}
+
+func (e *RPCError) withChallenge(value string) *RPCError {
+	e.challenge = value
+	return e
 }
 
 const (
@@ -32,8 +45,8 @@ const (
 	ErrCodeInvalidParams  = -32602
 	ErrCodeInternal       = -32603
 
-	// Codes -32020..-32099 are reserved for the MCP specification
-	// (2026-07-28). Only spec-defined codes may be emitted from this range.
 	ErrCodeHeaderMismatch             = -32020
 	ErrCodeUnsupportedProtocolVersion = -32022
+
+	ErrCodeInsufficientScope = -40300
 )

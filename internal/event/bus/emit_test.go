@@ -20,7 +20,7 @@ func TestEmit_DeliversToSubscriber(t *testing.T) {
 	b := helpers.NewTestBus(t)
 
 	var got event.EchoCreated
-	unsub, err := busen.Subscribe(b, func(_ context.Context, e busen.Event[event.EchoCreated]) error {
+	unsub, err := b.Subscribe(func(_ context.Context, e busen.Event[event.EchoCreated]) error {
 		got = e.Value
 		return nil
 	})
@@ -36,7 +36,7 @@ func TestEmit_KeyedEventCarriesOrderingKey(t *testing.T) {
 	t.Run("keyed event attaches OrderingKey", func(t *testing.T) {
 		b := helpers.NewTestBus(t)
 		var key string
-		unsub, err := busen.Subscribe(b, func(_ context.Context, e busen.Event[event.EchoCreated]) error {
+		unsub, err := b.Subscribe(func(_ context.Context, e busen.Event[event.EchoCreated]) error {
 			key = e.Key
 			return nil
 		})
@@ -51,14 +51,13 @@ func TestEmit_KeyedEventCarriesOrderingKey(t *testing.T) {
 	t.Run("keyed event with empty key publishes without key", func(t *testing.T) {
 		b := helpers.NewTestBus(t)
 		var key string
-		unsub, err := busen.Subscribe(b, func(_ context.Context, e busen.Event[event.ResourceUploaded]) error {
+		unsub, err := b.Subscribe(func(_ context.Context, e busen.Event[event.ResourceUploaded]) error {
 			key = e.Key
 			return nil
 		})
 		require.NoError(t, err)
 		t.Cleanup(unsub)
 
-		// ResourceUploaded.OrderingKey() == Key, which is empty here -> no WithKey.
 		require.NoError(t, eventbus.Emit(context.Background(), b, event.ResourceUploaded{FileName: "a.png"}))
 		assert.Empty(t, key)
 	})
@@ -69,7 +68,7 @@ func TestEmit_KeyedEventCarriesOrderingKey(t *testing.T) {
 			key       string
 			delivered bool
 		)
-		unsub, err := busen.Subscribe(b, func(_ context.Context, e busen.Event[event.SystemSnapshot]) error {
+		unsub, err := b.Subscribe(func(_ context.Context, e busen.Event[event.SystemSnapshot]) error {
 			key = e.Key
 			delivered = true
 			return nil
@@ -77,7 +76,6 @@ func TestEmit_KeyedEventCarriesOrderingKey(t *testing.T) {
 		require.NoError(t, err)
 		t.Cleanup(unsub)
 
-		// SystemSnapshot does not implement event.Keyed.
 		require.NoError(t, eventbus.Emit(context.Background(), b, event.SystemSnapshot{Info: "ok"}))
 		assert.True(t, delivered)
 		assert.Empty(t, key)
@@ -88,13 +86,12 @@ func TestEmit_PropagatesHandlerError(t *testing.T) {
 	b := helpers.NewTestBus(t)
 
 	sentinel := assert.AnError
-	unsub, err := busen.Subscribe(b, func(_ context.Context, _ busen.Event[event.EchoCreated]) error {
+	unsub, err := b.Subscribe(func(_ context.Context, _ busen.Event[event.EchoCreated]) error {
 		return sentinel
 	})
 	require.NoError(t, err)
 	t.Cleanup(unsub)
 
-	// Synchronous subscriber error is joined into the publish result and surfaced by Emit.
 	err = eventbus.Emit(context.Background(), b, event.EchoCreated{Echo: echoModel.Echo{ID: "x"}})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, sentinel)
@@ -104,7 +101,7 @@ func TestNotify_DeliversBestEffort(t *testing.T) {
 	b := helpers.NewTestBus(t)
 
 	var got string
-	unsub, err := busen.Subscribe(b, func(_ context.Context, e busen.Event[event.EchoCreated]) error {
+	unsub, err := b.Subscribe(func(_ context.Context, e busen.Event[event.EchoCreated]) error {
 		got = e.Value.Echo.ID
 		return nil
 	})
@@ -116,8 +113,6 @@ func TestNotify_DeliversBestEffort(t *testing.T) {
 }
 
 func TestNotify_SwallowsPublishError(t *testing.T) {
-	// A closed bus makes the underlying Publish return ErrClosed; Notify must
-	// swallow it (warn-log only) and never panic or propagate.
 	b := busen.New()
 	require.NoError(t, b.Close(context.Background()))
 

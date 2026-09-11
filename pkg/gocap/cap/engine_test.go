@@ -113,8 +113,6 @@ func TestEngineSiteVerifyInProcess(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// A redeem token issued through the HTTP flow must be consumable in-process
-	// against the same engine's backing store.
 	token := redeemViaHTTP(t, engine.Handler())
 	ok, err := engine.SiteVerify("my-site", "my-secret", token)
 	if err != nil {
@@ -124,7 +122,6 @@ func TestEngineSiteVerifyInProcess(t *testing.T) {
 		t.Fatal("expected redeem token to verify in-process")
 	}
 
-	// Tokens are single-use: the second verification is rejected, not errored.
 	ok, err = engine.SiteVerify("my-site", "my-secret", token)
 	if err != nil {
 		t.Fatalf("second siteverify error: %v", err)
@@ -133,7 +130,6 @@ func TestEngineSiteVerifyInProcess(t *testing.T) {
 		t.Fatal("expected redeem token to be consumed after first verify")
 	}
 
-	// A wrong secret is a rejection (false, nil), not an operational error.
 	fresh := redeemViaHTTP(t, engine.Handler())
 	ok, err = engine.SiteVerify("my-site", "wrong-secret", fresh)
 	if err != nil {
@@ -144,7 +140,6 @@ func TestEngineSiteVerifyInProcess(t *testing.T) {
 	}
 }
 
-// redeemViaHTTP runs the challenge/redeem HTTP flow and returns a redeem token.
 func redeemViaHTTP(t *testing.T, h http.Handler) string {
 	t.Helper()
 
@@ -182,7 +177,7 @@ func redeemViaHTTP(t *testing.T, h http.Handler) string {
 
 func bruteSolution(seed string, _ int, saltSize, difficulty int) int {
 	salt, target := buildPair(seed, 1, saltSize, difficulty)
-	for nonce := 0; nonce < 10_000_000; nonce++ {
+	for nonce := range 10_000_000 {
 		sum := sha256.Sum256([]byte(salt + strconv.Itoa(nonce)))
 		h := hex.EncodeToString(sum[:])
 		if h[:len(target)] == target {

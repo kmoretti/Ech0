@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2025-2026 lin-snow
 
-// Package handler 暴露 Ech0 Copilot 的 HTTP 接口。
 package handler
 
 import (
@@ -35,6 +34,19 @@ type (
 	ClearSessionInput struct{}
 )
 
+// AnswerAskInput carries a person's reply to the round a run is parked on.
+//
+// AskID is required and is checked against the outstanding round rather than
+// trusted: a stale tab holds a picker for a question that has already been
+// answered, and its click has to be refused rather than allowed to overwrite
+// the answer that was given.
+type AnswerAskInput struct {
+	Body struct {
+		AskID   string                     `json:"ask_id" minLength:"1" doc:"要回答的提问轮次 ID，来自 SSE 的 ask 事件"`
+		Answers []copilotService.AskAnswer `json:"answers" minItems:"1" doc:"每个问题的回答，按问题 ID 对应"`
+	}
+}
+
 type (
 	RecentOutput  = commonModel.Result[string]
 	SessionOutput = commonModel.Result[[]copilotService.ChatMessage]
@@ -64,17 +76,22 @@ func (h *CopilotHandler) ClearSession(ctx context.Context, _ *ClearSessionInput)
 	return commonModel.OK[any](nil, commonModel.CHAT_SESSION_CLEAR_SUCCESS), nil
 }
 
+func (h *CopilotHandler) AnswerAsk(ctx context.Context, input *AnswerAskInput) (EmptyOutput, error) {
+	if err := h.chatService.AnswerAsk(ctx, input.Body.AskID, input.Body.Answers); err != nil {
+		return EmptyOutput{}, err
+	}
+	return commonModel.OK[any](nil, commonModel.CHAT_ASK_ANSWER_SUCCESS), nil
+}
+
 type askRequest struct {
 	Question string `json:"question"`
 }
 
-// Ask 处理 Chat 流式问答（SSE，裸 gin）。错误以 SSE 事件回传，故此处忽略返回值。
 func (h *CopilotHandler) Ask() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var req askRequest
 		_ = ctx.ShouldBindJSON(&req)
 		locale := i18n.LocaleFromGin(ctx)
-		// 按用户上报时区算「今天/去年/上个月」与区间日界（与 today/heatmap 一致）。
 		timezone := timezoneUtil.NormalizeTimezone(ctx.GetHeader(timezoneUtil.DefaultTimezoneHeader))
 		_ = h.chatService.AskStream(ctx.Request.Context(), req.Question, locale, timezone, ctx.Writer)
 	}

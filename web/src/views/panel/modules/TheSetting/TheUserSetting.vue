@@ -2,7 +2,6 @@
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
   <PanelCard>
-    <!-- 用户设置 -->
     <div class="w-full">
       <div class="flex flex-row items-center justify-between mb-3">
         <h1 class="text-[var(--color-text-primary)] font-bold text-lg">
@@ -20,7 +19,6 @@
         </div>
       </div>
 
-      <!-- 头像 -->
       <div class="flex justify-start items-center mb-2">
         <img
           :src="avatarSrc"
@@ -30,7 +28,6 @@
           class="w-12 h-12 rounded-full ml-2 mr-9 ring-1 ring-[var(--color-border-subtle)] shadow-[var(--shadow-sm)]"
         />
         <div>
-          <!-- 点击上传头像 -->
           <input
             id="file-input"
             class="hidden"
@@ -56,7 +53,6 @@
         </div>
       </div>
 
-      <!-- 用户名 -->
       <div
         class="flex flex-row items-center justify-start text-[var(--color-text-secondary)] gap-2 min-h-10 py-1"
       >
@@ -75,7 +71,6 @@
         />
       </div>
 
-      <!-- 密码 -->
       <div
         class="flex flex-row items-center justify-start text-[var(--color-text-secondary)] gap-2 min-h-10 py-1"
       >
@@ -92,7 +87,6 @@
           autocomplete="off"
         />
       </div>
-      <!-- 邮箱 -->
       <div
         class="flex flex-row items-center justify-start text-[var(--color-text-secondary)] gap-2 min-h-10 py-1"
       >
@@ -110,7 +104,6 @@
           class="w-full max-w-52 py-1!"
         />
       </div>
-      <!-- 界面语言 -->
       <div
         class="flex flex-row items-center justify-start text-[var(--color-text-secondary)] gap-2 min-h-10 py-1"
       >
@@ -183,7 +176,6 @@ const handleUpdateUser = async () => {
       }
     })
     .finally(() => {
-      // 重新获取设置
       refreshCurrentUser()
     })
     .catch((err) => {
@@ -223,7 +215,6 @@ const handleUploadImage = async (event: Event) => {
     }
   } catch (err) {
     console.error('上传异常', err)
-    // 注意：这里只有抛出异常时才会进入，正常 res.code ≠ 1 是不会进来的
   } finally {
     clearFinishedUploads()
     target.value = ''

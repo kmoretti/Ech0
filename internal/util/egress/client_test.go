@@ -7,8 +7,10 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 )
 
@@ -42,8 +44,6 @@ func TestNewClient_Guard_blocks_redirect_to_loopback(t *testing.T) {
 	}))
 	defer loopbackSrv.Close()
 
-	// Even if the initial URL were allowed, a redirect to a loopback address
-	// must still be blocked by CheckRedirect.
 	redirectSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, loopbackSrv.URL, http.StatusFound)
 	}))
@@ -91,4 +91,29 @@ func TestRetry_exhausts_attempts(t *testing.T) {
 	if calls != 3 {
 		t.Fatalf("expected 3 attempts, got %d", calls)
 	}
+}
+
+func TestRetry_backoff_schedule(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		const initial = 100 * time.Millisecond
+		start := time.Now()
+
+		sentinel := errors.New("boom")
+		var offsets []time.Duration
+		err := Retry(4, initial, func() error {
+			offsets = append(offsets, time.Since(start))
+			return sentinel
+		})
+		if !errors.Is(err, sentinel) {
+			t.Fatalf("expected sentinel error, got %v", err)
+		}
+
+		want := []time.Duration{0, initial, 3 * initial, 7 * initial}
+		if !slices.Equal(offsets, want) {
+			t.Fatalf("attempt offsets = %v, want %v", offsets, want)
+		}
+		if elapsed := time.Since(start); elapsed != want[len(want)-1] {
+			t.Fatalf("Retry slept after the final attempt: elapsed = %v, want %v", elapsed, want[len(want)-1])
+		}
+	})
 }

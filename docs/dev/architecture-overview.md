@@ -12,7 +12,7 @@ Ech0 是一个**自托管的轻量个人微博（时间线）平台**，以**单
 
 | 维度 | 选型 |
 | --- | --- |
-| 后端语言 | Go 1.26+（CGO，因 SQLite + sqlite-vec） |
+| 后端语言 | Go 1.27+（CGO，因 SQLite + sqlite-vec） |
 | Web 框架 | Gin |
 | 依赖注入 | Google Wire（编译期生成，`internal/di/wire_gen.go`） |
 | ORM / 存储 | GORM + SQLite（`gorm.io/driver/sqlite` + `mattn/go-sqlite3`），向量检索用 `sqlite-vec` |
@@ -20,7 +20,7 @@ Ech0 是一个**自托管的轻量个人微博（时间线）平台**，以**单
 | 缓存 | Ristretto（进程内） |
 | 定时任务 | gocron v2 |
 | 对象存储 | AWS SDK v2（S3 兼容），经自研 `pkg/virefs` 抽象 |
-| LLM 能力 | 自研 `internal/agent`（OpenAI 兼容 / Anthropic 双协议 + ReAct 工具循环） |
+| LLM 能力 | 自研 `internal/agent`（OpenAI Chat Completions / OpenAI Responses / Anthropic 三协议 + ReAct 工具循环） |
 | 前端 | Vue 3 + Vite + TS + Pinia + Vue Router + vue-i18n + UnoCSS(Wind4) + markdown-it/Vditor |
 | 自研库（`pkg/`） | busen（事件总线）、gocap（PoW 验证码）、virefs（文件系统抽象）、viewer（请求身份上下文） |
 
@@ -54,7 +54,7 @@ Ech0 是一个**自托管的轻量个人微博（时间线）平台**，以**单
   ┌──▼────────────────▼──── 基础设施 / 运行时 ──┐  ┌──────────▼─────────┐  ┌──────────▼────────┐
   │ event/bus(Busen) storage(VireFS) cache     │  │ internal/agent     │  │ internal/mcp      │
   │ kvstore transaction job task captcha        │  │ Provider抽象+ReAct  │  │ JSON-RPC+Registry │
-  │ visitor setting migrator …                  │  │ →OpenAI/Anthropic  │  │ →领域 service     │
+  │ visitor setting migrator …                  │  │ →OpenAIx2/Anthropic│  │ →领域 service     │
   └──┬──────────────────────────────────────────┘  └────────────────────┘  └───────────────────┘
      │ 事件路由 (by Go type，§9)
   ┌──▼──────────── 事件订阅者（异步 side effects）────────────────────────────────────────┐
@@ -121,7 +121,7 @@ type Component interface {
 
 ## 4. 依赖注入（Google Wire）
 
-`internal/di` 是整个后端的"装配车间"。`wire.go`（手写、`//go:build wireinject`）声明 ProviderSet 与注入器，`wire_gen.go`（生成、勿手改）是实际代码。**改了构造函数 / 绑定，必须 `make wire`**，CI 跑 `make wire-check`。
+`internal/di` 是整个后端的"装配车间"。`wire.go`（手写、`//go:build wireinject`）声明 ProviderSet 与注入器，`wire_gen.go`（生成、勿手改）是实际代码。**改了构造函数 / 绑定，必须 `just wire`**，CI 跑 `just wire-check`。
 
 ### 4.1 ProviderSet 与注入器
 
@@ -239,7 +239,7 @@ Wire 默认会为每个 Build 各生成一份实例，对**有状态**基础设�
 
 ## 7. Agent 能力层（internal/agent）
 
-> **一句话**：`internal/agent` 是 Ech0 的 LLM 核心，把多家协议（OpenAI 兼容 / Anthropic）的生成能力收口为统一的 **Provider 抽象**，并提供一个 **ReAct 工具循环**，让模型在一轮对话内自主决定是否检索、检索几次。**领域零依赖**——它不 import `echo`/`embedding`，工具由上层（copilot service）注入。
+> **一句话**：`internal/agent` 是 Ech0 的 LLM 核心，把多家协议（OpenAI Chat Completions / OpenAI Responses / Anthropic）的生成能力收口为统一的 **Provider 抽象**，并提供一个 **ReAct 工具循环**，让模型在一轮对话内自主决定是否检索、检索几次。**领域零依赖**——它不 import `echo`/`embedding`，工具由上层（copilot service）注入。
 >
 > 方向是**出站（outbound）**：Ech0 作为 LLM 宿主，主动调用自己的领域工具。与之镜像的是 MCP 的入站（§8）。
 
@@ -271,15 +271,18 @@ Wire 默认会为每个 Build 各生成一份实例，对**有状态**基础设�
                 ▼                                            │ (TextDelta/ToolCall/Done/Error)
 ┌─────────────── Provider 抽象（provider.go，脏活下沉）────────────────────────────────┐
 │  providerFor(setting.Protocol)：                                                      │
-│    · OpenAI 兼容（openaiProvider）：OpenAI/DeepSeek/Qwen/Moonshot/Ollama…             │
+│    · OpenAI 兼容（openaiProvider）：Chat Completions，OpenAI/DeepSeek/Qwen/Moonshot/Ollama… │
 │        流式 tool_call 按 index 跨 chunk 累积 arguments（toolCallAccumulator）；       │
 │        prompt cache 由服务端自动命中（前缀 >1024 token），无需客户端字段             │
+│    · OpenAI Responses（openaiResponsesProvider）：/v1/responses 语义事件流；          │
+│        工具调用从 output_item.done 的完整 item 取（call_id 只在 item 上）；           │
+│        input 是扁平项数组（function_call / function_call_output 独立成项）           │
 │    · Anthropic（anthropicProvider）：真流式 Messages.NewStreaming；                   │
 │        tool input_json_delta 借 SDK Message.Accumulate 拼装；连续 tool 结果合并进单条 user │
 │    · 未知协议（含已下线的 gemini）→ AGENT_PROTOCOL_NOT_FOUND                          │
 └───────────────────────────────────────────────────────────────────────────────────┘
                                   │ 各家官方 SDK
-                                  ▼  外部 LLM API（/v1/chat/completions · /v1/messages）
+                                  ▼  外部 LLM API（/v1/chat/completions · /v1/responses · /v1/messages）
 ```
 
 ### 7.2 关键抽象（types.go）
@@ -379,7 +382,7 @@ internal/mcp/Adapter（adapter_*.go）── 注入 8 个领域 service：
 | --- | --- | --- |
 | 谁是 LLM 宿主 | Ech0 内部（copilot） | 外部（Claude 等） |
 | 谁定义工具 | copilot service 注入领域闭包 | Adapter 把领域 service 注册进 Registry |
-| 协议 | OpenAI 兼容 / Anthropic SDK | JSON-RPC 2.0（MCP 规范） |
+| 协议 | OpenAI Chat Completions / OpenAI Responses / Anthropic SDK | JSON-RPC 2.0（MCP 规范） |
 | 鉴权 | 站内会话用户 | access token 的 scope 集合 |
 | 典型场景 | 站内 Chat 问答 / 总结 | 把 Ech0 接进外部 AI 客户端读写 |
 
@@ -454,7 +457,7 @@ internal/mcp/Adapter（adapter_*.go）── 注入 8 个领域 service：
 | `internal/visitor` | PV/UV 追踪器，**actor 模型**（单 goroutine 改状态） | `Tracker.Record/Last7Days/Today/Load`、`DayStat`；由 `task/scheduled.VisitorSnapshot` 落库 |
 | `internal/setting` | 配置引擎：`Spec[T]`(key+default+normalize/migrate) + 注册表 + 播种 | `Get[T]/Set[T]/Seed`；启动时由 `app.ProvideOptions` 调 Seed |
 | `internal/migrator` | 导入导出引擎（两段式） | `ExportEngine`/`ImportEngine`；子包 `exporter/{fs,s3}`、`importer/{ech0,memos}`、`snapshot`、`spec`（契约） |
-| `internal/agent` | LLM Provider 抽象 + ReAct loop（详见 §7） | `agent.Run`、`Generate`；Provider 适配 OpenAI 兼容 / Anthropic |
+| `internal/agent` | LLM Provider 抽象 + ReAct loop（详见 §7） | `agent.Run`、`Generate`；Provider 适配 OpenAI Chat Completions / OpenAI Responses / Anthropic |
 | `internal/mcp` | MCP JSON-RPC 服务端（详见 §8） | `Server.ServeHTTP`、`Registry`、`Adapter` |
 | `internal/embedding` | 向量/RAG embedding 客户端（OpenAI 兼容 `/v1/embeddings`） | `Embed/EmbedOne`；service 层有 `Indexer`、`Search`、`Backfill` |
 | `internal/util/*` | 横切工具：log(zap 包装) / crypto / jwt / img / md / timezone / async / egress / uuid / github / tui / cookie / err / format / url ... | 日志须带 `module` 字段，见 `docs/dev/logging.md` |
@@ -469,7 +472,7 @@ internal/mcp/Adapter（adapter_*.go）── 注入 8 个领域 service：
 
 | 库 | 一句话 | 核心 API | 被谁用 |
 | --- | --- | --- | --- |
-| **busen**（`router`/`dispatch`） | 类型安全、有界、异步的进程内事件总线，支持 topic 路由、中间件、可观测 hook | `Bus`、`Publish[T]`/`Subscribe[T]`、`SubscribeTopic`、`Event[T]`、`Hooks`、`Shutdown(mode)` | `internal/event/bus` 封装为领域事件总线 |
+| **busen**（`router`/`dispatch`） | 类型安全、有界、异步的进程内事件总线，支持 topic 路由、中间件、可观测 hook | `Bus`、`Bus.Publish[T]`/`Bus.Subscribe[T]`（Go 1.27 泛型方法）、`Bus.SubscribeTopic`、`Event[T]`、`Hooks`、`Shutdown(mode)` | `internal/event/bus` 封装为领域事件总线 |
 | **gocap**（`cap`/`core`/`store`/`transport`） | 内嵌的 PoW 验证码引擎（challenge→redeem→siteverify），内存态 + 限流 + 可插存储 | `cap.Engine`(`Handler()`/`SiteVerify()`/`RegisterSite()`)、`core.Service`、`store.Store` | `internal/captcha` |
 | **virefs**（`plugin/zip`） | 基于 key 的统一文件系统，覆盖本地盘与 S3，支持中间件、迁移、多后端路由 | `FS` 接口、`LocalFS`/`ObjectFS`、`MountTable`/`Schema`、`Migrate`、`Copier/Presigner/BatchDeleter` | `internal/storage`、`internal/migrator/snapshot` |
 | **viewer** | 请求级身份/鉴权上下文抽象（user/token/scope/audience） | `Context` 接口、`NewUserViewer*`、`WithContext`/`FromContext`/`MustFromContext` | auth 中间件、comment/user/file/copilot service、mcp、scope 中间件 |
@@ -504,7 +507,7 @@ web/src/
 - **公开侧**（home/hub/zen/echo）：只读浏览时间线、联邦发现。
 - **管理侧**（panel/\*）：仪表盘、设置、用户、存储、数据迁移、评论审核、系统日志、高级配置。
 - **后端通信**：REST `/api/*`（带鉴权头）；Chat 用 SSE（`searching/sources/delta/done/error` 事件流，对应 §7 的 `AgentEvent`）；文件走 multipart 上传。
-- **i18n 红线**：禁止硬编码 UI 字符串，一律用翻译 key；`pnpm i18n:check` 是 `make check` 的一部分。
+- **i18n 红线**：禁止硬编码 UI 字符串，一律用翻译 key；`pnpm i18n:check` 是 `just check` 的一部分。
 
 ---
 
@@ -593,7 +596,7 @@ POST /migration/export  (鉴权)
 
 ## 15. 红线速查（接手前务必记住）
 
-1. **改 DI 图必跑 `make wire`**；提 PR 前 `make check`（后端 lint+swagger + 前端 lint+i18n）是强制的，`go build ./...` 与 `pnpm build` 必须过。
+1. **改 DI 图必跑 `just wire`**；提 PR 前 `just check`（后端 lint+openapi + 前端 lint+i18n）是强制的，`go build ./...` 与 `pnpm build` 必须过。
 2. **三个共享单例**（`visitor.Tracker` / `storage.Manager` / `job.Manager`）只能在顶层注入一次，别让 Wire 复制出第二份。
 3. **跨层导入用别名**（`xxxHandler/Service/Repository/Model/Util`）。
 4. **加副作用优先发事件**，别在 handler 里直接调服务；事件路由靠 Go 类型，不靠 topic。

@@ -4,7 +4,6 @@
 import { request } from '@/service/request'
 import { sseStream } from '@/service/request/sse'
 
-/** 获取当前用户的持久化 Chat 会话（重载页面恢复展示用） */
 export function getChatSession() {
   return request<App.Api.Chat.ChatMessage[]>({
     url: `/chat/session`,
@@ -12,7 +11,6 @@ export function getChatSession() {
   })
 }
 
-/** 清除当前用户的持久化 Chat 会话（不可恢复） */
 export function clearChatSession() {
   return request({
     url: `/chat/session`,
@@ -20,27 +18,86 @@ export function clearChatSession() {
   })
 }
 
+export function answerChatAsk(askId: string, answers: App.Api.Chat.ChatAskAnswer[]) {
+  return request({
+    url: `/chat/answer`,
+    method: 'POST',
+    data: { ask_id: askId, answers },
+  })
+}
+
+/**
+ * Reads a key off a value already proven to be an object. The result is
+ * `unknown`, so every caller still has to check what it got.
+ */
+const field = (source: object, key: string): unknown => (source as Record<string, unknown>)[key]
+
+const str = (source: object, key: string): string | undefined => {
+  const value = field(source, key)
+  return typeof value === 'string' ? value : undefined
+}
+
+/**
+ * An ask blocks the turn until the reader answers it, so a malformed payload
+ * would strand the run behind a picker nobody can act on. Everything optional
+ * is dropped rather than trusted: the fields are the model's own words and only
+ * ever reach the DOM as text.
+ */
+function parseAsk(data: unknown): App.Api.Chat.ChatAsk | null {
+  if (data === null || typeof data !== 'object') return null
+  const askId = str(data, 'ask_id')
+  const rawQuestions = field(data, 'questions')
+  if (askId === undefined || askId.length === 0 || !Array.isArray(rawQuestions)) return null
+
+  const questions: App.Api.Chat.ChatAskQuestion[] = []
+  for (const raw of rawQuestions) {
+    if (raw === null || typeof raw !== 'object') continue
+    const id = str(raw, 'id')
+    const text = str(raw, 'text')
+    if (id === undefined || text === undefined) continue
+
+    const rawOptions = field(raw, 'options')
+    const options: App.Api.Chat.ChatAskOption[] = []
+    if (Array.isArray(rawOptions)) {
+      for (const opt of rawOptions) {
+        if (opt === null || typeof opt !== 'object') continue
+        const label = str(opt, 'label')
+        if (label === undefined) continue
+        options.push({ label, description: str(opt, 'description') })
+      }
+    }
+    const recommended = field(raw, 'recommended')
+    questions.push({
+      id,
+      text,
+      header: str(raw, 'header'),
+      detail: str(raw, 'detail'),
+      options: options.length > 0 ? options : undefined,
+      multi: field(raw, 'multi') === true,
+      recommended:
+        typeof recommended === 'number' && recommended >= 0 && recommended < options.length
+          ? recommended
+          : undefined,
+    })
+  }
+
+  return questions.length > 0 ? { ask_id: askId, questions } : null
+}
+
 interface ChatStreamHandlers {
-  /** 模型决定检索时触发（Agent 形态，可多次），携带本次检索关键词 */
   onSearching?: (query: string) => void
-  /** 命中来源到达（可多次增量），调用方需累积去重 */
   onSources?: (sources: App.Api.Chat.ChatSource[]) => void
-  /** 区间聚合总结的覆盖度到达（summarize_echos） */
   onCoverage?: (coverage: App.Api.Chat.ChatCoverage) => void
-  /** 推理模型的思考增量（reasoning，可多次），调用方累积到折叠块 */
   onReasoning?: (text: string) => void
-  /** 推理阶段结束，携带后端权威耗时（毫秒），供展示「已思考（用时 X 秒）」 */
   onReasoningDone?: (durationMs: number) => void
   onDelta?: (text: string) => void
+  onAsk?: (ask: App.Api.Chat.ChatAsk) => void
+  onAskClosed?: (askId: string) => void
+  onAskMalformed?: () => void
   onError?: (message: string) => void
   onDone?: () => void
 }
 
-/**
- * 发起 Chat 流式问答（SSE）。传输细节（fetch + ReadableStream、公共头、abort、帧解析）
- * 收口在 service/request/sse.ts；此处仅把语义事件映射为类型化 handler。
- * 返回一个 abort 函数用于中断。
- */
 export function chatStream(question: string, handlers: ChatStreamHandlers): () => void {
   let done = false
   const finish = () => {
@@ -72,6 +129,21 @@ export function chatStream(question: string, handlers: ChatStreamHandlers): () =
         case 'delta':
           handlers.onDelta?.((data as { text: string }).text)
           break
+        case 'ask': {
+          const ask = parseAsk(data)
+          if (ask) handlers.onAsk?.(ask)
+          // A round nobody can draw leaves the run parked behind a picker that
+          // is not on screen, and it stays parked until its budget runs out.
+          // Said out loud rather than dropped: silence here looks exactly like
+          // the assistant having stopped for no reason.
+          else handlers.onAskMalformed?.()
+          break
+        }
+        case 'ask_closed': {
+          const askId = data !== null && typeof data === 'object' ? str(data, 'ask_id') : undefined
+          if (askId) handlers.onAskClosed?.(askId)
+          break
+        }
         case 'error':
           handlers.onError?.((data as { message: string }).message)
           break

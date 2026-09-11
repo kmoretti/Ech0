@@ -28,11 +28,9 @@ func TestMountTable_Routing(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Put via mount table
 	_ = mt.Put(ctx, "local/greet.txt", strings.NewReader("hi"))
 	_ = mt.Put(ctx, "s3/data.bin", strings.NewReader("01"))
 
-	// Get from local
 	rc, err := mt.Get(ctx, "local/greet.txt")
 	if err != nil {
 		t.Fatalf("Get local: %v", err)
@@ -43,7 +41,6 @@ func TestMountTable_Routing(t *testing.T) {
 		t.Fatalf("Get local = %q, want %q", data, "hi")
 	}
 
-	// Get from s3
 	rc, err = mt.Get(ctx, "s3/data.bin")
 	if err != nil {
 		t.Fatalf("Get s3: %v", err)
@@ -126,10 +123,11 @@ func TestMountTable_Unmount(t *testing.T) {
 	ctx := context.Background()
 
 	_ = mt.Put(ctx, "data/file.txt", strings.NewReader("hello"))
-	_, err := mt.Get(ctx, "data/file.txt")
+	rc, err := mt.Get(ctx, "data/file.txt")
 	if err != nil {
 		t.Fatalf("Get before unmount: %v", err)
 	}
+	rc.Close()
 
 	mt.Unmount("data")
 
@@ -187,7 +185,9 @@ func TestMountTable_ConcurrentAccess(t *testing.T) {
 			defer wg.Done()
 			key := "c/" + strings.Repeat("a", n%5+1) + ".txt"
 			_ = mt.Put(ctx, key, strings.NewReader("data"))
-			_, _ = mt.Get(ctx, key)
+			if rc, err := mt.Get(ctx, key); err == nil {
+				_ = rc.Close()
+			}
 			_, _ = mt.Stat(ctx, key)
 			_, _ = mt.List(ctx, "c")
 		}(i)

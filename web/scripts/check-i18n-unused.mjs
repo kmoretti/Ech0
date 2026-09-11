@@ -9,10 +9,10 @@ const SOURCE_EXTENSIONS = new Set(['.vue', '.ts', '.tsx', '.js', '.jsx', '.mjs',
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'coverage', '.git'])
 const DYNAMIC_KEY_FIELDS = ['labelKey', 'titleKey', 'textKey', 'i18nKey', 'tooltipKey']
 const ALLOW_UNUSED_PREFIXES = [
-  // Dynamic placeholders and reserved keys can be listed here.
 ]
 const ALLOW_UNUSED_KEYS = new Set([
-  // Put exact keys here when a key is only used via runtime composition.
+  'echoCard.commentsLabel',
+  'recentCard.generating',
 ])
 
 const flatten = (obj, prefix = '', result = new Set()) => {
@@ -46,14 +46,12 @@ const walkFiles = (dir, files = []) => {
 const collectUsedKeys = (content, keyUniverse) => {
   const used = new Set()
 
-  // t('foo.bar'), $t('foo.bar'), i18n.global.t('foo.bar')
   const tCallRegex = /(?:\b\$?t|\.t)\(\s*(['"`])([^'"`]+)\1/g
   for (const match of content.matchAll(tCallRegex)) {
     const key = match[2]
     if (keyUniverse.has(key)) used.add(key)
   }
 
-  // labelKey: 'foo.bar' and other commonly used i18n key props
   const fieldRegex = new RegExp(
     `\\b(?:${DYNAMIC_KEY_FIELDS.join('|')})\\b\\s*:\\s*(['"\`])([^'"\\\`]+)\\1`,
     'g',
@@ -71,7 +69,7 @@ const keyAllowed = (key) => {
   return ALLOW_UNUSED_PREFIXES.some((prefix) => key.startsWith(prefix))
 }
 
-const zh = JSON.parse(readFileSync(zhPath, 'utf8'))
+const zh = JSON.parse(readFileSync(zhPath, 'utf8').replace(/^\uFEFF/, ''))
 const allKeys = flatten(zh)
 const files = walkFiles(sourceDir)
 const usedKeys = new Set()

@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 const root = process.cwd()
 const zhPath = join(root, 'src/locales/messages/zh-CN.json')
-const zh = JSON.parse(readFileSync(zhPath, 'utf8'))
+const zh = JSON.parse(readFileSync(zhPath, 'utf8').replace(/^\uFEFF/, ''))
 
 const pseudo = (value) => {
   return `［${String(value)

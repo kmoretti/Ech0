@@ -5,31 +5,29 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	logUtil "github.com/lin-snow/ech0/pkg/log"
 	"golang.org/x/sync/errgroup"
 )
 
-// defaultMaxRounds 是工具轮数上限护栏：防模型反复调工具死循环烧 token。
 const defaultMaxRounds = 3
 
-// maxParallelTools 是单轮内并发执行工具调用的上限：模型一轮发多个工具调用时并发跑（多为 I/O
-// 密集的检索），削减串行延迟，同时 clamp 住并发度避免突发打满下游。
 const maxParallelTools = 4
 
-// defaultRunStrings 是 RunStrings 各字段留空时的回退（保持历史中文行为，向后兼容）。
 var defaultRunStrings = RunStrings{
 	DedupNote:       "（已检索过，结果见上）",
 	UnknownTool:     "未知工具：",
 	ToolError:       "工具执行失败：",
 	ImageNote:       toolImageNote,
 	ContextTrimNote: "（早前检索结果已省略以控制长度）",
+	Malformed:       "该工具未被正确声明，已拒绝执行：",
 }
 
-// withDefaults 用 defaultRunStrings 填充留空字段。
 func (s RunStrings) withDefaults() RunStrings {
 	if s.DedupNote == "" {
 		s.DedupNote = defaultRunStrings.DedupNote
@@ -46,16 +44,14 @@ func (s RunStrings) withDefaults() RunStrings {
 	if s.ContextTrimNote == "" {
 		s.ContextTrimNote = defaultRunStrings.ContextTrimNote
 	}
+	if s.Malformed == "" {
+		s.Malformed = defaultRunStrings.Malformed
+	}
 	return s
 }
 
-// Run 以 ReAct 结构（reason → act → observe）驱动一轮对话：模型在一次问答内
-// 自主决定是否调用工具、调几次。文本增量实时上浮（AgentDelta），工具调用触发
-// AgentSearching/AgentToolResult，收尾 AgentDone，错误 AgentError。
-//
-// 工具执行错误不中止——包装成 tool 结果回喂模型让它自愈；传输/协议错误才中止。
-// 护栏：maxRounds 工具轮上限、同 turn 内查询去重、ctx 取消即停。工具轮用尽后
-// 强制一轮「不给工具」的收尾，保证模型据已检索结果作答（否则会出现「只检索不回答」）。
+// Run starts one agent run and returns the events it produces. The channel
+// closes when the run is over.
 func Run(ctx context.Context, req RunRequest) (<-chan AgentEvent, error) {
 	if err := validate(req.Setting); err != nil {
 		return nil, err
@@ -66,21 +62,54 @@ func Run(ctx context.Context, req RunRequest) (<-chan AgentEvent, error) {
 	}
 
 	out := make(chan AgentEvent)
-	go func() {
-		// per-run 超时护栏：Timeout>0 时给整轮（含工具循环）套个上限，防 provider 静默挂死；
-		// <=0 沿用传入 ctx，行为不变。cancel 在 runLoop 收口（关闭 out）后触发。
-		runCtx := ctx
-		if req.Timeout > 0 {
-			var cancel context.CancelFunc
-			runCtx, cancel = context.WithTimeout(ctx, req.Timeout)
-			defer cancel()
-		}
-		runLoop(runCtx, provider, req, out)
-	}()
+	go runLoop(newBudget(ctx, req.Timeout), provider, req, out)
 	return out, nil
 }
 
-func runLoop(ctx context.Context, provider Provider, req RunRequest, out chan<- AgentEvent) {
+// budget is the run's generation deadline, and the one thing it does that a
+// context deadline cannot is stand still.
+//
+// Time a person spends deciding is not time the run is spending. An interactive
+// tool holds its call open for as long as someone takes to answer, and charging
+// that to the clock that bounds a hung provider would kill every confirmation
+// nobody clicked within the timeout — the mechanism would work only for people
+// who happened to be watching. So the deadline lives here, is credited back
+// whatever an interactive call waited, and the contexts derived from it are
+// per-step rather than one for the whole run.
+//
+// base is the caller's own context, and it is what every channel send is gated
+// on: it dies when the client does, which is the one cancellation a partially
+// finished run must still respect.
+type budget struct {
+	base     context.Context
+	deadline time.Time
+	unbound  bool
+}
+
+func newBudget(ctx context.Context, timeout time.Duration) *budget {
+	if timeout <= 0 {
+		return &budget{base: ctx, unbound: true}
+	}
+	return &budget{base: ctx, deadline: time.Now().Add(timeout)}
+}
+
+// step derives the context for one piece of work the deadline applies to.
+func (b *budget) step() (context.Context, context.CancelFunc) {
+	if b.unbound {
+		return context.WithCancel(b.base)
+	}
+	return context.WithDeadline(b.base, b.deadline)
+}
+
+// credit hands back the time a person took. Called only for interactive calls,
+// so a tool that merely runs slowly cannot buy itself more room.
+func (b *budget) credit(waited time.Duration) {
+	if !b.unbound {
+		b.deadline = b.deadline.Add(waited)
+	}
+}
+
+func runLoop(b *budget, provider Provider, req RunRequest, out chan<- AgentEvent) {
 	defer close(out)
 
 	maxRounds := req.MaxRounds
@@ -100,60 +129,56 @@ func runLoop(ctx context.Context, provider Provider, req RunRequest, out chan<- 
 	strs := req.Strings.withDefaults()
 
 	for round := 0; round < maxRounds; round++ {
-		// 轮内 token 预算回收：超限时把最旧的工具结果替换为占位，防多轮累积撑爆窗口。
 		trimContext(messages, req.MaxContextTokens, strs.ContextTrimNote)
-		o := streamRound(ctx, provider, out, messages, toolDefs, req.Temp)
+		o := streamRound(b, provider, out, messages, toolDefs, req.Temp)
 		if o.aborted {
-			return // ctx 取消
+			return
 		}
 		if o.err != nil {
-			emit(ctx, out, AgentEvent{Kind: AgentError, Err: o.err})
+			emit(b.base, out, AgentEvent{Kind: AgentError, Err: o.err})
 			return
 		}
 		if len(o.calls) == 0 {
-			// 模型本轮直接作答（无工具调用）→ 正常收尾
-			emit(ctx, out, AgentEvent{Kind: AgentDone})
+			emit(b.base, out, AgentEvent{Kind: AgentDone})
 			return
 		}
 
-		// 回灌本轮 assistant 的 tool_calls（连同已产出的文本），供下一轮上下文
 		messages = append(messages, Message{Role: RoleAssistant, Content: o.assistant, ToolCalls: o.calls})
-		if !execTools(ctx, out, o.calls, toolByName, seen, &messages, strs) {
-			return // ctx 取消
+		if !execTools(b, out, o.calls, toolByName, seen, &messages, strs) {
+			return
 		}
 	}
 
-	// 工具轮用尽仍在调工具：强制一轮「不给工具」让模型据已检索到的结果作答，保证有回答。
 	trimContext(messages, req.MaxContextTokens, strs.ContextTrimNote)
-	o := streamRound(ctx, provider, out, messages, nil, req.Temp)
+	o := streamRound(b, provider, out, messages, nil, req.Temp)
 	if o.aborted {
 		return
 	}
 	if o.err != nil {
-		emit(ctx, out, AgentEvent{Kind: AgentError, Err: o.err})
+		emit(b.base, out, AgentEvent{Kind: AgentError, Err: o.err})
 		return
 	}
-	emit(ctx, out, AgentEvent{Kind: AgentDone})
+	emit(b.base, out, AgentEvent{Kind: AgentDone})
 }
 
-// roundOutcome 是一轮 provider.Stream 调用的结果。
 type roundOutcome struct {
 	calls     []ToolCall
-	assistant string // 本轮产出的文本（已实时 emit，留作回灌上下文）
-	aborted   bool   // ctx 取消
-	err       error  // 传输/协议错误
+	assistant string
+	aborted   bool
+	err       error
 }
 
-// streamRound 跑一次 provider.Stream：文本增量实时 emit AgentDelta，收集工具调用。
-// toolDefs 为 nil 时模型无可用工具，被迫直接作答（用于强制收尾轮）。
 func streamRound(
-	ctx context.Context,
+	b *budget,
 	provider Provider,
 	out chan<- AgentEvent,
 	messages []Message,
 	toolDefs []ToolDef,
 	temp *float32,
 ) roundOutcome {
+	ctx, cancel := b.step()
+	defer cancel()
+
 	evCh, err := provider.Stream(ctx, Request{
 		Messages:    messages,
 		Tools:       toolDefs,
@@ -164,19 +189,18 @@ func streamRound(
 	}
 
 	var (
-		o roundOutcome
-		b strings.Builder
+		o    roundOutcome
+		text strings.Builder
 	)
 	for ev := range evCh {
 		switch ev.Kind {
 		case EventTextDelta:
-			b.WriteString(ev.Text)
-			if !emit(ctx, out, AgentEvent{Kind: AgentDelta, Text: ev.Text}) {
+			text.WriteString(ev.Text)
+			if !emit(b.base, out, AgentEvent{Kind: AgentDelta, Text: ev.Text}) {
 				o.aborted = true
 			}
 		case EventReasoningDelta:
-			// 推理只上浮供折叠展示——不写进答案缓冲（不入持久化答案），也不回灌给模型（非答案）。
-			if !emit(ctx, out, AgentEvent{Kind: AgentReasoning, Text: ev.Text}) {
+			if !emit(b.base, out, AgentEvent{Kind: AgentReasoning, Text: ev.Text}) {
 				o.aborted = true
 			}
 		case EventToolCall:
@@ -184,31 +208,25 @@ func streamRound(
 		case EventError:
 			o.err = ev.Err
 		case EventDone:
-			// 本次 Provider 调用结束，无需额外处理
 		}
 		if o.aborted {
-			o.assistant = b.String()
+			o.assistant = text.String()
 			return o
 		}
 	}
-	o.assistant = b.String()
+	o.assistant = text.String()
 	return o
 }
 
-// execTools 执行一轮的工具调用：去重、emit Searching/ToolResult、把结果追加进 messages。
-// 工具执行错误不中止（回喂模型自愈）；仅 ctx 取消时返回 false。
+// execTools runs one round's tool calls and appends their results to messages.
 //
-// 三段式（保留消息顺序、去重确定性，同时并发掉 I/O 密集的执行）：
-//
-//	A. 顺序预处理——去重命中 / 未知工具就地定好其 tool 结果消息，其余记为待执行；
-//	B. 有界并发执行待执行项（emit Searching + Execute），结果按 index 写入各自槽，无竞态；
-//	C. 顺序收尾——按调用原序 emit ToolResult、定好 tool 结果消息与（可选）带图消息。
-//
-// 追加顺序：**先把全部 tool 结果消息按原序追加，再追加带图 user 消息**。这样一轮 assistant 的
-// 多个 tool_use 的 tool_result 紧邻聚合，满足 Anthropic「tool_result 必须在紧随的同一条 user
-// 消息里与 tool_use 一一对应」的约束（旧逐条「结果→图→结果→图」会把后续 result 推远导致配对失败）。
+// The calls are split rather than merged into one group: machine work goes into
+// the parallel group as before, and interactive work runs afterwards, one call
+// at a time. Two questions racing the same event stream would reach the client
+// interleaved with no way to tell which picker a click belongs to, and the
+// second one would be answered by the first one's reply.
 func execTools(
-	ctx context.Context,
+	b *budget,
 	out chan<- AgentEvent,
 	calls []ToolCall,
 	toolByName map[string]Tool,
@@ -217,48 +235,60 @@ func execTools(
 	strs RunStrings,
 ) bool {
 	n := len(calls)
-	toolMsgs := make([]Message, n)   // 每个调用对应的 tool 结果消息（含去重/未知/错误/正常）
-	imageMsgs := make([]*Message, n) // 每个调用可选的带图 user 消息（多模态）
+	toolMsgs := make([]Message, n)
+	imageMsgs := make([]*Message, n)
 	outputs := make([]ToolOutput, n)
 	execErrs := make([]error, n)
 
-	// A. 顺序预处理：去重与未知工具就地定好结果消息；其余记为待执行（保留原序 index）。
-	var runnable []int
+	var runnable, interactive []int
 	for i, tc := range calls {
 		key := tc.Name + ":" + string(tc.Args)
 		if seen[key] {
 			toolMsgs[i] = Message{Role: RoleTool, ToolCallID: tc.ID, Content: strs.DedupNote}
 			continue
 		}
-		seen[key] = true
-		if _, ok := toolByName[tc.Name]; !ok {
+		tool, ok := toolByName[tc.Name]
+		if !ok {
 			toolMsgs[i] = Message{Role: RoleTool, ToolCallID: tc.ID, Content: strs.UnknownTool + tc.Name}
 			continue
 		}
+		if tool.blocksOnPerson() {
+			interactive = append(interactive, i)
+			continue
+		}
+		seen[key] = true
 		runnable = append(runnable, i)
 	}
 
-	// B. 有界并发执行：每个 goroutine emit Searching + Execute，结果写入独立 index 槽。
-	// emit 失败（ctx 取消）→ 返回 ctx.Err() 让整组取消。g.Wait 阻塞至所有 goroutine 结束，
-	// 故 outputs/execErrs 的写入在 Wait 返回前全部完成，后续顺序读取无竞态。
-	var g errgroup.Group
-	g.SetLimit(maxParallelTools)
-	for _, idx := range runnable {
-		idx, tc, tool := idx, calls[idx], toolByName[calls[idx].Name]
-		g.Go(func() error {
-			if !emit(ctx, out, AgentEvent{Kind: AgentSearching, ToolName: tc.Name, ToolArgs: tc.Args}) {
-				return ctx.Err()
-			}
-			outputs[idx], execErrs[idx] = tool.Execute(ctx, tc.Args)
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return false // ctx 取消
+	if len(runnable) > 0 {
+		ctx, cancel := b.step()
+		var g errgroup.Group
+		g.SetLimit(maxParallelTools)
+		for _, idx := range runnable {
+			idx, tc, tool := idx, calls[idx], toolByName[calls[idx].Name]
+			g.Go(func() error {
+				if !emit(b.base, out, AgentEvent{Kind: AgentSearching, ToolName: tc.Name, ToolArgs: tc.Args}) {
+					return b.base.Err()
+				}
+				outputs[idx], execErrs[idx] = dispatchTool(ctx, tool, tc.Args, strs)
+				return nil
+			})
+		}
+		err := g.Wait()
+		cancel()
+		if err != nil {
+			return false
+		}
 	}
 
-	// C. 顺序收尾：按原序 emit ToolResult、定好结果/带图消息。
-	for _, idx := range runnable {
+	for _, idx := range interactive {
+		tc, tool := calls[idx], toolByName[calls[idx].Name]
+		started := time.Now()
+		outputs[idx], execErrs[idx] = dispatchTool(b.base, tool, tc.Args, strs)
+		b.credit(time.Since(started))
+	}
+
+	for _, idx := range append(runnable, interactive...) {
 		tc := calls[idx]
 		if execErrs[idx] != nil {
 			logUtil.GetLogger().Warn("agent tool execute failed",
@@ -268,19 +298,15 @@ func execTools(
 			toolMsgs[idx] = Message{Role: RoleTool, ToolCallID: tc.ID, Content: strs.ToolError + execErrs[idx].Error()}
 			continue
 		}
-		if !emit(ctx, out, AgentEvent{Kind: AgentToolResult, ToolName: tc.Name, Meta: outputs[idx].Meta}) {
+		if !emit(b.base, out, AgentEvent{Kind: AgentToolResult, ToolName: tc.Name, Meta: outputs[idx].Meta}) {
 			return false
 		}
 		toolMsgs[idx] = Message{Role: RoleTool, ToolCallID: tc.ID, Content: outputs[idx].Content}
-		// 多模态：工具带出了图片（如命中 Echo 的配图）→ 用带图 user 消息递给模型。
-		// 走 user 消息而非塞进 tool_result，是因 OpenAI 的 tool 角色消息只能纯文本，
-		// user 带图两家协议都支持，一套逻辑通用。
 		if len(outputs[idx].Images) > 0 {
 			imageMsgs[idx] = &Message{Role: RoleUser, Content: strs.ImageNote, Images: outputs[idx].Images}
 		}
 	}
 
-	// 先追加全部 tool 结果（聚合相邻，满足 Anthropic 配对约束），再追加带图消息。
 	*messages = append(*messages, toolMsgs...)
 	for i := range imageMsgs {
 		if imageMsgs[i] != nil {
@@ -290,14 +316,85 @@ func execTools(
 	return true
 }
 
-// trimContext 在轮内消息上下文超 budget 时回收最旧的工具结果：把其 Content 替换为 note 占位
-// （保留消息与 ToolCallID 配对，绝不删消息——否则 tool_use/tool_result 失配会被 API 400）。
-// budget<=0 时不回收。逐条替换直到回到预算内或没有可回收的工具结果。
-func trimContext(messages []Message, budget int, note string) {
-	if budget <= 0 {
+// blocksOnPerson reports whether this call waits on a human. Derived rather
+// than declared for mutations: a write tool whose author forgot the flag would
+// otherwise run inside the parallel group, and its confirmation would race
+// whatever else that round asked.
+func (t Tool) blocksOnPerson() bool {
+	return t.Interactive || t.Effect == EffectMutate
+}
+
+// dispatchTool is the gate. Every tool call in the loop goes through it, and
+// what it enforces is an ordering no tool implementation can opt out of:
+// a change is planned, shown, and only then made.
+//
+// The gate is here rather than in the prompt because a prompt is not a gate.
+// An instruction to confirm before writing is remembered until the context
+// grows, the conversation turns, or the model is talked out of it — and the one
+// time it is forgotten is a write nobody agreed to. Nothing the model can emit
+// reaches Apply except through Confirm, so forgetting is not among the things
+// that can go wrong.
+//
+// Every branch that cannot establish that ordering refuses. That includes the
+// ones that mean this repository has a bug — an undeclared effect, a mutation
+// missing Plan, Confirm or Apply — because a tool nobody finished declaring is
+// exactly the tool that must not run.
+func dispatchTool(ctx context.Context, tool Tool, args json.RawMessage, strs RunStrings) (ToolOutput, error) {
+	switch tool.Effect {
+	case EffectRead:
+		if tool.Run == nil {
+			return malformedTool(tool, strs)
+		}
+		return tool.Run(ctx, args)
+	case EffectMutate:
+		return applyMutation(ctx, tool, args, strs)
+	default:
+		return malformedTool(tool, strs)
+	}
+}
+
+func applyMutation(ctx context.Context, tool Tool, args json.RawMessage, strs RunStrings) (ToolOutput, error) {
+	m := tool.Mutation
+	if m == nil || m.Plan == nil || m.Confirm == nil {
+		return malformedTool(tool, strs)
+	}
+
+	plan, err := m.Plan(ctx, args)
+	if err != nil {
+		return ToolOutput{}, err
+	}
+	if plan.Apply == nil {
+		return malformedTool(tool, strs)
+	}
+
+	decision, err := m.Confirm(ctx, plan)
+	if err != nil {
+		return ToolOutput{}, err
+	}
+	if !decision.Approved {
+		return ToolOutput{Content: decision.Refusal}, nil
+	}
+
+	return plan.Apply(ctx)
+}
+
+// malformedTool refuses a call the loop cannot run safely and says so twice: to
+// the operator at error level, because it is a bug here rather than anything the
+// model did, and to the model as an ordinary refusal, because the turn still has
+// to end in a sentence somebody wrote.
+func malformedTool(tool Tool, strs RunStrings) (ToolOutput, error) {
+	logUtil.GetLogger().Error("agent tool is not declared correctly",
+		slog.String("module", "agent"),
+		slog.String("tool", tool.Def.Name),
+		slog.Int("effect", int(tool.Effect)))
+	return ToolOutput{Content: strs.Malformed + tool.Def.Name}, nil
+}
+
+func trimContext(messages []Message, limit int, note string) {
+	if limit <= 0 {
 		return
 	}
-	for contextTokens(messages) > budget {
+	for contextTokens(messages) > limit {
 		idx := -1
 		for i := range messages {
 			if messages[i].Role == RoleTool && messages[i].Content != note {
@@ -306,13 +403,12 @@ func trimContext(messages []Message, budget int, note string) {
 			}
 		}
 		if idx < 0 {
-			return // 没有可回收的工具结果了
+			return
 		}
 		messages[idx].Content = note
 	}
 }
 
-// contextTokens 估算消息上下文的 token 总量（仅按文本 rune 计，图片不计）。
 func contextTokens(messages []Message) int {
 	total := 0
 	for i := range messages {
@@ -321,10 +417,8 @@ func contextTokens(messages []Message) int {
 	return total
 }
 
-// toolImageNote 是带图 user 消息的说明文本，告诉模型这些图来自上一步检索命中的 Echo。
 const toolImageNote = "（以下是上一步检索命中的 Echo 的配图，供你结合图片内容作答）"
 
-// emit 向 out 发送事件，ctx 取消时返回 false（调用方应据此停止）。
 func emit(ctx context.Context, out chan<- AgentEvent, ev AgentEvent) bool {
 	select {
 	case out <- ev:

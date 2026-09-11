@@ -1,155 +1,80 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
-<!--
-  推理（reasoning）折叠块：推理模型把思考过程经 <think> / reasoning_content 分流出来，
-  这里默认折叠成「已思考（用时 X 秒）」，点开可看完整思考。流式思考时自动展开并显示「思考中…」，
-  答案开始（收到后端 reasoning_done）后定格耗时并自动折叠。安静克制，非推理模型完全不出现。
--->
 <template>
-  <div class="reasoning" :class="{ 'reasoning--active': active }">
-    <button class="reasoning__header" :aria-expanded="!collapsed" @click="collapsed = !collapsed">
+  <ChatActivity :label="label" :active="active" :clock="clock">
+    <template #glyph>
       <Reasoning class="reasoning__glyph" aria-hidden="true" />
-      <span class="reasoning__label">{{ label }}</span>
-      <svg
-        class="reasoning__chevron"
-        :class="{ 'reasoning__chevron--open': !collapsed }"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path d="m6 9 6 6 6-6" />
-      </svg>
-    </button>
-    <Transition name="reasoning-fade">
-      <div v-if="!collapsed" class="reasoning__body">
-        <TheMdPreview :content="text" />
-      </div>
-    </Transition>
-  </div>
+    </template>
+    <div ref="bodyEl" class="reasoning__body">
+      <TheMdPreview :content="text" />
+    </div>
+  </ChatActivity>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { TheMdPreview } from '@/components/advanced/md'
 import Reasoning from '@/components/icons/reasoning.vue'
+import ChatActivity from './ChatActivity.vue'
+import { formatDuration, useElapsed } from './useElapsed'
 
 const props = defineProps<{
-  /** 思考过程文本（markdown） */
   text: string
-  /** 是否仍在流式思考（true→「思考中…」并自动展开；false/缺省→已结束，展示耗时） */
   active?: boolean
-  /** 思考耗时（毫秒，后端权威值） */
   durationMs?: number
 }>()
 
 const { t } = useI18n()
 
-// 思考中默认展开，思考结束 / 历史恢复默认折叠。
-const collapsed = ref<boolean>(props.active !== true)
+const bodyEl = ref<HTMLElement | null>(null)
 
-// 思考结束（active: true→false）时自动折叠，把舞台让回答案。
-watch(
-  () => props.active,
-  (now, prev) => {
-    if (prev && !now) collapsed.value = true
-  },
+const active = computed<boolean>(() => props.active === true)
+const liveMs = useElapsed(active)
+
+const label = computed<string>(() =>
+  active.value ? t('chatPanel.reasoningThinking') : t('chatPanel.reasoningDone'),
 )
 
-const label = computed<string>(() => {
-  if (props.active) return t('chatPanel.reasoningThinking')
-  const seconds = Math.max(0, Math.round((props.durationMs ?? 0) / 1000))
-  return t('chatPanel.reasoningDone', { seconds })
+/**
+ * `reasoning_ms` is the window between the first reasoning token and the first
+ * answer token, not the time the model spent thinking. A provider that buffers
+ * the whole thought and flushes it at once closes that window in milliseconds,
+ * and `0.0s` would then assert something we cannot know — so anything under a
+ * second is reported as no duration at all rather than as none elapsed.
+ */
+const MEASURABLE_MS = 1000
+
+const clock = computed<string>(() => {
+  if (active.value) return formatDuration(liveMs.value)
+  const settled = props.durationMs
+  if (settled === undefined || settled < MEASURABLE_MS) return ''
+  return formatDuration(settled)
 })
+
+// The trace is capped, so without this the reader would be pinned to the first
+// few lines of a thought that is still being written.
+watch(
+  () => [props.text, active.value] as const,
+  async () => {
+    if (!active.value) return
+    await nextTick()
+    const el = bodyEl.value
+    if (el) el.scrollTop = el.scrollHeight
+  },
+)
 </script>
 
 <style scoped>
-.reasoning {
-  width: 100%;
-  margin-bottom: 0.55rem;
-}
-
-/* 折叠头：克制的 muted 小行，hover 才微微亮起；不抢答案的视觉重心 */
-.reasoning__header {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  max-width: 100%;
-  padding: 0.18rem 0.5rem 0.18rem 0.4rem;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 0.78rem;
-  line-height: 1.5;
-  cursor: pointer;
-  transition:
-    color 0.18s ease,
-    background 0.18s ease;
-}
-
-.reasoning__header:hover {
-  background: var(--color-accent-soft);
-  color: var(--color-text-secondary);
-}
-
-/* 思考脸图标：思考中着 accent 并轻轻呼吸，结束后随 muted 文字静止 */
-.reasoning__glyph {
-  width: 1.05rem;
-  height: 1.05rem;
-  flex-shrink: 0;
-  opacity: 0.85;
-}
-
-/* 图标内置 fill=#888888，统一改用 currentColor 以便随状态/主题着色 */
 .reasoning__glyph :deep(path) {
   fill: currentColor;
 }
 
-.reasoning--active .reasoning__glyph {
-  color: var(--color-accent);
-  opacity: 1;
-  animation: reasoning-pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes reasoning-pulse {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-
-  50% {
-    opacity: 1;
-  }
-}
-
-.reasoning__label {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.reasoning__chevron {
-  width: 0.85rem;
-  height: 0.85rem;
-  flex-shrink: 0;
-  opacity: 0.7;
-  transition: transform 0.22s ease;
-}
-
-.reasoning__chevron--open {
-  transform: rotate(180deg);
-}
-
-/* 思考正文：左侧一道淡边界 + muted 文字，明显次于答案 */
 .reasoning__body {
-  margin-top: 0.35rem;
-  padding: 0.1rem 0 0.1rem 0.85rem;
-  border-left: 2px solid var(--color-border-strong);
+  max-height: 13rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
   color: var(--color-text-secondary);
   font-size: 0.86rem;
 }
@@ -157,30 +82,5 @@ const label = computed<string>(() => {
 .reasoning__body :deep(.echo-markdown) {
   line-height: 1.7;
   color: var(--color-text-secondary);
-}
-
-.reasoning-fade-enter-active,
-.reasoning-fade-leave-active {
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-}
-
-.reasoning-fade-enter-from,
-.reasoning-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-2px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .reasoning--active .reasoning__glyph {
-    animation: none;
-  }
-
-  .reasoning__chevron,
-  .reasoning-fade-enter-active,
-  .reasoning-fade-leave-active {
-    transition: none;
-  }
 }
 </style>

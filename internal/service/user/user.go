@@ -24,7 +24,6 @@ import (
 	"github.com/lin-snow/ech0/pkg/viewer"
 )
 
-// UserService 用户服务结构体，提供用户相关的业务逻辑处理
 type UserService struct {
 	transactor     transaction.Transactor
 	userRepository Repository
@@ -231,7 +230,6 @@ func (userService *UserService) Register(registerDto *authModel.RegisterDto) err
 		return err
 	}
 
-	// 发布用户注册事件
 	eventbus.Notify(context.Background(), userService.bus, event.UserCreated{User: newUser})
 
 	return nil
@@ -248,7 +246,6 @@ func (userService *UserService) Register(registerDto *authModel.RegisterDto) err
 //   - error: 更新过程中的错误信息
 func (userService *UserService) UpdateUser(ctx context.Context, userdto model.UserInfoDto) error {
 	userid := viewer.MustFromContext(ctx).UserID()
-	// 检查执行操作的用户是否为管理员
 	user, err := userService.userRepository.GetUserByID(ctx, userid)
 	if err != nil {
 		return err
@@ -257,7 +254,6 @@ func (userService *UserService) UpdateUser(ctx context.Context, userdto model.Us
 		return errors.New(commonModel.NO_PERMISSION_DENIED)
 	}
 
-	// 检查是否需要更新用户名
 	if userdto.Username != "" && userdto.Username != user.Username {
 		// 检查用户名是否已存�?
 		existingUser, err := userService.userRepository.GetUserByUsername(ctx, userdto.Username)
@@ -300,7 +296,6 @@ func (userService *UserService) UpdateUser(ctx context.Context, userdto model.Us
 		user.Email = strings.TrimSpace(userdto.Email)
 	}
 	if err := userService.transactor.Run(ctx, func(txCtx context.Context) error {
-		// 更新用户信息
 		if err := userService.userRepository.UpdateUser(txCtx, &user); err != nil {
 			return err
 		}
@@ -322,7 +317,6 @@ func (userService *UserService) UpdateUser(ctx context.Context, userdto model.Us
 		}
 	}
 
-	// 发布用户更新事件
 	eventbus.Notify(context.Background(), userService.bus, event.UserUpdated{User: user})
 
 	return nil
@@ -362,13 +356,11 @@ func (userService *UserService) UpdateUserAdmin(ctx context.Context, id string) 
 	user.IsAdmin = !user.IsAdmin
 
 	if err := userService.transactor.Run(ctx, func(txCtx context.Context) error {
-		// 更新用户信息
 		return userService.userRepository.UpdateUser(txCtx, &user)
 	}); err != nil {
 		return err
 	}
 
-	// 发布用户更新事件
 	eventbus.Notify(context.Background(), userService.bus, event.UserUpdated{User: user})
 
 	return nil
@@ -381,7 +373,6 @@ func (userService *UserService) UpdateUserAdmin(ctx context.Context, id string) 
 //   - []model.User: 用户列表
 //   - error: 获取过程中的错误信息
 func (userService *UserService) GetAllUsers(ctx context.Context) ([]model.User, error) {
-	// Only Admin can get all users
 	userid := viewer.MustFromContext(ctx).UserID()
 	caller, err := userService.userRepository.GetUserByID(ctx, userid)
 	if err != nil {
@@ -401,7 +392,6 @@ func (userService *UserService) GetAllUsers(ctx context.Context) ([]model.User, 
 		return nil, err
 	}
 
-	// 处理用户信息(去掉Owner用户)
 	for i := range allures {
 		if allures[i].ID == owner.ID {
 			allures = append(allures[:i], allures[i+1:]...)
@@ -412,11 +402,6 @@ func (userService *UserService) GetAllUsers(ctx context.Context) ([]model.User, 
 	return allures, nil
 }
 
-// GetOwner 获取 Owner 信息
-//
-// 返回:
-//   - model.User: Owner 用户信息
-//   - error: 获取过程中的错误信息
 func (userService *UserService) GetOwner() (model.User, error) {
 	owner, err := userService.userRepository.GetOwner(context.Background())
 	if err != nil {
@@ -426,15 +411,6 @@ func (userService *UserService) GetOwner() (model.User, error) {
 	return owner, nil
 }
 
-// DeleteUser 删除用户
-// 只有 Owner 可以删除用户，不能删除自己和 Owner
-//
-// 参数:
-//   - userid: 执行删除操作的用户ID（必须为管理员）
-//   - id: 要删除的用户ID
-//
-// 返回:
-//   - error: 删除过程中的错误信息
 func (userService *UserService) DeleteUser(ctx context.Context, id string) error {
 	userid := viewer.MustFromContext(ctx).UserID()
 	var deletedUser model.User
@@ -473,14 +449,6 @@ func (userService *UserService) DeleteUser(ctx context.Context, id string) error
 	return nil
 }
 
-// GetUserByID 根据用户ID获取用户信息
-//
-// 参数:
-//   - userId: 用户ID
-//
-// 返回:
-//   - model.User: 用户信息
-//   - error: 获取过程中的错误信息
 func (userService *UserService) GetUserByID(userId string) (model.User, error) {
 	return userService.userRepository.GetUserByID(context.Background(), userId)
 }

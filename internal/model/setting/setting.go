@@ -14,7 +14,6 @@ const (
 	NEVER_EXPIRY      string = "never"
 )
 
-// SystemSetting 定义系统设置实体
 type SystemSetting struct {
 	SiteTitle        string `json:"site_title"`          // 站点标题
 	ServerLogo       string `json:"server_logo"`         // 服务器Logo
@@ -31,7 +30,6 @@ type SystemSetting struct {
 	CustomJS         string `json:"custom_js"`           // 自定�?JS
 }
 
-// S3Setting 定义 S3 存储设置实体
 type S3Setting struct {
 	Enable     bool   `json:"enable"`      // 是否启用 S3 存储
 	Provider   string `json:"provider"`    // S3 服务提供商，例如 "aws", "r2", "minio", "other"
@@ -66,7 +64,6 @@ type OAuth2Setting struct {
 	Issuer  string `json:"issuer"`   // OIDC 颁发�?
 	JWKSURL string `json:"jwks_url"` // OIDC JWKS URL
 
-	// 认证边界配置（Panel 主配置，ENV 仅默认值）
 	AuthRedirectAllowedReturnURLs []string `json:"auth_redirect_allowed_return_urls"`
 	CORSAllowedOrigins            []string `json:"cors_allowed_origins"`
 }
@@ -77,7 +74,6 @@ type PasskeySetting struct {
 	WebAuthnAllowedOrigins []string `json:"webauthn_allowed_origins"`
 }
 
-// AccessTokenSetting 定义访问令牌设置实体
 type AccessTokenSetting struct {
 	ID         string `gorm:"type:char(36);primaryKey" json:"id"`         // 访问令牌 ID
 	UserID     string `gorm:"type:char(36);index" json:"user_id"`         // 创建该访问令牌的用户 ID
@@ -94,12 +90,11 @@ type AccessTokenSetting struct {
 
 func (a *AccessTokenSetting) BeforeCreate(_ *gorm.DB) error {
 	if a.ID == "" {
-		a.ID = uuidUtil.MustNewV7()
+		a.ID = uuidUtil.NewV7()
 	}
 	return nil
 }
 
-// AgentSetting 定义 LLM Agent 设置实体
 type AgentSetting struct {
 	Enable     bool   `json:"enable"`     // 是否启用 Agent 功能
 	Protocol   string `json:"protocol"`   // LLM 接口协议（OpenAI 兼容/Anthropic，OpenAI 兼容覆盖 DeepSeek、Qwen、Ollama 等）

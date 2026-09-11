@@ -16,20 +16,14 @@ import (
 	echoModel "github.com/lin-snow/ech0/internal/model/echo"
 )
 
-// statsTopTags 是 stats_overview 输出的常用标签条数上限。
 const statsTopTags = 10
 
-// statsArgs 是 stats_overview 的入参：date_from/date_to 必填（区间），tags 可选限定主题。
 type statsArgs struct {
 	DateFrom string   `json:"date_from"`
 	DateTo   string   `json:"date_to"`
 	Tags     []string `json:"tags"`
 }
 
-// statsOverviewTool 是注入给 agent 的领域工具：对某时间区间做**精确量化统计**（纯 SQL/内存，
-// 不调 LLM）。与 summarize_echos 互补——后者产「叙事材料」，本工具产「确切数字」：总条数、
-// 活跃天数、按月分布、最活跃月份、配图数、常用标签 Top N。回答「发了多少条 / 最活跃的月份 /
-// 最常用标签」这类需要确切数字的问题用它，避免模型据采样估算。
 func (s *CopilotService) statsOverviewTool(allTags []echoModel.Tag, locale string, loc *time.Location, user chatUser) agent.Tool {
 	return agent.Tool{
 		Def: agent.ToolDef{
@@ -37,7 +31,8 @@ func (s *CopilotService) statsOverviewTool(allTags []echoModel.Tag, locale strin
 			Description: "统计某时间区间内 Echo 的精确量化指标（总条数、活跃天数、按月分布、最活跃月份、配图数、常用标签 Top N）。回答“我（今年/某段时间）发了多少条”“最活跃的月份”“最常用的标签”这类需要**确切数字**的问题时用它——数据来自数据库精确统计，而非采样估算。必须提供 date_from 与 date_to；可选 tags（按标签名限定主题）。",
 			Parameters:  json.RawMessage(`{"type":"object","properties":{"date_from":{"type":"string","description":"起始日期，格式 YYYY-MM-DD，含当天"},"date_to":{"type":"string","description":"结束日期，格式 YYYY-MM-DD，含当天"},"tags":{"type":"array","items":{"type":"string"},"description":"可选，按标签名限定主题；可用标签见系统提示"}},"required":["date_from","date_to"]}`),
 		},
-		Execute: func(ctx context.Context, args json.RawMessage) (agent.ToolOutput, error) {
+		Effect: agent.EffectRead,
+		Run: func(ctx context.Context, args json.RawMessage) (agent.ToolOutput, error) {
 			var a statsArgs
 			_ = json.Unmarshal(args, &a)
 			from := parseDay(a.DateFrom, false, loc)
@@ -57,8 +52,6 @@ func (s *CopilotService) statsOverviewTool(allTags []echoModel.Tag, locale strin
 	}
 }
 
-// formatStatsOverview 把区间内收集到的 Echo 聚合成一段精确统计文本（回喂模型直接采用）。
-// 统计口径基于实际纳入的 echos（受 maxAggregateEchos 上限约束，截断时如实标注）。
 func formatStatsOverview(echos []echoModel.Echo, total int64, truncated bool, loc *time.Location, locale string) string {
 	returned := len(echos)
 	monthCounts := make(map[string]int)
@@ -108,13 +101,11 @@ func formatStatsOverview(echos []echoModel.Echo, total int64, truncated bool, lo
 	return strings.TrimSpace(b.String())
 }
 
-// monthCount 是一个月份及其条数（用于稳定排序后输出）。
 type monthCount struct {
 	Month string
 	Count int
 }
 
-// sortedMonthCounts 把月份计数按月份升序（时间正序）排好。
 func sortedMonthCounts(m map[string]int) []monthCount {
 	out := make([]monthCount, 0, len(m))
 	for k, v := range m {
@@ -124,7 +115,6 @@ func sortedMonthCounts(m map[string]int) []monthCount {
 	return out
 }
 
-// topEntry 返回条数最多的月份（并列时取较早月份）；空输入返回 ("",0)。
 func topEntry(months []monthCount) (string, int) {
 	best, bestN := "", 0
 	for _, mc := range months {
@@ -135,7 +125,6 @@ func topEntry(months []monthCount) (string, int) {
 	return best, bestN
 }
 
-// topNCounts 把标签计数按条数降序（并列按名称升序）取前 n。
 func topNCounts(m map[string]int, n int) []monthCount {
 	out := make([]monthCount, 0, len(m))
 	for k, v := range m {
@@ -153,7 +142,6 @@ func topNCounts(m map[string]int, n int) []monthCount {
 	return out
 }
 
-// joinMonthCounts 把月份分布拼成 "2025-01 (10)、2025-02 (8)" 形式；unit 仅中文加在数字后。
 func joinMonthCounts(months []monthCount, unit string) string {
 	if len(months) == 0 {
 		return "—"
@@ -169,7 +157,6 @@ func joinMonthCounts(months []monthCount, unit string) string {
 	return strings.Join(parts, "、")
 }
 
-// joinTagCounts 把标签计数拼成 "#读书 (20)、#旅行 (15)"；空时返回 emptyLabel。
 func joinTagCounts(tags []monthCount, emptyLabel string) string {
 	if len(tags) == 0 {
 		return emptyLabel

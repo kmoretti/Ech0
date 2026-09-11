@@ -33,7 +33,7 @@ func TestEchoUpsertDto_ToModel(t *testing.T) {
 	})
 
 	t.Run("non_nil_extension_is_projected", func(t *testing.T) {
-		payload := map[string]interface{}{"url": "https://x", "n": 1}
+		payload := map[string]any{"url": "https://x", "n": 1}
 		dto := &EchoUpsertDto{
 			ID:        "e1",
 			Extension: &EchoExtensionDto{Type: Extension_MUSIC, Payload: payload},
@@ -42,7 +42,6 @@ func TestEchoUpsertDto_ToModel(t *testing.T) {
 		require.NotNil(t, got.Extension)
 		assert.Equal(t, Extension_MUSIC, got.Extension.Type)
 		assert.Equal(t, payload, got.Extension.Payload)
-		// Only Type/Payload are copied; the rest of EchoExtension stays zero.
 		assert.Equal(t, "", got.Extension.ID)
 		assert.Equal(t, "", got.Extension.EchoID)
 		assert.Equal(t, int64(0), got.Extension.CreatedAt)

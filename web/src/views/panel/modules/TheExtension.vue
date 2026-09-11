@@ -2,13 +2,11 @@
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
   <div class="w-full px-2">
-    <!-- 分段控件：Connect / Copilot -->
     <BaseSegmented v-model="tab" :options="tabOptions" />
 
-    <!-- Connect -->
     <TheConnectSetting v-if="tab === 'connect'" />
-    <!-- Ech0 Copilot -->
-    <TheCopilotSetting v-else />
+    <TheCopilotSetting v-else-if="tab === 'copilot'" />
+    <TheMCPSetting v-else />
   </div>
 </template>
 
@@ -18,12 +16,14 @@ import { useI18n } from 'vue-i18n'
 import BaseSegmented from '@/components/common/BaseSegmented.vue'
 import TheConnectSetting from './TheSetting/TheConnectSetting.vue'
 import TheCopilotSetting from './TheCopilot/TheCopilotSetting.vue'
+import TheMCPSetting from './TheSetting/TheMCPSetting.vue'
 
 const { t } = useI18n()
 const tab = ref('connect')
 const tabOptions = computed(() => [
   { label: String(t('extensionManagement.tabConnect')), value: 'connect' },
   { label: String(t('extensionManagement.tabCopilot')), value: 'copilot' },
+  { label: String(t('extensionManagement.tabMCP')), value: 'mcp' },
 ])
 </script>
 

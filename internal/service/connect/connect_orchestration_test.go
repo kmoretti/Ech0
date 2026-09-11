@@ -24,11 +24,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// peerFetch is the injectable peer-fetch signature accepted by WithPeerFetcher.
 type peerFetch = func(peerConnectURL string, requestTimeout time.Duration) (model.Connect, error)
 
-// cannedFetcher builds a peerFetcher backed by a static URL -> result map. A URL
-// mapped to a nil Connect with a non-nil error simulates an unreachable peer.
 func cannedFetcher(t *testing.T, byURL map[string]struct {
 	connect model.Connect
 	err     error
@@ -45,7 +42,6 @@ func cannedFetcher(t *testing.T, byURL map[string]struct {
 	}
 }
 
-// serverURLs extracts ServerURL fields for set-wise assertions (fanout order is nondeterministic).
 func serverURLs(connects []model.Connect) []string {
 	out := make([]string, 0, len(connects))
 	for _, c := range connects {
@@ -53,10 +49,6 @@ func serverURLs(connects []model.Connect) []string {
 	}
 	return out
 }
-
-// -----------------------------------------------------------------------------
-// AddConnect: remaining error path (CreateConnect failure).
-// -----------------------------------------------------------------------------
 
 func TestAddConnect_CreateConnectErrorPropagates(t *testing.T) {
 	const userID = "u-1"
@@ -77,10 +69,6 @@ func TestAddConnect_CreateConnectErrorPropagates(t *testing.T) {
 	assert.ErrorIs(t, err, wantErr)
 }
 
-// -----------------------------------------------------------------------------
-// DeleteConnect: auth gate + error propagation + success.
-// -----------------------------------------------------------------------------
-
 func TestDeleteConnect_NonAdminDenied(t *testing.T) {
 	const userID = "u-1"
 	tx := passthroughTx(t)
@@ -89,7 +77,6 @@ func TestDeleteConnect_NonAdminDenied(t *testing.T) {
 		CommonGetUserByUserId(mock.Anything, userID).
 		Return(userModel.User{IsAdmin: false}, nil).
 		Once()
-	// repository 不应被触达：权限校验先于删除。
 	repo := connectmock.NewMockRepository(t)
 
 	svc := connectService.NewConnectService(tx, repo, nil, cs, nil)
@@ -145,10 +132,6 @@ func TestDeleteConnect_Success(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// -----------------------------------------------------------------------------
-// GetConnects: list passthrough.
-// -----------------------------------------------------------------------------
-
 func TestGetConnects_Empty(t *testing.T) {
 	repo := connectmock.NewMockRepository(t)
 	repo.EXPECT().GetAllConnects(mock.Anything).Return([]model.Connected{}, nil).Once()
@@ -188,10 +171,6 @@ func TestGetConnects_ErrorPropagates(t *testing.T) {
 	assert.ErrorIs(t, err, wantErr)
 	assert.Nil(t, got)
 }
-
-// -----------------------------------------------------------------------------
-// GetConnectsInfo: orchestration over the injected peerFetcher.
-// -----------------------------------------------------------------------------
 
 func TestGetConnectsInfo_EmptyConnects(t *testing.T) {
 	repo := connectmock.NewMockRepository(t)
@@ -250,7 +229,6 @@ func TestGetConnectsInfo_FanoutAggregatesPeers(t *testing.T) {
 }
 
 func TestGetConnectsInfo_DedupBySeenServerURL(t *testing.T) {
-	// 两个不同的对端地址解析出相同的 ServerURL，应只保留一份。
 	connects := []model.Connected{
 		{ID: "1", ConnectURL: "https://a.example"},
 		{ID: "2", ConnectURL: "https://b.example"},
@@ -274,7 +252,6 @@ func TestGetConnectsInfo_DedupBySeenServerURL(t *testing.T) {
 }
 
 func TestGetConnectsInfo_PartialFailureAggregation(t *testing.T) {
-	// 一个对端成功、一个对端始终失败（耗尽重试）：结果只含成功项。
 	connects := []model.Connected{
 		{ID: "1", ConnectURL: "https://good.example"},
 		{ID: "2", ConnectURL: "https://bad.example"},
@@ -289,7 +266,6 @@ func TestGetConnectsInfo_PartialFailureAggregation(t *testing.T) {
 		"https://good.example": {connect: model.Connect{ServerName: "good", ServerURL: "https://good.srv"}},
 		"https://bad.example":  {err: errors.New("peer unreachable")},
 	})
-	// WithRetryBaseDelay(0)：bad.example 要耗尽 3 次重试，注入 0 退避避免真实 1s+2s 墙钟等待。
 	svc := connectService.NewConnectService(nil, repo, nil, nil, nil).
 		WithPeerFetcher(fetcher).
 		WithRetryBaseDelay(0)
@@ -301,19 +277,17 @@ func TestGetConnectsInfo_PartialFailureAggregation(t *testing.T) {
 }
 
 func TestGetConnectsInfo_RetryThenSuccess(t *testing.T) {
-	// 首次尝试失败、第二次成功：验证 fetchConnectsInfo 的重试计数路径。
 	connects := []model.Connected{{ID: "1", ConnectURL: "https://flaky.example"}}
 	repo := connectmock.NewMockRepository(t)
 	repo.EXPECT().GetAllConnects(mock.Anything).Return(connects, nil).Once()
 
-	var calls int32
+	var calls atomic.Int32
 	fetcher := func(url string, _ time.Duration) (model.Connect, error) {
-		if atomic.AddInt32(&calls, 1) == 1 {
+		if calls.Add(1) == 1 {
 			return model.Connect{}, errors.New("transient")
 		}
 		return model.Connect{ServerName: "flaky", ServerURL: "https://flaky.srv"}, nil
 	}
-	// WithRetryBaseDelay(0)：第二次尝试前的退避注入 0，避免真实 1s 墙钟等待。
 	svc := connectService.NewConnectService(nil, repo, nil, nil, nil).
 		WithPeerFetcher(fetcher).
 		WithRetryBaseDelay(0)
@@ -322,7 +296,7 @@ func TestGetConnectsInfo_RetryThenSuccess(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, got, 1)
 	assert.Equal(t, "https://flaky.srv", got[0].ServerURL)
-	assert.Equal(t, int32(2), atomic.LoadInt32(&calls), "expected one failed attempt then one success")
+	assert.Equal(t, int32(2), calls.Load(), "expected one failed attempt then one success")
 }
 
 func TestGetConnectsInfo_CacheHitAndInvalidation(t *testing.T) {
@@ -330,65 +304,59 @@ func TestGetConnectsInfo_CacheHitAndInvalidation(t *testing.T) {
 	connects := []model.Connected{{ID: "id-1", ConnectURL: "https://peer.example"}}
 
 	repo := connectmock.NewMockRepository(t)
-	// GetAllConnects 在两次真实 fetch 中各调用一次（命中缓存的那次不会触达）。
 	repo.EXPECT().GetAllConnects(mock.Anything).Return(connects, nil)
 	repo.EXPECT().DeleteConnect(mock.Anything, "id-1").Return(nil).Once()
 
 	cs := adminCommon(t, userID)
 	tx := passthroughTx(t)
 
-	var fetchCount int32
+	var fetchCount atomic.Int32
 	fetcher := func(string, time.Duration) (model.Connect, error) {
-		atomic.AddInt32(&fetchCount, 1)
+		fetchCount.Add(1)
 		return model.Connect{ServerName: "peer", ServerURL: "https://peer.srv"}, nil
 	}
 	svc := connectService.NewConnectService(tx, repo, nil, cs, nil).WithPeerFetcher(fetcher)
 
-	// 第一次：真实拉取并填充缓存。
 	first, err := svc.GetConnectsInfo()
 	require.NoError(t, err)
 	require.Len(t, first, 1)
-	assert.Equal(t, int32(1), atomic.LoadInt32(&fetchCount))
+	assert.Equal(t, int32(1), fetchCount.Load())
 
-	// 第二次：命中缓存，不再拉取。
 	second, err := svc.GetConnectsInfo()
 	require.NoError(t, err)
 	assert.Equal(t, first, second)
-	assert.Equal(t, int32(1), atomic.LoadInt32(&fetchCount), "second call must hit cache")
+	assert.Equal(t, int32(1), fetchCount.Load(), "second call must hit cache")
 
-	// 删除连接后缓存失效，下一次必须重新拉取。
 	require.NoError(t, svc.DeleteConnect(helpers.CtxAsUser(userID), "id-1"))
 
 	third, err := svc.GetConnectsInfo()
 	require.NoError(t, err)
 	require.Len(t, third, 1)
-	assert.Equal(t, int32(2), atomic.LoadInt32(&fetchCount), "cache invalidation must force a re-fetch")
+	assert.Equal(t, int32(2), fetchCount.Load(), "cache invalidation must force a re-fetch")
 }
 
-// TestGetConnectsInfo_SingleflightCollapsesConcurrentCalls 验证 singleflight：
-// 当首个调用仍在飞行中时，其余并发调用应复用同一结果，底层只拉取一次。
 func TestGetConnectsInfo_SingleflightCollapsesConcurrentCalls(t *testing.T) {
 	connects := []model.Connected{{ID: "1", ConnectURL: "https://peer.example"}}
 
-	var getAllCount int32
+	var getAllCount atomic.Int32
 	repo := connectmock.NewMockRepository(t)
 	repo.EXPECT().
 		GetAllConnects(mock.Anything).
 		RunAndReturn(func(context.Context) ([]model.Connected, error) {
-			atomic.AddInt32(&getAllCount, 1)
+			getAllCount.Add(1)
 			return connects, nil
 		})
 
 	var (
-		fetchCount  int32
+		fetchCount  atomic.Int32
 		startedOnce sync.Once
 		started     = make(chan struct{})
 		release     = make(chan struct{})
 	)
 	fetcher := func(string, time.Duration) (model.Connect, error) {
-		atomic.AddInt32(&fetchCount, 1)
+		fetchCount.Add(1)
 		startedOnce.Do(func() { close(started) })
-		<-release // 让首个 fetch 飞行期间，后续调用堆叠到 singleflight。
+		<-release
 		return model.Connect{ServerName: "peer", ServerURL: "https://peer.srv"}, nil
 	}
 	svc := connectService.NewConnectService(nil, repo, nil, nil, nil).WithPeerFetcher(fetcher)
@@ -397,7 +365,6 @@ func TestGetConnectsInfo_SingleflightCollapsesConcurrentCalls(t *testing.T) {
 	results := make(chan []model.Connect, callers)
 	errs := make(chan error, callers)
 
-	// 第一个调用：进入飞行状态并阻塞在 fetcher 上。
 	go func() {
 		got, err := svc.GetConnectsInfo()
 		results <- got
@@ -405,10 +372,9 @@ func TestGetConnectsInfo_SingleflightCollapsesConcurrentCalls(t *testing.T) {
 	}()
 	<-started
 
-	// 其余调用：在首个调用仍飞行时进入 singleflight，应作为等待者堆叠。
 	var launched sync.WaitGroup
 	launched.Add(callers - 1)
-	for i := 0; i < callers-1; i++ {
+	for range callers - 1 {
 		go func() {
 			launched.Done()
 			got, err := svc.GetConnectsInfo()
@@ -417,14 +383,13 @@ func TestGetConnectsInfo_SingleflightCollapsesConcurrentCalls(t *testing.T) {
 		}()
 	}
 	launched.Wait()
-	// 让等待者们都进入（阻塞在）singleflight.Do 之后再放行首个调用。
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		runtime.Gosched()
 	}
 	close(release)
 
 	var first []model.Connect
-	for i := 0; i < callers; i++ {
+	for range callers {
 		require.NoError(t, <-errs)
 		got := <-results
 		require.Len(t, got, 1)
@@ -435,13 +400,9 @@ func TestGetConnectsInfo_SingleflightCollapsesConcurrentCalls(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, int32(1), atomic.LoadInt32(&fetchCount), "singleflight must collapse to a single peer fetch")
-	assert.Equal(t, int32(1), atomic.LoadInt32(&getAllCount), "singleflight must collapse to a single repository read")
+	assert.Equal(t, int32(1), fetchCount.Load(), "singleflight must collapse to a single peer fetch")
+	assert.Equal(t, int32(1), getAllCount.Load(), "singleflight must collapse to a single repository read")
 }
-
-// -----------------------------------------------------------------------------
-// GetConnectsHealth: per-peer probe aggregation.
-// -----------------------------------------------------------------------------
 
 func TestGetConnectsHealth_Empty(t *testing.T) {
 	repo := connectmock.NewMockRepository(t)
@@ -469,7 +430,6 @@ func TestGetConnectsHealth_RepoErrorPropagates(t *testing.T) {
 }
 
 func TestGetConnectsHealth_MixedOnlineOffline(t *testing.T) {
-	// 顺序须与输入保持一致（out[i]）；在线项带版本，离线项为空版本。
 	connects := []model.Connected{
 		{ID: "online-1", ConnectURL: "https://up.example"},
 		{ID: "offline-1", ConnectURL: "https://down.example"},

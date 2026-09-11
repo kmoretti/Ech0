@@ -41,11 +41,11 @@ func TestResolveTmpDir(t *testing.T) {
 }
 
 func TestCleanupTmpDirFromPayload(t *testing.T) {
-	// 切到临时工作目录,避免在仓库里留下 data/ 脏目录(CleanupTmpDirFromPayload 解析相对 data/)。
 	prevWD, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("getwd failed: %v", err)
 	}
+	defer func() { _ = os.Chdir(prevWD) }()
 	t.Cleanup(func() { _ = os.Chdir(prevWD) })
 	if err := os.Chdir(t.TempDir()); err != nil {
 		t.Fatalf("chdir failed: %v", err)

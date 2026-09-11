@@ -3,41 +3,66 @@
 
 package mcp
 
-// ProtocolVersion is the MCP revision this server implements. Revision
-// 2026-07-28 is stateless: there is no initialize handshake, every request
-// carries its protocol version in params._meta (mirrored into the
-// MCP-Protocol-Version header), and every result carries resultType plus,
-// where required, caching hints.
 const (
 	ProtocolVersion = "2026-07-28"
 	ServerName      = "ech0-mcp"
+
+	MCPEndpointPath         = "/mcp"
+	TransportStreamableHTTP = "streamable-http"
 )
 
-// SupportedVersions is advertised by server/discover and in
-// UnsupportedProtocolVersion error data.
-var SupportedVersions = []string{ProtocolVersion}
-
-// _meta keys defined by the 2026-07-28 revision.
 const (
-	metaKeyProtocolVersion = "io.modelcontextprotocol/protocolVersion"
-	metaKeyServerInfo      = "io.modelcontextprotocol/serverInfo"
+	protocolVersion20251125 = "2025-11-25"
+	protocolVersion20250618 = "2025-06-18"
+	protocolVersion20250326 = "2025-03-26"
+
+	preferredLegacyVersion = protocolVersion20251125
+)
+
+var SupportedVersions = []string{
+	ProtocolVersion,
+	protocolVersion20251125,
+	protocolVersion20250618,
+	protocolVersion20250326,
+}
+
+func isLegacyVersion(version string) bool {
+	switch version {
+	case protocolVersion20251125, protocolVersion20250618, protocolVersion20250326:
+		return true
+	default:
+		return false
+	}
+}
+
+type era uint8
+
+const (
+	eraLegacy era = iota
+	eraModern
+)
+
+const (
+	metaKeyProtocolVersion    = "io.modelcontextprotocol/protocolVersion"
+	metaKeyClientCapabilities = "io.modelcontextprotocol/clientCapabilities"
+	metaKeyServerInfo         = "io.modelcontextprotocol/serverInfo"
 )
 
 const resultTypeComplete = "complete"
 
-// Cache scopes for CacheableResult (ttlMs + cacheScope).
 const (
 	cacheScopePublic  = "public"
 	cacheScopePrivate = "private"
 )
 
-// Freshness hints in milliseconds. Tool and resource definitions are fixed
-// at process start, so discover/list results cache well; read results are
-// live data and marked immediately stale.
 const (
 	discoverTTLMs = 60 * 60 * 1000
 	listTTLMs     = 5 * 60 * 1000
+	staticTTLMs   = 60 * 60 * 1000
+	liveTTLMs     = 30 * 1000
 )
+
+const serverInstructions = "Ech0 personal microblog. Manage posts, tags, comments, files, connects and webhooks via tools; read site data via ech0:// resources."
 
 type ServerCapabilities struct {
 	Tools     *ToolsCapability     `json:"tools,omitempty"`
@@ -53,11 +78,15 @@ type ResourcesCapability struct {
 	ListChanged bool `json:"listChanged"`
 }
 
-// ResultEnvelope carries the fields every 2026-07-28 result must include:
-// the mandatory resultType, and the _meta serverInfo the spec recommends.
-// Server.handlePost stamps it on every successful result via complete().
+func serverCapabilities() ServerCapabilities {
+	return ServerCapabilities{
+		Tools:     &ToolsCapability{ListChanged: false},
+		Resources: &ResourcesCapability{Subscribe: false, ListChanged: false},
+	}
+}
+
 type ResultEnvelope struct {
-	ResultType string         `json:"resultType"`
+	ResultType string         `json:"resultType,omitempty"`
 	Meta       map[string]any `json:"_meta,omitempty"`
 }
 
@@ -69,24 +98,44 @@ func (e *ResultEnvelope) complete(info ServerInfo) {
 	e.Meta[metaKeyServerInfo] = info
 }
 
-// completer is implemented by every result type through ResultEnvelope.
 type completer interface{ complete(info ServerInfo) }
 
-// CacheInfo is the CacheableResult contract: required on server/discover,
-// tools/list, resources/list and resources/read results.
 type CacheInfo struct {
 	TTLMs      int64  `json:"ttlMs"`
 	CacheScope string `json:"cacheScope"`
 }
 
-// DiscoverResult answers server/discover, the one method every 2026-07-28
-// server must implement. It replaces the removed initialize handshake.
+func publicCache(ttlMs int64) CacheInfo {
+	return CacheInfo{TTLMs: ttlMs, CacheScope: cacheScopePublic}
+}
+
+func privateCache(ttlMs int64) CacheInfo {
+	return CacheInfo{TTLMs: ttlMs, CacheScope: cacheScopePrivate}
+}
+
+func (c CacheInfo) normalize() CacheInfo {
+	if c.CacheScope != cacheScopePublic {
+		c.CacheScope = cacheScopePrivate
+	}
+	if c.TTLMs < 0 {
+		c.TTLMs = 0
+	}
+	return c
+}
+
 type DiscoverResult struct {
 	ResultEnvelope
 	SupportedVersions []string           `json:"supportedVersions"`
 	Capabilities      ServerCapabilities `json:"capabilities"`
 	Instructions      string             `json:"instructions,omitempty"`
-	CacheInfo
+	*CacheInfo
+}
+
+type InitializeResult struct {
+	ProtocolVersion string             `json:"protocolVersion"`
+	Capabilities    ServerCapabilities `json:"capabilities"`
+	ServerInfo      ServerInfo         `json:"serverInfo"`
+	Instructions    string             `json:"instructions,omitempty"`
 }
 
 type ServerInfo struct {
