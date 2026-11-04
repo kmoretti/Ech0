@@ -5,8 +5,10 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/lin-snow/ech0/internal/agent"
@@ -15,6 +17,10 @@ import (
 	logUtil "github.com/lin-snow/ech0/pkg/log"
 	"github.com/lin-snow/ech0/pkg/viewer"
 )
+
+// errRecentSummaryEmpty means the provider answered successfully but with no
+// text. It is never cached, so an empty response cannot blank the widget.
+var errRecentSummaryEmpty = errors.New("recent summary is empty")
 
 func (s *CopilotService) GetRecent(ctx context.Context) (string, error) {
 	const cacheKey = string(agent.GEN_RECENT)
@@ -38,6 +44,12 @@ func (s *CopilotService) generateAndCacheRecent(ctx context.Context, cacheKey st
 				if err != nil {
 					return cached, nil
 				}
+				// Never replace a good summary with an empty completion: keep
+				// the previous text and the dirty marker so the next open retries.
+				output = strings.TrimSpace(output)
+				if output == "" {
+					return cached, nil
+				}
 				if err := s.durableKV.Set(ctx, cacheKey, output); err != nil {
 					logUtil.GetLogger().
 						Error("Failed to add or update key value", logUtil.Err(err))
@@ -55,6 +67,10 @@ func (s *CopilotService) generateAndCacheRecent(ctx context.Context, cacheKey st
 		output, err := s.buildRecentSummary(ctx)
 		if err != nil {
 			return "", err
+		}
+		output = strings.TrimSpace(output)
+		if output == "" {
+			return "", errRecentSummaryEmpty
 		}
 
 		if err := s.durableKV.Set(ctx, cacheKey, output); err != nil {
@@ -101,7 +117,31 @@ func (s *CopilotService) getRecentFromCache(ctx context.Context, cacheKey string
 	if err != nil {
 		return "", false
 	}
-	return cachedValue, true
+
+	value := strings.TrimSpace(cachedValue)
+	if value == "" {
+		return "", false
+	}
+
+	// Older releases cached a JSON envelope {"fingerprint":"…","text":"…"}.
+	// Read it once so an upgrade does not surface raw JSON in the widget.
+	if strings.HasPrefix(value, "{") {
+		var legacy struct {
+			Text string `json:"text"`
+		}
+		if json.Unmarshal([]byte(value), &legacy) != nil {
+			// A JSON-looking payload is not a usable summary; regenerate
+			// instead of rendering the raw envelope in the widget.
+			return "", false
+		}
+		legacyText := strings.TrimSpace(legacy.Text)
+		if legacyText == "" {
+			return "", false
+		}
+		return legacyText, true
+	}
+
+	return value, true
 }
 
 func (s *CopilotService) buildRecentSummary(ctx context.Context) (string, error) {
