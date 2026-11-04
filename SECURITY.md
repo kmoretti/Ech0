@@ -12,7 +12,7 @@
 
 优先使用 GitHub 的私密漏洞报告：
 
-- https://github.com/LiuShen-Fork/Ech0/security/advisories/new
+- https://github.com/kmoretti/Ech0/security/advisories/new
 
 报告内容建议包括：
 

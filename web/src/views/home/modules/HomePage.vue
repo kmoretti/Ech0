@@ -11,11 +11,7 @@
       }"
     >
       <div class="home-layout">
-        <div
-          ref="mainColumn"
-          class="home-main"
-          :class="{ 'home-main--unclipped': false }"
-        >
+        <div ref="mainColumn" class="home-main" :class="{ 'home-main--unclipped': false }">
           <div class="home-main-track">
             <div
               v-if="activeTab === 'publish'"
@@ -289,7 +285,9 @@ onBeforeUnmount(() => {
   max-width: none;
 }
 
-.home-shell--feed .home-main-track > :not(.home-aside--mobile):not(.home-masonry-feed):not(.hub-page--embedded) {
+.home-shell--feed
+  .home-main-track
+  > :not(.home-aside--mobile, .home-masonry-feed, .hub-page--embedded) {
   display: none;
 }
 

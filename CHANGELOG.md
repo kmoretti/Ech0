@@ -9,6 +9,125 @@ For releases prior to v4.6.5, see the [GitHub releases page](https://github.com/
 
 ## [Unreleased]
 
+## [5.8.3] - 2026-10-25
+
+### Added
+
+* **The `em` manager script updates itself.** `em self-update` (menu option 10) replaces `/usr/local/sbin/em` with the current script and refreshes the `em` / `ech0` links, and `em update` now does the same on every run, even when the server binary is already current. Installs that still run the old script need one bootstrap: `curl -fsSL https://raw.githubusercontent.com/lin-snow/Ech0/main/scripts/ech0.sh | sudo bash -s -- self-update`.
+
+* **`em logs`, `em help`, and `em update --force`.** Logs are one command away instead of a raw `journalctl` invocation, `help` lists every action, and `--force` reinstalls the current release when a normal update skips it.
+
+* **Script installs get a persistent `JWT_SECRET`.** When `.env` does not already define one, the installer generates it, so restarting the service no longer invalidates every signed-in session.
+
+* **Install and update verify the service actually started.** Both wait for the unit to become active and probe `/healthz`, and print the last journal lines when startup fails.
+
+### Fixed
+
+* **`curl … | bash` no longer installs the shell as the manager.** The installer copied `/bin/bash` to `/usr/local/sbin/em` when it could not find its own script file; it now downloads the real script instead.
+
+* **Only stable Ech0 releases are selected.** Version lookup uses the latest-release endpoint and ignores pre-releases and chart tags such as `ech0-5.8.2`.
+
+* **A failed update rolls back.** The previous binary is kept as `ech0.bak` and restored automatically if the new one does not start.
+
+* **The manager's "current information" menu item works again.** It called the removed `ech0 info` command; it now runs `ech0 version`.
+
+* **Uninstall keeps configuration together with the data.** Keeping `data/` now also keeps `.env`, and the "already installed" message points at `update` / `self-update` instead of a dead end.
+
+* **The systemd unit waits for the network and stops cleanly.** It starts after `network-online.target` and allows 30 seconds for shutdown.
+
+* **A custom `ECH0_DB_PATH` no longer crashes or creates the wrong directory.** Directory resolution hardcoded an `/ech0.db` suffix: a bare file name such as `ech0.db` panicked, and `data/mydb.sqlite` resolved its parent to `data/my`. The directory now comes from the path itself, so any file name or nesting works, and an `ECH0_DB_TYPE` other than `sqlite` fails at startup with a clear error instead of running on an empty DB handle.
+
+* **`ECH0_SERVER_HOST` and `ECH0_LOG_CONSOLE` now take effect.** The listener was pinned to all interfaces and console output could not be turned off. `ECH0_SERVER_HOST=127.0.0.1` now narrows the bind address (empty / `0.0.0.0` / `::` still keeps dual-stack), and `ECH0_LOG_CONSOLE=false` writes only to the log file and TUI log stream (the default stays `true`, so existing behavior is unchanged).
+
+* **Clearer errors for `.env` and JWT secrets.** A `.env` file that exists but fails to parse now reports the real error instead of "No .env file found"; an unset `JWT_SECRET` warns that restarting invalidates issued tokens and adds an `ECH0_JWT_SECRET` alias; a malformed numeric env value names the affected field and keeps its default.
+
+* **Dead env vars removed.** `ECH0_MIGRATION_*`, `ECH0_COMMENT_ENABLE` (comments are toggled in the admin panel), and `ECH0_UPLOAD_{IMAGE,AUDIO,VIDEO}_PATH` (storage paths are chosen by extension routing) had no effect when set. See the new [`docs/usage/configuration.md`](docs/usage/configuration.md) for the full variable and default list.
+
+* **Sessions no longer expire every week.** The refresh token used a fixed 7 days from sign-in, and `/api/auth/refresh` only issued access tokens and never renewed the refresh cookie, so even an active user had to sign in again after a week. Every silent refresh now reissues the refresh token and resets the cookie (`exp` slides to `now + ECH0_JWT_REFRESH_EXPIRES`), so staying active within 7 days keeps you signed in. Renewal keeps the original JTI, so logout still revokes the same session and concurrent refreshes from multiple tabs no longer sign each other out.
+
+
+## [5.8.2] - 2026-10-22
+
+### Added
+
+* **Ctrl+S / Cmd+S saves the panel you are editing.** An open inline edit in System, User, Storage, OAuth2, Passkey, Snapshot schedule, Webhooks, Copilot, Comments, or access-token creation is now saved with the shortcut. The apply button shows the key in its tooltip (⌘S on Apple platforms) and exposes `aria-keyshortcuts`, and the browser's own "Save page" dialog is suppressed only while an edit is active. The shortcut ignores key repeat, IME composition, and a save that is already running.
+
+### Fixed
+
+* **Double-saving a settings panel is no longer possible.** The save action is now blocked while its request is in flight, covering Copilot, System, User, Storage, OAuth2, Passkey, Snapshot schedule, Webhooks, Comments, and access-token creation. Previously a fast double click could send the same change twice.
+
+* **Comment settings cannot be saved before they load.** The save action stays disabled until the current settings have arrived, so opening the panel and saving immediately no longer writes defaults over the stored configuration.
+
+### Security
+
+* **Dependency refresh closes known advisories.** The Go backend and all three frontend projects were updated; there are no application code, API, schema, or configuration changes. On the backend, `golang.org/x/net` 0.61.0 fixes five HTTP/2 issues, and Go 1.27.3 fixes `GO-2026-6809` (`crypto/x509` distrust of compromised intermediate certificates, reachable through OAuth state verification). On the frontend, this resolves `shell-quote` command injection (critical, via `npm-run-all2`), a `markdown-it` quadratic-time DoS, the Vite 8.3.0–8.3.2 advisories, `@vitest/mocker` code injection, a `source-map-js` event-loop DoS, and a `compression` memory-leak DoS. `govulncheck ./...` reports no reachable vulnerabilities, and `pnpm audit` reports none for `site` and `hub`.
+
+* **One `web` advisory remains.** `braces` ([GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)) is dev-only (eslint/stylelint globbing); `micromatch@4.0.8` accepts `^3.0.3`, but no patched release has been published.
+
+### Internal
+
+* **Go 1.27.3 is now required.** `go.mod`, the Docker builder image, CI workflows, and docs target Go 1.27.3.
+
+* **Backend modules updated.** `anthropic-sdk-go` 1.84.0, `openai-go/v3` 3.85.1, `quic-go` 0.64.1, the AWS SDK v2 chain, `go-sqlite3` 1.14.52, `gjson` 1.20.0, `mongo-driver/v2` 2.9.2, and OpenTelemetry 1.47.0.
+
+* **Frontend dependencies updated.** Web: Vue 3.5.44, Vue Router 5.4.0, Pinia 4.1.0, Vue I18n 11.4.16, VueUse 15.0.0, Vite 8.3.4, Vitest 4.1.12, markdown-it 15.0.3, UnoCSS 66.11.0, TypeScript 6.0.3. Site: React Router 8.5.0, React 19.3.1. Hub: Vite PWA plugin 2.0.0 and the same Vue stack. All three stay on TypeScript 6 because `vue-tsc` and `typescript-eslint` still reject TypeScript 7.
+
+* **`just hub build` works again.** The hub prebuild installs `web/` with pnpm instead of npm, whose dependency resolver crashed while walking pnpm's virtual store.
+
+* **Mockery pinned to 3.8.1.** Go 1.27's unified export data requires the newer tool; mocks were regenerated with no interface changes.
+
+* **Save shortcut coverage added.** Unit tests cover the composable's activation, busy, composition, and key-repeat handling, plus the capsule's tooltip and opt-out.
+
+* **Shortcut platform detection centralized.** `isMac` is now a shared helper used by both the filter badges and the capsule tooltips.
+
+
+## [5.8.0] - 2026-09-28
+
+### Changed
+
+* **Copilot is now admin-only.** The chat, session, and answer endpoints now require the site admin. Other signed-in users are refused before the SSE stream opens, and the client shows the server's message. Copilot spends the operator's model budget and reads and writes the owner's Echos, so being signed in is no longer enough.
+
+* **An empty context window now means a conservative 64k instead of 256k.** Copilot also plans a single budget across output, system prompt, history, and summary material. Set the window to your model's real limit; if it is set too high, requests fail as too long.
+
+* **Temperature is no longer guessed from the model name.** The built-in tables that decided which models accept sampling parameters were incomplete, and a wrong guess failed the request. They have been removed along with the hardcoded chat temperature, so models now run at their own default unless you set one (see below).
+
+* **Lower token cost on multi-round tool runs.** Streaming Anthropic requests put a cache breakpoint on the last block, so each tool round reads the previous round from the prompt cache. When old tool results have to be cleared, Copilot clears them down to 80% of the limit, so the following rounds append to the cached prompt instead of invalidating it again.
+
+### Added
+
+* **Optional temperature setting for the Copilot agent.** *Panel → Copilot* has a new **Temperature** field (0–2). If it is left empty, nothing is sent and the model uses its own default (recommended). If it is set, it applies to every agent call, including **Test connection**, so a value the model rejects is caught before you save.
+
+* **WebP support for vision requests.** WebP images are now decoded and, when large, downscaled like other formats instead of being sent as-is or dropped. Resampling now uses Catmull-Rom.
+
+### Fixed
+
+* **Copilot recovers from context overflows.** After the first reply, the budget is based on the input tokens the provider reports, and tool declarations now count toward it. If a request is rejected as too long before anything has streamed, Copilot trims it to three quarters of its size and retries once.
+
+* **Truncated answers are marked unfinished.** Every provider now reports when output was cut off by a length limit. Copilot then ends the run and drops that round's tool calls, whose arguments may be incomplete. A response stopped by a content filter is now reported as an error instead of a silently partial answer.
+
+* **Provider compatibility hardened.** Provider-specific assistant state is now passed back on tool rounds: DeepSeek `reasoning_content`, Claude signed thinking blocks, and encrypted reasoning items from the Responses API. The final forced-answer round now keeps tools declared with `tool_choice=none`; Anthropic rejects tool history without tool declarations. Parallel tool-call fragments are split by ID when a stream omits their index, and refusal stop reasons are shown instead of being hidden.
+
+* **Tool loop correctness.** Only successful tool calls whose results are still in context are deduplicated. Failed results are marked `is_error`. When trimming is needed, Copilot first clears older results, then images, and finally truncates the newest round instead of dropping it. Token estimates now account for CJK text.
+
+* **Conversation history always starts with a question.** History is now selected by whole turns, so it never begins partway through an exchange.
+
+* **Retrieval falls back to keyword search.** If semantic search fails, has no index yet, or returns too few results, Copilot falls back to keyword search or adds keyword results. An unknown tag name is now a tool error instead of silently broadening the query.
+
+* **Safer multimodal input.** Image formats are detected from file contents, only JPEG/PNG/GIF/WebP images are sent, large images are downscaled, and image bytes are capped per run.
+
+* **Recent summary cache fixes.** The cache now checks whether the feature is enabled, is tied to the setting that produced it, and is invalidated when an Echo is deleted.
+
+* **The semantic index stays consistent with live Echos.** Search hits are checked against the Echos table and filtered by user ID, so renaming an author no longer hides their Echos and deleted Echos never appear. Index writes happen in one transaction and only while the Echo still exists, closing a race with deletion; backfill removes orphaned rows. Search returns "index not ready" when no index matches the configured model and dimension instead of querying a missing or mismatched table. Backfill retries a failed batch item by item so one bad input no longer fails the whole page, and very long inputs are truncated.
+
+### Internal
+
+* **Go 1.27.1.** `go.mod`, the Docker builder image, CI workflows, and docs now target Go 1.27.1.
+* **Go 1.27 generic methods adopted.** Each job type is now bound to its payload at compile time through `jobModel.Kind[P]`, and `job.Manager` uses generic `Register`/`Submit`/`Get`/`Delete`/`Cancel`. `cache` is a concrete `*cache.Cache` with generic read-through methods and per-instance singleflight. Settings use `Spec[T]` methods with `Pristine()`.
+* **`pkg/app` and `pkg/egress` extracted.** The lifecycle core moved from `internal/app` to `pkg/app`, with Ech0's composition in `di.ProvideApp`, and `internal/util/egress` moved to `pkg/egress`.
+* **Per-run token logging.** Each agent run logs its round count and its input, cached, and output token totals.
+* **Interactive architecture diagram** published at [ech0.app/arch](https://ech0.app/arch). It covers the overall request flow and the internals of `pkg/` plus the event bus, webhooks, kvstore/settings/cache, visitor, job/task, and app lifecycle.
+* **Dependencies updated.** Go: `anthropic-sdk-go` 1.75.0, `openai-go/v3` 3.66.0, `aws-sdk-go-v2` 1.47.1 (`service/s3` 1.113.4), `go-webauthn/webauthn` 0.18.2, `go-oidc/v3` 3.21.0, and the `golang.org/x/*` modules; `golang.org/x/image` is a new dependency for WebP. Web: `unocss` 66.10.5, `eslint-plugin-vue` 10.11.1, and `prettier` 3.9.9, plus in-range `pnpm update` across `web/`, `hub/`, and `site/`.
+
 
 ## [5.7.0] - 2026-08-28
 
@@ -723,7 +842,8 @@ This is primarily a security release: six advisories disclosed since v4.7.2 are 
 
   Practical risk in this repo was negligible (the vulnerable code only runs at PWA build time on developer-controlled input), but the alerts are now resolved at the supply-chain level.
 
-[Unreleased]: https://github.com/lin-snow/Ech0/compare/v5.5.0...HEAD
+[Unreleased]: https://github.com/lin-snow/Ech0/compare/v5.8.3...HEAD
+[5.8.3]: https://github.com/lin-snow/Ech0/compare/v5.8.2...v5.8.3
 [5.5.0]: https://github.com/lin-snow/Ech0/compare/v5.4.7...v5.5.0
 [5.4.7]: https://github.com/lin-snow/Ech0/compare/v5.4.6...v5.4.7
 [5.4.6]: https://github.com/lin-snow/Ech0/compare/v5.4.5...v5.4.6

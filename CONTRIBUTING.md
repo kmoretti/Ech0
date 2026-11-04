@@ -10,17 +10,17 @@
 
 ## 开发环境
 
-后端要求 Go `1.26.0+` 和可用于 CGO 的 C 工具链；前端要求 Node.js `25.5.0+` 与 pnpm `10+`。
+后端要求 Go `1.27.3+` 和可用于 CGO 的 C 工具链；前端要求 Node.js `26.0.0+` 与 pnpm `11+`。
 
-常用命令：
+常用命令（仓库根目录，任务统一由 `just` 调度）：
 
 ```bash
-make run
-make dev
-make check
-make wire-check
+just run
+just dev
+just check
+just wire-check
 go build ./...
-pnpm -C web build
+just web build
 ```
 
 前端开发可在 `web/` 目录执行：
@@ -43,13 +43,13 @@ pnpm lint
 提交前至少运行：
 
 ```bash
-make check
-make wire-check
+just check
+just wire-check
 go build ./...
-pnpm -C web build
+just web build
 ```
 
-修改接口路由、请求或响应结构时运行 `make swagger`；修改 Wire 构造器、绑定或 provider set 时运行 `make wire`。前端不得硬编码界面文本，需要使用 vue-i18n，并确保 `pnpm i18n:check` 通过。
+修改接口路由、请求或响应结构时运行 `just openapi` 并提交 `internal/openapi/openapi.yaml`；修改 Wire 构造器、绑定或 provider set 时运行 `just wire`。前端不得硬编码界面文本，需要使用 vue-i18n，并确保 `just web i18n-check` 通过。
 
 ## 代码规范
 

@@ -107,6 +107,10 @@ type AgentSetting struct {
 	// 用于区间聚合（年�?月度总结）时的取数预算：窗口越大越倾向「一次塞满全�?Echo」，
 	// 越小越早转入按月 map-reduce 分层总结。前端以 256k/1m 形式填写、解析成 token 数后存此�?
 	ContextWindow int `json:"context_window"`
+	// Temperature is sent only when set. Left nil, the model runs at its own
+	// default — the only choice that works for every model, since some reject
+	// the parameter outright. Whether a model takes it is for its docs to say.
+	Temperature *float64 `json:"temperature,omitempty"`
 }
 
 type SnapshotSchedule struct {

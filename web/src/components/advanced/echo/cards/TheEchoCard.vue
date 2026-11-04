@@ -611,6 +611,175 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
+.echo-timeline--masonry {
+  overflow: clip visible;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-bg-surface) 96%, transparent);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 5%);
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.echo-timeline--masonry:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-border-strong);
+  box-shadow: 0 14px 34px rgb(0 0 0 / 8%);
+}
+
+.echo-timeline--masonry .echo-header-sticky {
+  min-height: 2rem;
+  padding: 0.45rem 0.65rem 0;
+  background: transparent;
+}
+
+.echo-timeline--masonry .timeline-content {
+  margin-left: 0;
+}
+
+.echo-timeline--masonry .timeline-content::before {
+  display: none;
+}
+
+.echo-timeline--masonry .echo-card-body {
+  padding-bottom: 0.55rem;
+}
+
+.echo-card-body--clamped {
+  position: relative;
+  max-height: 18rem;
+  overflow: hidden;
+}
+
+.echo-card-body--clamped::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 6rem;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--color-bg-surface));
+}
+
+.echo-card-more {
+  display: flex;
+  width: calc(100% - 1.5rem);
+  margin: -0.1rem 0.75rem 0.75rem;
+  padding: 0.45rem 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.echo-card-meta {
+  margin-inline: 0.75rem;
+}
+
+.echo-card-meta--stats {
+  margin-top: 0.35rem;
+  margin-bottom: 0.7rem;
+}
+
+.echo-card-comments + .echo-card-meta--stats {
+  margin-top: 0.55rem;
+}
+
+.echo-card-meta :deep(.echo-meta) {
+  padding-top: 0;
+}
+
+.echo-card-meta :deep(.echo-meta-line) {
+  gap: 0.32rem;
+  font-size: 0.68rem;
+}
+
+.echo-card-meta :deep(.echo-meta-actions) {
+  gap: 0.45rem;
+}
+
+.echo-card-meta :deep(.echo-meta-actions button) {
+  color: var(--color-text-muted);
+}
+
+.echo-card-meta :deep(.echo-meta-actions button:hover) {
+  color: var(--color-accent);
+}
+
+.echo-card-comments {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0 0.75rem;
+  padding-top: 0;
+}
+
+.echo-card-comments__divider {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+}
+
+.echo-card-comments__divider::before,
+.echo-card-comments__divider::after {
+  content: '';
+  height: 1px;
+  background: var(--color-border-subtle);
+}
+
+.echo-card-comments__divider::before {
+  display: none;
+}
+
+.echo-card-comments__divider::after {
+  flex: 1 1 auto;
+}
+
+.echo-card-comments__divider span {
+  padding: 0.16rem 0.5rem;
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-bg-surface) 88%, var(--color-accent) 12%);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 22%, var(--color-border-subtle));
+  border-radius: 999px;
+  line-height: 1;
+}
+
+.echo-card-comment {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.echo-card-comment__author {
+  flex: 0 0 auto;
+  max-width: 38%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.echo-card-comment__content {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .timeline-marker {
   position: relative;
   width: var(--axis-dot-size);

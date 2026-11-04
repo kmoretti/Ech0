@@ -37,4 +37,4 @@ pnpm format
 2. 需要固定侧栏顺序时，在 `app/docs/registry.ts` 中登记 slug。
 3. Markdown 中可使用 `![](imgs/...)` 引用图片，构建时会转换为 `/docs-assets/imgs/...`。
 
-该文档站属于 [LiuShen-Fork/Ech0](https://github.com/LiuShen-Fork/Ech0) 仓库，项目来源与开源许可见根目录 `README.md` 和 `LICENSE`。
+该文档站属于 [kmoretti/Ech0](https://github.com/kmoretti/Ech0) 仓库，项目来源与开源许可见根目录 `README.md` 和 `LICENSE`。

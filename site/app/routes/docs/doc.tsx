@@ -6,18 +6,19 @@ import { MarkdownDoc } from "../../docs/MarkdownDoc";
 import { extractTocFromMarkdown } from "../../docs/toc";
 import { absoluteUrl } from "../../site";
 
-export function meta({ data }: Route.MetaArgs) {
-  if (!data?.title) {
+export function meta({ loaderData }: Route.MetaArgs) {
+  if (!loaderData?.title) {
     return [{ title: "文档 - 克喵のEch0" }];
   }
   return [
-    { title: `${data.title} - 克喵のEch0文档` },
+    { title: `${loaderData.title} - 克喵のEch0文档` },
     {
       name: "description",
-      content: data.description || `${data.title} - 克喵のEch0文档。`,
+      content:
+        loaderData.description || `${loaderData.title} - 克喵のEch0文档。`,
     },
-    { property: "og:title", content: `${data.title} - 克喵のEch0文档` },
-    { property: "og:url", content: absoluteUrl(`/docs/${data.slug}`) },
+    { property: "og:title", content: `${loaderData.title} - 克喵のEch0文档` },
+    { property: "og:url", content: absoluteUrl(`/docs/${loaderData.slug}`) },
   ];
 }
 

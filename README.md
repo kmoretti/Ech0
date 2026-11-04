@@ -134,7 +134,7 @@ docker compose up -d
 ## 与上游关系
 
 - 原项目：[lin-snow/Ech0](https://github.com/lin-snow/Ech0)
-- 当前 fork：[LiuShen-Fork/Ech0](https://github.com/LiuShen-Fork/Ech0)
+- 当前 fork：[kmoretti/Ech0](https://github.com/kmoretti/Ech0)
 
 感谢原项目提供的架构、功能与开源基础。本仓库主要用于克喵Moretti个人站点的定制化部署。
 

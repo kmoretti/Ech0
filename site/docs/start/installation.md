@@ -15,7 +15,7 @@ description: 使用自建 Docker Hub 镜像或源码部署克喵のEch0
 | `JWT_SECRET` | 使用足够长的随机字符串，不要使用文档示例值。 |
 | 端口 | 服务默认监听 `6277`。公网使用时还需配置防火墙、反向代理和 HTTPS。 |
 
-完整的 Docker Hub Actions 使用方式见仓库根目录 [README](https://github.com/LiuShen-Fork/Ech0/blob/main/README.md)。
+完整的 Docker Hub Actions 使用方式见仓库根目录 [README](https://github.com/kmoretti/Ech0/blob/main/README.md)。
 
 ## Docker
 
@@ -57,7 +57,7 @@ docker compose up -d
 
 ## 源码运行
 
-后端需要 Go `1.26.0+` 和可用于 CGO 的 C 工具链，前端需要 Node.js `25.5.0+` 与 pnpm `10+`。
+后端需要 Go `1.27.3+` 和可用于 CGO 的 C 工具链，前端需要 Node.js `26.0.0+` 与 pnpm `11+`。
 
 开发预览时分别启动：
 

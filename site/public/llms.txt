@@ -4,10 +4,10 @@
 
 主要入口：
 
-- [当前仓库](https://github.com/LiuShen-Fork/Ech0)：源代码、中文 README、Issue 与 Docker Hub 构建流程
-- [中文 README](https://raw.githubusercontent.com/LiuShen-Fork/Ech0/main/README.md)：项目定位、定制改进、开发命令与部署说明
-- [参与贡献](https://raw.githubusercontent.com/LiuShen-Fork/Ech0/main/CONTRIBUTING.md)：开发环境、检查命令与提交规范
-- [安全策略](https://raw.githubusercontent.com/LiuShen-Fork/Ech0/main/SECURITY.md)：安全漏洞私密报告方式
+- [当前仓库](https://github.com/kmoretti/Ech0)：源代码、中文 README、Issue 与 Docker Hub 构建流程
+- [中文 README](https://raw.githubusercontent.com/kmoretti/Ech0/main/README.md)：项目定位、定制改进、开发命令与部署说明
+- [参与贡献](https://raw.githubusercontent.com/kmoretti/Ech0/main/CONTRIBUTING.md)：开发环境、检查命令与提交规范
+- [安全策略](https://raw.githubusercontent.com/kmoretti/Ech0/main/SECURITY.md)：安全漏洞私密报告方式
 - [原项目 lin-snow/Ech0](https://github.com/lin-snow/Ech0)：上游通用版本与完整社区文档
 
 运行中的 Ech0 实例会在 `/swagger/index.html` 提供 REST API 文档。当前仓库默认以中文作为项目说明语言。

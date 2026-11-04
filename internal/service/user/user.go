@@ -210,7 +210,7 @@ func (userService *UserService) Register(registerDto *authModel.RegisterDto) err
 	}
 
 	// 检查是否开放注册（纯读，直�?setting 引擎�?durableKV，不依赖 SettingService�?
-	sysSetting, err := coreSetting.Get(context.Background(), userService.durableKV, coreSetting.System)
+	sysSetting, err := coreSetting.System.Get(context.Background(), userService.durableKV)
 	if err != nil {
 		return err
 	}

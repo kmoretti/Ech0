@@ -38,7 +38,7 @@ export function meta(_args: Route.MetaArgs) {
     { property: "og:image:height", content: String(OG_IMAGE_HEIGHT) },
     {
       property: "og:image:alt",
-      content: "克喵の个人说说界面预览",
+      content: "克喵のEch0个人说说界面预览",
     },
     { property: "og:locale", content: "en_US" },
     { name: "twitter:card", content: "summary_large_image" },
@@ -47,7 +47,7 @@ export function meta(_args: Route.MetaArgs) {
     { name: "twitter:image", content: imageUrl },
     {
       name: "twitter:image:alt",
-      content: "克喵の个人说说界面预览",
+      content: "克喵のEch0个人说说界面预览",
     },
   ];
 }
@@ -287,7 +287,7 @@ export default function Home() {
           </a>
           <span className="mx-2 text-sand-6">·</span>
           <a
-            href="https://github.com/LiuShen-Fork/Ech0"
+            href="https://github.com/kmoretti/Ech0"
             className="font-medium underline-offset-4 transition-colors hover:text-sand-12"
           >
             GitHub

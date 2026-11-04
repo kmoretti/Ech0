@@ -5,17 +5,17 @@ import { parseDocFile } from "../docs/registry";
 import { absoluteUrl } from "../site";
 import privacyMd from "../../content/privacy.md?raw";
 
-export function meta({ data }: Route.MetaArgs) {
-  if (!data) {
+export function meta({ loaderData }: Route.MetaArgs) {
+  if (!loaderData) {
     return [{ title: "隐私 - 克喵のEch0" }];
   }
   return [
-    { title: `${data.title} - 克喵のEch0` },
+    { title: `${loaderData.title} - 克喵のEch0` },
     {
       name: "description",
-      content: data.description || data.title,
+      content: loaderData.description || loaderData.title,
     },
-    { property: "og:title", content: `${data.title} - 克喵のEch0` },
+    { property: "og:title", content: `${loaderData.title} - 克喵のEch0` },
     { property: "og:url", content: absoluteUrl("/privacy") },
   ];
 }

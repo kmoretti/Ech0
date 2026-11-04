@@ -319,7 +319,11 @@ const loadCommentPreviews = async (options: { force?: boolean } = {}) => {
   if (cached) {
     applyCommentPreviews(cached.data.comments)
     if (!cached.fresh) {
-      void refreshHomeCacheInBackground(HOME_COMMENTS_CACHE_KEY, HOME_CACHE_TTL, fetchCommentsPayload)
+      void refreshHomeCacheInBackground(
+        HOME_COMMENTS_CACHE_KEY,
+        HOME_CACHE_TTL,
+        fetchCommentsPayload,
+      )
     }
     return
   }
@@ -457,7 +461,11 @@ onBeforeUnmount(() => {
             <p v-if="siteTitle" class="site-card__intro">{{ siteTitle }}</p>
           </header>
           <div class="site-card__actions">
-            <button type="button" :aria-label="t('homeHeader.searchTitle')" @click="emit('open-palette')">
+            <button
+              type="button"
+              :aria-label="t('homeHeader.searchTitle')"
+              @click="emit('open-palette')"
+            >
               <Search />
             </button>
             <button
@@ -468,7 +476,12 @@ onBeforeUnmount(() => {
               <Home v-if="exploreMode" />
               <Hub v-else />
             </button>
-            <button v-if="userStore.isLogin" type="button" :aria-label="t('homeSidebar.panel')" @click="openPanel">
+            <button
+              v-if="userStore.isLogin"
+              type="button"
+              :aria-label="t('homeSidebar.panel')"
+              @click="openPanel"
+            >
               <Setting />
             </button>
             <button
@@ -493,7 +506,12 @@ onBeforeUnmount(() => {
               {{ siteFooterContent }}
             </a>
             <span v-else>{{ siteFooterContent || '\u00a0' }}</span>
-            <a :href="projectUrl" target="_blank" rel="noopener noreferrer" class="site-card__github">
+            <a
+              :href="projectUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="site-card__github"
+            >
               <Github />
               <span>Ech0</span>
             </a>
@@ -519,14 +537,16 @@ onBeforeUnmount(() => {
           variant="masonry"
           @refresh="refresh"
         />
-        <TheHubEcho
-          v-else-if="item.type === 'hub-echo'"
-          :echo="item.echo"
-        />
+        <TheHubEcho v-else-if="item.type === 'hub-echo'" :echo="item.echo" />
       </div>
     </div>
 
-    <div v-if="shouldShowHubInlineLoading" class="feed-status feed-status--inline-loading" role="status" aria-live="polite">
+    <div
+      v-if="shouldShowHubInlineLoading"
+      class="feed-status feed-status--inline-loading"
+      role="status"
+      aria-live="polite"
+    >
       <span class="feed-pager__spinner" aria-hidden="true"></span>
       <span>{{ t('homeFeed.loading') }}</span>
     </div>
@@ -537,19 +557,30 @@ onBeforeUnmount(() => {
       {{ echoStore.isFilteringMode ? t('homeFeed.noMoreFiltered') : t('homeFeed.noMore') }}
     </div>
     <div
-      v-else-if="!shouldShowFullInitialLoading && exploreMode && hubEchoList.length === 0 && hubHasTriedInitialLoad"
+      v-else-if="
+        !shouldShowFullInitialLoading &&
+        exploreMode &&
+        hubEchoList.length === 0 &&
+        hubHasTriedInitialLoad
+      "
       class="feed-status"
     >
       {{ t('hub.emptyConnectHint') }}
     </div>
     <div
-      v-else-if="!shouldShowFullInitialLoading && exploreMode && hubEchoList.length > 0 && !canLoadMore"
+      v-else-if="
+        !shouldShowFullInitialLoading && exploreMode && hubEchoList.length > 0 && !canLoadMore
+      "
       class="feed-status"
     >
       {{ t('hub.noMoreData') }}
     </div>
     <nav
-      v-else-if="!shouldShowFullInitialLoading && !shouldShowHubInlineLoading && (canLoadMore || isLoadingMore)"
+      v-else-if="
+        !shouldShowFullInitialLoading &&
+        !shouldShowHubInlineLoading &&
+        (canLoadMore || isLoadingMore)
+      "
       class="feed-pager"
       :aria-label="t('homeFeed.loading')"
     >
@@ -578,8 +609,7 @@ onBeforeUnmount(() => {
   grid-auto-flow: row;
   grid-auto-rows: 2px;
   align-items: start;
-  column-gap: 8px;
-  row-gap: 0;
+  gap: 0 8px;
   width: 100%;
   padding: 0;
 }
@@ -796,7 +826,10 @@ onBeforeUnmount(() => {
   background: transparent;
   border: 0;
   border-radius: var(--radius-xs);
-  transition: transform 180ms ease, color 180ms ease, background-color 180ms ease;
+  transition:
+    transform 180ms ease,
+    color 180ms ease,
+    background-color 180ms ease;
 }
 
 .site-card__actions button :deep(svg) {
@@ -899,26 +932,38 @@ onBeforeUnmount(() => {
 }
 
 @keyframes feed-spinner {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes card-enter {
-  from { opacity: 0; transform: translateY(16px) scale(0.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @media (width < 640px) {
   .masonry-grid {
     grid-template-columns: 1fr;
-    column-gap: 8px;
-    row-gap: 0;
+    gap: 0 8px;
     padding: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .masonry-cell { animation: none; }
+  .masonry-cell {
+    animation: none;
+  }
 
-  .feed-pager__spinner { animation: none; }
+  .feed-pager__spinner {
+    animation: none;
+  }
 }
 </style>

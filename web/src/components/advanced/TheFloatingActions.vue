@@ -31,9 +31,7 @@ const getScrollContainer = () => {
   const homeMain = document.querySelector<HTMLElement>('.home-main')
   if (!homeMain || homeMain.scrollHeight <= homeMain.clientHeight + 1) return null
   const overflowY = window.getComputedStyle(homeMain).overflowY
-  return overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay'
-    ? homeMain
-    : null
+  return overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay' ? homeMain : null
 }
 
 const updateBackTop = () => {
@@ -42,9 +40,7 @@ const updateBackTop = () => {
 }
 
 const openPublish = () => {
-  router.push(
-    userStore.isLogin ? { name: 'home', query: { tab: 'publish' } } : { name: 'auth' },
-  )
+  router.push(userStore.isLogin ? { name: 'home', query: { tab: 'publish' } } : { name: 'auth' })
 }
 
 const scrollToTop = () => {
@@ -114,15 +110,20 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 2.75rem;
+  height: 2.75rem;
   color: var(--color-text-secondary);
   background: color-mix(in srgb, var(--color-bg-surface) 92%, transparent);
   border: 1px solid var(--color-border-subtle);
   border-radius: 50%;
   box-shadow: 0 10px 28px rgb(0 0 0 / 10%);
   backdrop-filter: blur(12px);
-  transition: transform 180ms ease, color 180ms ease, box-shadow 180ms ease;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .floating-actions__button:hover {
@@ -140,11 +141,14 @@ onBeforeUnmount(() => {
 .floating-actions__button :deep(svg) {
   width: 1.15rem;
   height: 1.15rem;
+  pointer-events: none;
 }
 
 .floating-action-enter-active,
 .floating-action-leave-active {
-  transition: opacity 220ms ease, transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    opacity 220ms ease,
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .floating-action-enter-from,

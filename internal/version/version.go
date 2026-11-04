@@ -21,7 +21,7 @@ const (
 
 // Version is the application release version. Release builds may override it
 // with -ldflags so fork-specific release numbers are reflected at runtime.
-var Version = "5.7.0"
+var Version = "5.8.3"
 
 var Commit = "unknown"
 

@@ -13,6 +13,7 @@
             :apply-title="t('commonUi.apply')"
             :cancel-title="t('commonUi.cancel')"
             :edit-title="t('commonUi.edit')"
+            :busy="saving"
             @apply="handleUpdateUser"
             @toggle="editMode = !editMode"
           />
@@ -155,8 +156,11 @@ const userInfo = ref<App.Api.User.UserInfo>({
 })
 
 const editMode = ref<boolean>(false)
+const saving = ref<boolean>(false)
 const avatarSrc = computed(() => resolveAvatarUrl(user.value?.avatar, DEFAULT_USER_AVATAR_URL))
-const hasCustomAvatar = computed(() => Boolean(userInfo.value.avatar || userInfo.value.avatar_file_id))
+const hasCustomAvatar = computed(() =>
+  Boolean(userInfo.value.avatar || userInfo.value.avatar_file_id),
+)
 // 用户界面语言统一用 endonym 选项（与头部切换器、站点默认语言一致）。
 const localeOptions = LOCALE_OPTIONS
 const localeLabel = computed(
@@ -166,6 +170,8 @@ const { enqueueUpload, waitForTask, clearFinishedUploads } = useFileQueue()
 const { openConfirm } = useBaseDialog()
 
 const handleUpdateUser = async () => {
+  if (saving.value) return
+  saving.value = true
   await fetchUpdateUser(userInfo.value)
     .then((res) => {
       if (res.code === 1) {
@@ -176,6 +182,7 @@ const handleUpdateUser = async () => {
       }
     })
     .finally(() => {
+      saving.value = false
       refreshCurrentUser()
     })
     .catch((err) => {
