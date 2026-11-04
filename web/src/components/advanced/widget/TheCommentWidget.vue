@@ -40,11 +40,14 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
-defineProps<{ fluid?: boolean }>()
+const props = defineProps<{
+  fluid?: boolean
+  demoComment?: App.Api.Comment.CommentItem
+}>()
 
 const router = useRouter()
 const { t } = useI18n()
-const randomComment = ref<App.Api.Comment.CommentItem | null>(null)
+const randomComment = ref<App.Api.Comment.CommentItem | null>(props.demoComment ?? null)
 const commentLoading = ref(false)
 const canJumpToEchoDetail = computed(
   () => Boolean(randomComment.value?.echo_id) && !commentLoading.value,
@@ -97,6 +100,7 @@ const handleJumpToEchoDetail = () => {
 }
 
 onMounted(() => {
+  if (props.demoComment) return
   void loadRandomComment()
 })
 </script>
@@ -121,7 +125,7 @@ onMounted(() => {
   width: 34px;
   height: 34px;
   border-radius: 9999px;
-  background: #f2e68f;
+  background: #e9e3d8;
   border: 1.5px solid #3f362d;
   transform: rotate(-5deg);
 }

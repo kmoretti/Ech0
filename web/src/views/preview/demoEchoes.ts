@@ -21,6 +21,10 @@ const tagWalk = tag('t-walk', '散步', 6)
 
 const now = Date.now()
 
+// Resolve local fixture art against the dev server, not the API origin.
+const previewAsset = (name: string) =>
+  new URL(`/preview/${name}`, window.location.origin).toString()
+
 const at = (daysAgo: number, hour: number, minute: number) => {
   const date = new Date(now)
   date.setDate(date.getDate() - daysAgo)
@@ -110,6 +114,21 @@ export const demoEchoes: Echo[] = [
   },
   {
     ...base,
+    id: 'demo-web',
+    created_at: at(1, 10, 5),
+    fav_count: 6,
+    tags: [tagReading],
+    content: '收藏一个很安静的博客。主人写旧书店、写雨，也写搬家时舍不得扔掉的空玻璃瓶。',
+    extension: {
+      type: 'WEBSITE',
+      payload: {
+        title: '山月记 · 一个安静的博客',
+        site: 'https://example.com/shanyue',
+      },
+    },
+  },
+  {
+    ...base,
     id: 'demo-06',
     created_at: at(2, 20, 17),
     fav_count: 6,
@@ -121,6 +140,43 @@ export const demoEchoes: Echo[] = [
       '',
       '回来的时候，楼道里飘着谁家的饭菜香。忽然觉得，所谓生活，大概就是这些不必被记录的瞬间，在身体里慢慢积成了温度。',
     ].join('\n'),
+  },
+  {
+    ...base,
+    id: 'demo-media',
+    created_at: at(2, 16, 0),
+    fav_count: 8,
+    tags: [tagDaily],
+    layout: 'grid',
+    content: '傍晚在窗边画的两张小稿。',
+    echo_files: [
+      {
+        echo_id: 'demo-media',
+        file_id: 'preview-ink-1',
+        file: {
+          id: 'preview-ink-1',
+          url: previewAsset('ink-mountain.svg'),
+          storage_type: 'local',
+          category: 'image',
+          content_type: 'image/svg+xml',
+          width: 800,
+          height: 600,
+        },
+      },
+      {
+        echo_id: 'demo-media',
+        file_id: 'preview-ink-2',
+        file: {
+          id: 'preview-ink-2',
+          url: previewAsset('ink-window.svg'),
+          storage_type: 'local',
+          category: 'image',
+          content_type: 'image/svg+xml',
+          width: 800,
+          height: 600,
+        },
+      },
+    ],
   },
   {
     ...base,
@@ -141,6 +197,20 @@ export const demoEchoes: Echo[] = [
   },
   {
     ...base,
+    id: 'demo-github',
+    created_at: at(3, 9, 40),
+    fav_count: 14,
+    tags: [tagWriting],
+    content: '最近在读的源码。一个把「轻量」真正落实下来的自托管项目。',
+    extension: {
+      type: 'GITHUBPROJ',
+      payload: {
+        repoUrl: 'https://github.com/lin-snow/Ech0',
+      },
+    },
+  },
+  {
+    ...base,
     id: 'demo-09',
     created_at: at(4, 18, 50),
     fav_count: 4,
@@ -150,6 +220,22 @@ export const demoEchoes: Echo[] = [
       '',
       '读完忽然想把自己的 RSS 重新整理一遍。互联网这么大，还是想留一小块地方，只放喜欢的东西。',
     ].join('\n'),
+  },
+  {
+    ...base,
+    id: 'demo-location',
+    created_at: at(4, 12, 15),
+    fav_count: 5,
+    tags: [tagWalk],
+    content: '在湖边坐了一下午。风把水面吹成一张揉皱的纸。',
+    extension: {
+      type: 'LOCATION',
+      payload: {
+        placeholder: '杭州 · 西湖边',
+        latitude: 30.246,
+        longitude: 120.148,
+      },
+    },
   },
   {
     ...base,

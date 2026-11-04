@@ -240,31 +240,28 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .home-page {
-  --home-canvas: var(--color-bg-canvas, #f5f3ef);
-  --home-accent: #e07020;
-  --home-main-max: 33rem;
+  --home-canvas: #ece9e3;
+  --home-accent: #292622;
+  --home-main-max: 46rem;
 
-  /* Star journal palette — shared by HomeBanner / TheEchos / TheEchoCard */
-  --sj-canvas: #f7f3ea;
-  --sj-paper: #fffdf7;
-  --sj-ink: #2f251d;
-  --sj-ink-2: #6f6357;
-  --sj-ink-3: #9a8d7e;
-  --sj-line: #e6ddcf;
-  --sj-line-strong: #d5c7b4;
-  --sj-accent: #b84200;
-  --sj-gold: #b08a3e;
+  /* Desk palette — paper, graphite and a single restrained brick accent. */
+  --sj-canvas: #ece9e3;
+  --sj-paper: #fbfaf7;
+  --sj-paper-2: #f5f2ec;
+  --sj-kraft: #e7e1d7;
+  --sj-ink: #292622;
+  --sj-ink-2: #605b55;
+  --sj-ink-3: #928c84;
+  --sj-line: #d9d3ca;
+  --sj-line-strong: #c3bcb2;
+  --sj-accent: #8a4132;
 
   min-height: 100dvh;
   background:
-    radial-gradient(
-      70rem 42rem at 50% -12%,
-      color-mix(in srgb, var(--sj-gold) 7%, transparent),
-      transparent 62%
-    ),
+    radial-gradient(90rem 50rem at 50% -18%, rgb(255 255 255 / 42%), transparent 62%),
     radial-gradient(
       circle at 1px 1px,
-      color-mix(in srgb, var(--sj-ink) 3.2%, transparent) 1px,
+      color-mix(in srgb, var(--sj-ink) 3.5%, transparent) 1px,
       transparent 0
     ),
     var(--home-canvas);
@@ -276,32 +273,31 @@ onBeforeUnmount(() => {
 }
 
 .sunny .home-page {
-  --sj-canvas: #f8f4e8;
-  --sj-paper: #fffef8;
-  --sj-gold: #a98a45;
-  --sj-accent: #a84812;
+  --home-canvas: #f1ede5;
+  --sj-canvas: #f1ede5;
+  --sj-paper: #fdfbf6;
+  --sj-paper-2: #f7f3ec;
+  --sj-kraft: #e9e3d8;
 }
 
 .dark .home-page {
-  --sj-canvas: #171412;
-  --sj-paper: #201b17;
-  --sj-ink: #efe6d8;
-  --sj-ink-2: #b9ab99;
-  --sj-ink-3: #8a7c6b;
-  --sj-line: #352c24;
-  --sj-line-strong: #4b3e32;
-  --sj-accent: #e07a3a;
-  --sj-gold: #d0a95f;
+  --home-canvas: #191715;
+  --sj-canvas: #191715;
+  --sj-paper: #23201d;
+  --sj-paper-2: #201d1a;
+  --sj-kraft: #2b2621;
+  --sj-ink: #e9e4dc;
+  --sj-ink-2: #b8b1a8;
+  --sj-ink-3: #8d867d;
+  --sj-line: #3a352f;
+  --sj-line-strong: #4e4841;
+  --sj-accent: #a85c49;
 
   background:
-    radial-gradient(
-      70rem 42rem at 50% -12%,
-      color-mix(in srgb, var(--sj-gold) 8%, transparent),
-      transparent 60%
-    ),
+    radial-gradient(90rem 50rem at 50% -18%, rgb(255 255 255 / 4%), transparent 62%),
     radial-gradient(
       circle at 1px 1px,
-      color-mix(in srgb, var(--sj-ink) 4.2%, transparent) 1px,
+      color-mix(in srgb, var(--sj-ink) 5%, transparent) 1px,
       transparent 0
     ),
     var(--home-canvas);
@@ -319,7 +315,7 @@ onBeforeUnmount(() => {
 }
 
 .home-shell {
-  max-width: 50rem;
+  max-width: 64rem;
   margin: 1rem auto 2.5rem;
   padding: 0 0.75rem;
 }

@@ -2,40 +2,38 @@
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
   <article
-    class="star-letter group"
-    :class="{
-      'star-letter--featured': featured,
-      'star-letter--dropcap': dropCap,
-      'star-letter--private': echo.private,
-    }"
+    class="desk-note group"
+    :class="[
+      noteStyleClass,
+      fastenerClass,
+      {
+        'desk-note--wide': wide,
+        'desk-note--dropcap': dropCap,
+        'desk-note--private': echo.private,
+      },
+    ]"
+    :style="noteInlineStyle"
   >
-    <div class="star-letter__index" aria-hidden="true">
-      <span class="star-letter__index-num">{{ letterNo || '01' }}</span>
-      <span class="star-letter__index-line"></span>
-    </div>
+    <span class="desk-note__fastener" aria-hidden="true"></span>
 
-    <div class="star-letter__paper">
-      <span class="star-letter__fold" aria-hidden="true"></span>
+    <div class="desk-note__sheet">
+      <header class="desk-note__head">
+        <span class="desk-note__serial">No.{{ letterNo || '01' }}</span>
+        <span class="desk-note__time">{{ timeLabel }}</span>
+        <span class="desk-note__dot" aria-hidden="true"></span>
+        <span class="desk-note__words">{{ t('starJournal.words', { count: wordCount }) }}</span>
+        <span v-if="props.echo.private" class="desk-note__private">
+          {{ t('echoCard.privateStatus') }}
+        </span>
 
-      <header class="star-letter__head">
-        <div class="star-letter__stamp">
-          <span class="star-letter__time">{{ timeLabel }}</span>
-          <span class="star-letter__sep" aria-hidden="true"></span>
-          <span class="star-letter__words">{{ t('starJournal.words', { count: wordCount }) }}</span>
-          <span v-if="props.echo.private" class="star-letter__private">
-            <Lock class="star-letter__private-icon" />
-            {{ t('echoCard.privateStatus') }}
-          </span>
-        </div>
-
-        <div v-if="userStore.isLogin" class="star-letter__menu-wrap">
+        <div v-if="userStore.isLogin" class="desk-note__menu-wrap">
           <button
             ref="menuTriggerRef"
             type="button"
             :aria-label="t('echoCard.moreActions')"
             :aria-expanded="isMenuOpen"
             aria-haspopup="menu"
-            class="star-letter__menu-btn"
+            class="desk-note__menu-btn"
             @click.stop="toggleMenu"
           >
             <More class="w-4 h-4" />
@@ -54,9 +52,9 @@
                 v-if="isMenuOpen"
                 ref="menuPanelRef"
                 :style="menuPanelStyle"
-                class="star-letter__menu"
+                class="desk-note__menu"
               >
-                <div v-if="props.echo.private" class="star-letter__menu-note">
+                <div v-if="props.echo.private" class="desk-note__menu-note">
                   <Lock class="w-3 h-3" />
                   <span>{{ t('echoCard.privateStatus') }}</span>
                 </div>
@@ -93,12 +91,12 @@
         </div>
       </header>
 
-      <div class="star-letter__body">
+      <div class="desk-note__body">
         <template v-if="isContentLeadingEcho(props.echo)">
-          <div class="star-letter__prose">
+          <div class="desk-note__prose">
             <TheMdPreview :content="props.echo.content" />
           </div>
-          <div class="star-letter__media" :class="{ 'star-letter__media--av': isAvEcho }">
+          <div class="desk-note__media" :class="{ 'desk-note__media--av': isAvEcho }">
             <TheMediaPlayer
               :echo="props.echo"
               :layout="props.echo.layout"
@@ -108,34 +106,34 @@
         </template>
 
         <template v-else>
-          <div class="star-letter__media" :class="{ 'star-letter__media--av': isAvEcho }">
+          <div class="desk-note__media" :class="{ 'desk-note__media--av': isAvEcho }">
             <TheMediaPlayer
               :echo="props.echo"
               :layout="props.echo.layout"
               :priority="props.index === 0"
             />
           </div>
-          <div class="star-letter__prose">
+          <div class="desk-note__prose">
             <TheMdPreview :content="props.echo.content" />
           </div>
         </template>
 
-        <div v-if="props.echo.extension" class="star-letter__extension">
+        <div v-if="props.echo.extension" class="desk-note__extension">
           <TheExtensionRenderer :echo="props.echo" />
         </div>
       </div>
 
-      <footer class="star-letter__foot">
-        <ul v-if="tags.length" class="star-letter__tags">
-          <li v-for="tag in tags" :key="tag.id" class="star-letter__tag">
+      <footer class="desk-note__foot">
+        <ul v-if="tags.length" class="desk-note__tags">
+          <li v-for="tag in tags" :key="tag.id" class="desk-note__tag">
             <span aria-hidden="true">#</span>{{ tag.name }}
           </li>
         </ul>
-        <span v-else class="star-letter__foot-ornament" aria-hidden="true">✦</span>
+        <span v-else class="desk-note__foot-ornament" aria-hidden="true">· ·</span>
 
-        <button type="button" class="star-letter__open" @click="handleExpandEcho(echo.id)">
+        <button type="button" class="desk-note__open" @click="handleExpandEcho(echo.id)">
           <span>{{ t('echoCard.openDetail') }}</span>
-          <Open class="star-letter__open-icon" />
+          <Open class="desk-note__open-icon" />
         </button>
       </footer>
     </div>
@@ -179,13 +177,28 @@ const emit = defineEmits(['refresh'])
 
 type Echo = App.Api.Ech0.Echo
 
+type NoteStyle = 'plain' | 'ruled' | 'grid' | 'kraft' | 'trace'
+type Fastener = 'tape' | 'pin' | 'staple'
+
 const props = defineProps<{
   echo: Echo
   index?: number
   featured?: boolean
   dropCap?: boolean
   letterNo?: string
+  noteStyle?: NoteStyle
+  fastener?: Fastener
+  tilt?: number
+  offset?: number
+  wide?: boolean
 }>()
+
+const noteStyleClass = computed(() => `desk-note--${props.noteStyle ?? 'plain'}`)
+const fastenerClass = computed(() => `desk-note--${props.fastener ?? 'tape'}`)
+const noteInlineStyle = computed(() => ({
+  '--note-tilt': `${props.tilt ?? 0}deg`,
+  '--note-offset': `${props.offset ?? 0}px`,
+}))
 
 const isAvEcho = computed(
   () => getEchoFilesBy(props.echo, { categories: ['audio', 'video'] }).length > 0,
@@ -323,182 +336,201 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="css">
-.star-letter {
-  --sl-ink: var(--sj-ink, #2f251d);
-  --sl-ink-soft: var(--sj-ink-2, #6f6357);
-  --sl-ink-faint: var(--sj-ink-3, #9a8d7e);
-  --sl-line: var(--sj-line, #e6ddcf);
-  --sl-line-strong: var(--sj-line-strong, #d5c7b4);
-  --sl-paper: var(--sj-paper, #fffdf7);
-  --sl-canvas: var(--sj-canvas, #f7f3ea);
-  --sl-accent: var(--sj-accent, #b84200);
-  --sl-gold: var(--sj-gold, #b08a3e);
+.desk-note {
+  --note-ink: var(--sj-ink, #292622);
+  --note-ink-2: var(--sj-ink-2, #605b55);
+  --note-ink-3: var(--sj-ink-3, #928c84);
+  --note-line: var(--sj-line, #d9d3ca);
+  --note-line-strong: var(--sj-line-strong, #c3bcb2);
+  --note-paper: var(--sj-paper, #fbfaf7);
 
   position: relative;
-  display: grid;
-  grid-template-columns: 2.1rem minmax(0, 1fr);
-  gap: 0.55rem;
+  grid-row: span var(--note-rows, 1);
   width: 100%;
   min-width: 0;
-  animation: ink-settle 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform: rotate(var(--note-tilt, 0deg)) translateY(var(--note-offset, 0));
+  transition:
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 420ms ease;
+  animation: note-settle 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.star-letter__index {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  padding-top: 0.9rem;
-  color: var(--sl-ink-faint);
-  user-select: none;
+.desk-note--wide {
+  grid-column: 1 / -1;
 }
 
-.star-letter__index-num {
-  font-family: var(--font-family-display);
-  font-size: 0.66rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  font-variant-numeric: tabular-nums;
+.desk-note__fastener {
+  position: absolute;
+  z-index: 2;
+  top: -0.52rem;
+  left: 50%;
+  pointer-events: none;
 }
 
-.star-letter__index-line {
-  width: 1px;
-  flex: 1 1 auto;
-  min-height: 1.4rem;
-  background: linear-gradient(
-    to bottom,
-    var(--sl-line-strong),
-    color-mix(in srgb, var(--sl-line) 25%, transparent)
-  );
+.desk-note--tape .desk-note__fastener {
+  width: 4.6rem;
+  height: 1.2rem;
+  transform: translateX(-50%) rotate(-1.8deg);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--note-ink) 7%, transparent) 0 2px,
+      transparent 2px 5px
+    ),
+    color-mix(in srgb, #fff 55%, var(--note-line) 45%);
+  opacity: 0.72;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--note-ink) 8%, transparent);
+  clip-path: polygon(2% 6%, 98% 0, 100% 92%, 0 100%);
 }
 
-.star-letter__paper {
+.desk-note--pin .desk-note__fastener {
+  width: 0.62rem;
+  height: 0.62rem;
+  transform: translate(-50%, 0);
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #fff 0 18%, #a8a29a 42%, #625d57 100%);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--note-ink) 30%, transparent),
+    0 4px 7px -3px color-mix(in srgb, var(--note-ink) 35%, transparent);
+}
+
+.desk-note--staple .desk-note__fastener {
+  top: 0.32rem;
+  left: 0.55rem;
+  width: 0.7rem;
+  height: 0.42rem;
+  transform: rotate(-28deg);
+  border-top: 1.5px solid color-mix(in srgb, var(--note-ink) 45%, transparent);
+  border-bottom: 1.5px solid color-mix(in srgb, var(--note-ink) 30%, transparent);
+  opacity: 0.55;
+}
+
+.desk-note__sheet {
   position: relative;
   min-width: 0;
-  padding: 0.95rem 1.1rem 0.8rem;
-  background:
-    radial-gradient(
-      120% 90% at 100% 0%,
-      color-mix(in srgb, var(--sl-gold) 6%, transparent),
-      transparent 55%
-    ),
-    var(--sl-paper);
-  border: 1px solid var(--sl-line);
-  border-radius: 3px 15px 3px 3px;
+  padding: 1.05rem 1.1rem 0.82rem;
+  color: var(--note-ink);
+  background-color: var(--note-paper);
+  border: 1px solid var(--note-line);
+  border-radius: 2px;
   box-shadow:
-    0 1px 0 color-mix(in srgb, var(--sl-ink) 4%, transparent),
-    0 14px 30px -26px color-mix(in srgb, var(--sl-ink) 55%, transparent);
-  transition:
-    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 260ms ease,
-    border-color 260ms ease;
+    0 1px 0 color-mix(in srgb, var(--note-ink) 4%, transparent),
+    0 1px 2px color-mix(in srgb, var(--note-ink) 5%, transparent),
+    0 16px 28px -24px color-mix(in srgb, var(--note-ink) 55%, transparent);
+  overflow: hidden;
 }
 
-.star-letter__paper::after {
+.desk-note__sheet::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
-.star-letter__fold {
-  position: absolute;
-  top: -1px;
-  right: -1px;
-  width: 1.15rem;
-  height: 1.15rem;
-  background: linear-gradient(
-    225deg,
-    var(--sl-canvas) 0 47%,
-    var(--sl-line-strong) 48% 51%,
-    var(--sl-paper) 52%
+/* Paper stocks */
+.desk-note--ruled .desk-note__sheet {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 1.62rem,
+    color-mix(in srgb, var(--note-ink) 8%, transparent) 1.62rem calc(1.62rem + 1px)
   );
-  border-bottom-left-radius: 2px;
-  border-top-right-radius: 14px;
-  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
-  transform-origin: top right;
+  background-position: 0 3.25rem;
 }
 
-.star-letter__fold::after {
+.desk-note--grid .desk-note__sheet {
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 1.3rem,
+      color-mix(in srgb, var(--note-ink) 7%, transparent) 1.3rem calc(1.3rem + 1px)
+    ),
+    repeating-linear-gradient(
+      to right,
+      transparent 0 1.3rem,
+      color-mix(in srgb, var(--note-ink) 7%, transparent) 1.3rem calc(1.3rem + 1px)
+    );
+  background-position: 0 3.25rem;
+}
+
+.desk-note--kraft .desk-note__sheet {
+  background-color: var(--sj-kraft, #e7e1d7);
+}
+
+.desk-note--trace .desk-note__sheet {
+  background-color: color-mix(in srgb, var(--note-paper) 76%, var(--sj-canvas, #ece9e3) 24%);
+}
+
+.desk-note--trace .desk-note__sheet::before {
   content: '';
   position: absolute;
-  right: 0.22rem;
-  top: 0.22rem;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    118deg,
+    transparent 0 42%,
+    color-mix(in srgb, #fff 55%, transparent) 46%,
+    transparent 58%
+  );
+  opacity: 0.35;
+}
+
+.desk-note__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.42rem;
+  min-height: 1.25rem;
+  margin-bottom: 0.55rem;
+  font-family: var(--font-family-display);
+  font-size: 0.64rem;
+  letter-spacing: 0.07em;
+  color: var(--note-ink-3);
+}
+
+.desk-note__serial {
+  padding: 0.02rem 0.28rem;
+  border: 1px solid var(--note-line);
+  color: var(--note-ink-2);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+}
+
+.desk-note__time {
+  color: var(--note-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-note__dot {
   width: 2px;
   height: 2px;
   border-radius: 50%;
-  background: var(--sl-gold);
-  opacity: 0;
-  transition: opacity 260ms ease;
+  background: var(--note-line-strong);
 }
 
-.star-letter__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  min-height: 1.4rem;
-  margin-bottom: 0.55rem;
+.desk-note__private {
+  padding: 0.02rem 0.3rem;
+  border: 1px solid var(--note-line-strong);
+  color: var(--note-ink-2);
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
 }
 
-.star-letter__stamp {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-width: 0;
-  font-family: var(--font-family-display);
-  font-size: 0.69rem;
-  letter-spacing: 0.04em;
-  color: var(--sl-ink-faint);
-}
-
-.star-letter__time {
-  font-variant-numeric: tabular-nums;
-  color: var(--sl-ink-soft);
-}
-
-.star-letter__sep {
-  width: 0.9rem;
-  height: 1px;
-  background: var(--sl-line-strong);
-}
-
-.star-letter__words {
-  white-space: nowrap;
-}
-
-.star-letter__private {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  padding: 0.08rem 0.32rem;
-  border: 1px solid color-mix(in srgb, var(--sl-accent) 35%, transparent);
-  border-radius: 2px;
-  color: var(--sl-accent);
-  font-size: 0.6rem;
-  letter-spacing: 0.08em;
-}
-
-.star-letter__private-icon {
-  width: 0.66rem;
-  height: 0.66rem;
-}
-
-.star-letter__menu-wrap {
+.desk-note__menu-wrap {
+  margin-left: auto;
   flex: none;
 }
 
-.star-letter__menu-btn {
+.desk-note__menu-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.65rem;
-  height: 1.65rem;
+  width: 1.55rem;
+  height: 1.55rem;
   border-radius: 50%;
-  color: var(--sl-ink-faint);
+  color: var(--note-ink-3);
   border: 1px solid transparent;
   transition:
     color 180ms ease,
@@ -506,177 +538,176 @@ onBeforeUnmount(() => {
     background-color 180ms ease;
 }
 
-.star-letter__menu-btn:hover,
-.star-letter__menu-btn:focus-visible {
-  color: var(--sl-ink);
-  border-color: var(--sl-line-strong);
-  background: color-mix(in srgb, var(--sl-paper) 70%, var(--sl-line) 30%);
+.desk-note__menu-btn:hover,
+.desk-note__menu-btn:focus-visible {
+  color: var(--note-ink);
+  border-color: var(--note-line-strong);
+  background: color-mix(in srgb, var(--note-paper) 70%, var(--note-line) 30%);
   outline: none;
 }
 
-.star-letter__body {
+.desk-note__body {
   min-width: 0;
 }
 
-.star-letter__prose {
+.desk-note__prose {
   min-width: 0;
-  color: var(--sl-ink);
+  color: var(--note-ink);
 }
 
-.star-letter__prose :deep(.echo-markdown) {
-  font-size: 0.925rem;
+.desk-note__prose :deep(.echo-markdown) {
+  font-size: 0.9rem;
   line-height: 1.78;
 }
 
-.star-letter__prose :deep(.echo-markdown > div > p) {
-  margin-block: 0.35em;
+.desk-note__prose :deep(.echo-markdown > div > p) {
+  margin-block: 0.32em;
 }
 
-.star-letter__media {
+.desk-note__media {
+  margin-bottom: 0.65rem;
+}
+
+.desk-note__media--av {
   margin-bottom: 0.7rem;
 }
 
-.star-letter__media--av {
-  margin-bottom: 0.75rem;
-}
-
-.star-letter__media:empty {
+.desk-note__media:empty {
   display: none;
 }
 
-.star-letter__extension {
+.desk-note__extension {
   margin-top: 0.6rem;
 }
 
-.star-letter__foot {
+.desk-note__extension :deep(.extension-card-shell) {
+  border-color: var(--note-line);
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--note-paper) 82%, var(--sj-canvas, #ece9e3) 18%);
+  box-shadow: none;
+}
+
+.desk-note__extension :deep(.extension-card-shell__header) {
+  border-bottom: 1px dashed var(--note-line);
+  background: transparent;
+  color: var(--note-ink-3);
+}
+
+.desk-note__foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  margin-top: 0.7rem;
-  padding-top: 0.55rem;
-  border-top: 1px dashed color-mix(in srgb, var(--sl-line-strong) 70%, transparent);
+  gap: 0.7rem;
+  margin-top: 0.65rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed color-mix(in srgb, var(--note-line-strong) 75%, transparent);
 }
 
-.star-letter__tags {
+.desk-note__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.32rem;
+  gap: 0.3rem;
   min-width: 0;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.star-letter__tag {
-  padding: 0.06rem 0.4rem;
-  border: 1px dashed var(--sl-line-strong);
-  border-radius: 2px;
-  font-size: 0.66rem;
+.desk-note__tag {
+  padding: 0.04rem 0.36rem;
+  border: 1px dashed var(--note-line-strong);
+  border-radius: 1px;
+  font-size: 0.63rem;
   letter-spacing: 0.03em;
-  color: var(--sl-ink-soft);
-  background: color-mix(in srgb, var(--sl-paper) 82%, var(--sl-line) 18%);
+  color: var(--note-ink-2);
 }
 
-.star-letter__tag > span {
-  color: var(--sl-accent);
-  margin-right: 0.1rem;
+.desk-note__tag > span {
+  margin-right: 0.08rem;
+  color: var(--note-ink-3);
   font-family: var(--font-family-display);
 }
 
-.star-letter__foot-ornament {
-  font-size: 0.62rem;
-  color: color-mix(in srgb, var(--sl-gold) 70%, var(--sl-ink-faint));
-  letter-spacing: 0.2em;
+.desk-note__foot-ornament {
+  font-size: 0.6rem;
+  letter-spacing: 0.28em;
+  color: var(--note-ink-3);
 }
 
-.star-letter__open {
+.desk-note__open {
   display: inline-flex;
   align-items: center;
-  gap: 0.28rem;
+  gap: 0.24rem;
   white-space: nowrap;
   font-family: var(--font-family-display);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   letter-spacing: 0.05em;
-  color: var(--sl-ink-faint);
+  color: var(--note-ink-3);
   transition: color 180ms ease;
 }
 
-.star-letter__open:hover,
-.star-letter__open:focus-visible {
-  color: var(--sl-accent);
+.desk-note__open:hover,
+.desk-note__open:focus-visible {
+  color: var(--note-ink);
   outline: none;
 }
 
-.star-letter__open-icon {
-  width: 0.72rem;
-  height: 0.72rem;
+.desk-note__open-icon {
+  width: 0.68rem;
+  height: 0.68rem;
   transition: transform 200ms ease;
 }
 
-.star-letter__open:hover .star-letter__open-icon {
+.desk-note__open:hover .desk-note__open-icon {
   transform: translate(1px, -1px);
 }
 
-/* Featured letter of the day */
-.star-letter--featured .star-letter__paper {
-  padding-top: 1.15rem;
-  background:
-    radial-gradient(
-      130% 90% at 100% 0%,
-      color-mix(in srgb, var(--sl-gold) 10%, transparent),
-      transparent 52%
-    ),
-    var(--sl-paper);
-  border-color: color-mix(in srgb, var(--sl-line-strong) 82%, var(--sl-gold) 18%);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, var(--sl-ink) 5%, transparent),
-    0 22px 44px -34px color-mix(in srgb, var(--sl-ink) 65%, transparent);
+/* Wide opener: a little more air, a faint quotation mark, no colour. */
+.desk-note--wide .desk-note__sheet {
+  padding: 1.2rem 1.35rem 0.9rem;
 }
 
-.star-letter--featured .star-letter__paper::before {
+.desk-note--wide .desk-note__sheet::before {
   content: '“';
   position: absolute;
-  top: -0.35rem;
-  right: 0.7rem;
+  top: -0.4rem;
+  right: 0.8rem;
   font-family: var(--font-family-display);
   font-size: 4.2rem;
   line-height: 1;
-  color: color-mix(in srgb, var(--sl-accent) 10%, transparent);
+  color: color-mix(in srgb, var(--note-ink) 8%, transparent);
   pointer-events: none;
 }
 
-.star-letter--dropcap
-  .star-letter__prose
-  :deep(.echo-markdown > div > p:first-child)::first-letter {
+.desk-note--wide .desk-note__prose :deep(.echo-markdown) {
+  font-size: 0.94rem;
+}
+
+.desk-note--dropcap .desk-note__prose :deep(.echo-markdown > div > p:first-child)::first-letter {
   float: left;
   margin: 0.04em 0.1em 0 0;
   font-family: var(--font-family-display);
   font-size: 2.7em;
   font-weight: 600;
   line-height: 0.82;
-  color: var(--sl-accent);
+  color: var(--note-ink);
 }
 
 @media (hover: hover) {
-  .star-letter__paper:hover {
-    transform: translateY(-2px);
-    border-color: color-mix(in srgb, var(--sl-line-strong) 82%, var(--sl-gold) 18%);
+  .desk-note:hover {
+    z-index: 3;
+    transform: rotate(0deg) translateY(calc(var(--note-offset, 0px) - 4px));
+  }
+
+  .desk-note:hover .desk-note__sheet {
     box-shadow:
-      0 1px 0 color-mix(in srgb, var(--sl-ink) 5%, transparent),
-      0 20px 36px -28px color-mix(in srgb, var(--sl-ink) 58%, transparent);
-  }
-
-  .star-letter__paper:hover .star-letter__fold {
-    transform: scale(1.12) rotate(2deg);
-  }
-
-  .star-letter__paper:hover .star-letter__fold::after {
-    opacity: 1;
+      0 1px 0 color-mix(in srgb, var(--note-ink) 5%, transparent),
+      0 2px 4px color-mix(in srgb, var(--note-ink) 7%, transparent),
+      0 22px 34px -24px color-mix(in srgb, var(--note-ink) 50%, transparent);
   }
 }
 
-.star-letter__menu {
+.desk-note__menu {
   position: fixed;
   z-index: 5000;
   width: 9rem;
@@ -689,7 +720,7 @@ onBeforeUnmount(() => {
     var(--shadow-md);
 }
 
-.star-letter__menu-note {
+.desk-note__menu-note {
   display: flex;
   align-items: center;
   gap: 0.375rem;
@@ -697,7 +728,7 @@ onBeforeUnmount(() => {
   color: var(--color-text-muted);
 }
 
-.star-letter__menu-note span {
+.desk-note__menu-note span {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -736,39 +767,44 @@ onBeforeUnmount(() => {
   color: var(--color-danger);
 }
 
-@keyframes ink-settle {
+@keyframes note-settle {
   from {
     opacity: 0;
-    filter: blur(3px);
-    transform: translateY(10px);
+    filter: blur(2px);
+    transform: rotate(calc(var(--note-tilt, 0deg) * 1.8))
+      translateY(calc(var(--note-offset, 0px) + 12px));
   }
 
   to {
     opacity: 1;
     filter: blur(0);
-    transform: translateY(0);
+    transform: rotate(var(--note-tilt, 0deg)) translateY(var(--note-offset, 0));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .star-letter {
+  .desk-note {
     animation: none;
+    transition: none;
   }
 }
 
-@media (width <= 480px) {
-  .star-letter {
-    grid-template-columns: 1.55rem minmax(0, 1fr);
-    gap: 0.4rem;
+@media (width <= 640px) {
+  .desk-note {
+    transform: rotate(calc(var(--note-tilt, 0deg) * 0.45))
+      translateY(calc(var(--note-offset, 0px) * 0.4));
   }
 
-  .star-letter__paper {
-    padding: 0.8rem 0.85rem 0.7rem;
-    border-radius: 2px 12px 2px 2px;
+  .desk-note__sheet {
+    padding: 0.85rem 0.9rem 0.72rem;
   }
 
-  .star-letter__stamp {
-    font-size: 0.64rem;
+  .desk-note--wide .desk-note__sheet {
+    padding: 0.95rem 0.95rem 0.75rem;
+  }
+
+  .desk-note__head {
+    font-size: 0.6rem;
   }
 }
 </style>

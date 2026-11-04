@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
-  <WidgetShell v-if="AgentSetting.enable" title="Recent AI" :fluid="fluid">
+  <WidgetShell v-if="AgentSetting.enable || demoText" title="Recent AI" :fluid="fluid">
     <template #icon>
       <RecentIcon />
     </template>
@@ -28,21 +28,28 @@ import { useSettingStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
-defineProps<{ fluid?: boolean }>()
+const props = defineProps<{
+  fluid?: boolean
+  demoText?: string
+}>()
 
 const settingStore = useSettingStore()
 const { AgentSetting } = storeToRefs(settingStore)
 const { t } = useI18n()
 
-const recent = ref<string>(String(t('recentCard.mysteriousRecent')))
-const loading = ref<boolean>(true)
+const recent = ref<string>(props.demoText || String(t('recentCard.mysteriousRecent')))
+const loading = ref<boolean>(!props.demoText)
 
 onMounted(() => {
+  if (props.demoText) return
   if (AgentSetting.value.enable) {
     fetchGetRecent()
       .then((res) => {
-        if (res.code === 1) {
-          recent.value = res.data
+        // Keep the last visible text when the server has nothing new: an
+        // empty completion must never blank the card.
+        const text = String(res.data ?? '').trim()
+        if (res.code === 1 && text) {
+          recent.value = text
         }
       })
       .catch((err) => {

@@ -1,59 +1,57 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
-  <section class="star-hero" aria-label="Intro">
-    <div class="star-hero__sky" aria-hidden="true">
-      <span
-        v-for="(star, index) in skyStars"
-        :key="index"
-        class="star-hero__star"
-        :style="star"
-      ></span>
-      <svg class="star-hero__constellation" viewBox="0 0 132 52" fill="none">
-        <path
-          class="star-hero__constellation-line"
-          d="M8 38 L30 22 L52 30 L76 12 L98 24 L124 9"
-          stroke="currentColor"
-          stroke-width="0.7"
-          stroke-linecap="round"
-        />
-        <circle cx="8" cy="38" r="1.5" fill="currentColor" />
-        <circle cx="30" cy="22" r="2.1" fill="currentColor" />
-        <circle cx="52" cy="30" r="1.2" fill="currentColor" />
-        <circle cx="76" cy="12" r="2.4" fill="currentColor" />
-        <circle cx="98" cy="24" r="1.4" fill="currentColor" />
-        <circle cx="124" cy="9" r="1.8" fill="currentColor" />
-      </svg>
-      <span class="star-hero__shooting"></span>
-    </div>
+  <section class="desk-hero" aria-label="Intro">
+    <span class="desk-hero__clip" aria-hidden="true"></span>
 
-    <div class="star-hero__top">
-      <p class="star-hero__eyebrow">
-        <span class="star-hero__spark" aria-hidden="true">✦</span>
+    <div class="desk-hero__top">
+      <p class="desk-hero__eyebrow">
         <span>{{ t('starJournal.eyebrow') }}</span>
-        <span class="star-hero__date">{{ dateLabel }}</span>
+        <span class="desk-hero__date">{{ dateLabel }}</span>
       </p>
-      <span class="star-hero__seal" aria-hidden="true">{{ t('starJournal.seal') }}</span>
+      <span class="desk-hero__postmark" aria-hidden="true">
+        <span>{{ t('starJournal.seal') }}</span>
+        <span class="desk-hero__postmark-dot"></span>
+      </span>
     </div>
 
-    <p class="star-hero__epigraph">{{ epigraph }}</p>
-    <p class="star-hero__tagline">{{ t('homeBio.tagline') }}</p>
+    <p class="desk-hero__epigraph">{{ epigraph }}</p>
+    <p class="desk-hero__tagline">{{ t('homeBio.tagline') }}</p>
 
-    <div class="star-hero__foot">
+    <div class="desk-hero__foot">
       <RouterLink
         :to="{ name: 'about' }"
-        class="star-hero__powered"
+        class="desk-hero__powered"
         :aria-label="t('about.linkAriaLabel')"
       >
         Powered by Ech0
       </RouterLink>
+
+      <div class="desk-hero__trace" aria-hidden="true">
+        <svg viewBox="0 0 132 40" fill="none">
+          <path
+            class="desk-hero__trace-line"
+            d="M6 30 L28 18 L50 25 L74 10 L96 20 L124 7"
+            stroke="currentColor"
+            stroke-width="0.6"
+            stroke-linecap="round"
+          />
+          <circle cx="6" cy="30" r="1.2" fill="currentColor" />
+          <circle cx="28" cy="18" r="1.7" fill="currentColor" />
+          <circle cx="50" cy="25" r="1" fill="currentColor" />
+          <circle cx="74" cy="10" r="2" fill="currentColor" />
+          <circle cx="96" cy="20" r="1.1" fill="currentColor" />
+          <circle cx="124" cy="7" r="1.5" fill="currentColor" />
+        </svg>
+      </div>
+
       <RouterLink
         :to="{ name: 'about' }"
-        class="star-hero__about"
+        class="desk-hero__about"
         :aria-label="t('about.linkAriaLabel')"
         :title="t('about.linkAriaLabel')"
       >
-        <Exclamation class="star-hero__about-icon" />
+        <Exclamation class="desk-hero__about-icon" />
       </RouterLink>
     </div>
   </section>
@@ -94,111 +92,56 @@ const dateLabel = computed(() =>
     weekday: 'short',
   }).format(new Date()),
 )
-
-const skyStars = [
-  { left: '8%', top: '22%', animationDelay: '-0.4s', animationDuration: '4.2s' },
-  { left: '15%', top: '64%', animationDelay: '-1.7s', animationDuration: '5.1s' },
-  { left: '24%', top: '14%', animationDelay: '-2.9s', animationDuration: '4.6s' },
-  { left: '33%', top: '78%', animationDelay: '-0.9s', animationDuration: '5.4s' },
-  { left: '42%', top: '36%', animationDelay: '-3.3s', animationDuration: '4.1s' },
-  { left: '51%', top: '12%', animationDelay: '-1.2s', animationDuration: '5.8s' },
-  { left: '59%', top: '70%', animationDelay: '-2.2s', animationDuration: '4.8s' },
-  { left: '68%', top: '28%', animationDelay: '-0.1s', animationDuration: '5.2s' },
-  { left: '76%', top: '60%', animationDelay: '-3.8s', animationDuration: '4.4s' },
-  { left: '84%', top: '18%', animationDelay: '-1.9s', animationDuration: '5.6s' },
-  { left: '91%', top: '48%', animationDelay: '-2.6s', animationDuration: '4.9s' },
-  { left: '96%', top: '74%', animationDelay: '-0.7s', animationDuration: '5.3s' },
-]
 </script>
 
 <style scoped>
-.star-hero {
+.desk-hero {
   position: relative;
-  overflow: hidden;
-  margin-top: 0.5rem;
-  margin-bottom: 1rem;
-  padding: 1.05rem 1.15rem 0.85rem;
-  color: var(--sj-ink, #2f251d);
-  background:
-    radial-gradient(
-      120% 140% at 100% 0%,
-      color-mix(in srgb, var(--sj-gold, #b08a3e) 12%, transparent),
-      transparent 55%
-    ),
-    linear-gradient(165deg, var(--sj-paper, #fffdf7), var(--sj-canvas, #f7f3ea) 115%);
-  border: 1px solid var(--sj-line, #e6ddcf);
-  border-radius: 3px 18px 3px 3px;
+  margin: 0.35rem 0 1.25rem;
+  padding: 1.15rem 1.25rem 0.95rem;
+  color: var(--sj-ink, #292622);
+  background-color: var(--sj-paper, #fbfaf7);
+  border: 1px solid var(--sj-line, #d9d3ca);
+  border-radius: 1px;
   box-shadow:
-    0 1px 0 color-mix(in srgb, var(--sj-ink, #2f251d) 4%, transparent),
-    0 24px 50px -40px color-mix(in srgb, var(--sj-ink, #2f251d) 65%, transparent);
+    0 1px 0 color-mix(in srgb, var(--sj-ink, #292622) 4%, transparent),
+    0 1px 2px color-mix(in srgb, var(--sj-ink, #292622) 5%, transparent),
+    0 26px 40px -36px color-mix(in srgb, var(--sj-ink, #292622) 55%, transparent);
+  transform: rotate(-0.28deg);
+  animation: hero-settle 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.star-hero::after {
+.desk-hero::after {
   content: '';
-  position: absolute;
-  right: 1.15rem;
-  bottom: 0.62rem;
-  left: 1.15rem;
-  height: 1px;
-  background: repeating-linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--sj-line-strong, #d5c7b4) 75%, transparent) 0 5px,
-    transparent 5px 10px
-  );
-  pointer-events: none;
-}
-
-.star-hero__sky {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  color: var(--sj-gold, #b08a3e);
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='170' height='170' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
-.star-hero__star {
+.desk-hero__clip {
   position: absolute;
-  width: 2px;
-  height: 2px;
-  border-radius: 50%;
-  background: currentcolor;
-  opacity: 0.55;
-  animation: star-twinkle 5s ease-in-out infinite;
+  z-index: 2;
+  top: -0.42rem;
+  left: 1.6rem;
+  width: 0.62rem;
+  height: 1.45rem;
+  border: 1.5px solid color-mix(in srgb, var(--sj-ink, #292622) 42%, transparent);
+  border-radius: 0.4rem;
+  transform: rotate(8deg);
+  box-shadow: 0 2px 3px -2px color-mix(in srgb, var(--sj-ink, #292622) 35%, transparent);
 }
 
-.star-hero__constellation {
+.desk-hero__clip::after {
+  content: '';
   position: absolute;
-  top: 0.6rem;
-  right: 1.1rem;
-  width: 5.4rem;
-  opacity: 0.34;
-  color: var(--sj-gold, #b08a3e);
+  inset: 0.18rem 0.12rem 0.22rem;
+  border: 1px solid color-mix(in srgb, var(--sj-ink, #292622) 30%, transparent);
+  border-radius: 0.3rem;
 }
 
-.star-hero__constellation-line {
-  stroke-dasharray: 180;
-  stroke-dashoffset: 180;
-  animation: constellation-draw 2.6s cubic-bezier(0.22, 1, 0.36, 1) 0.25s forwards;
-}
-
-.star-hero__shooting {
-  position: absolute;
-  top: 18%;
-  left: -12%;
-  width: 5.5rem;
-  height: 1px;
-  opacity: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--sj-gold, #b08a3e) 70%, white),
-    white
-  );
-  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--sj-gold, #b08a3e) 60%, transparent));
-  transform: rotate(16deg);
-  animation: star-shoot 9.5s cubic-bezier(0.3, 0, 0.55, 1) 2.4s infinite;
-}
-
-.star-hero__top {
+.desk-hero__top {
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -206,117 +149,141 @@ const skyStars = [
   gap: 1rem;
 }
 
-.star-hero__eyebrow {
+.desk-hero__eyebrow {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.45rem;
+  gap: 0.5rem;
   margin: 0;
   font-family: var(--font-family-display);
-  font-size: 0.7rem;
+  font-size: 0.64rem;
   font-weight: 600;
-  letter-spacing: 0.18em;
-  color: var(--sj-ink-3, #9a8d7e);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sj-ink-3, #928c84);
 }
 
-.star-hero__spark {
-  color: var(--sj-gold, #b08a3e);
-  font-size: 0.72rem;
-  letter-spacing: 0;
-}
-
-.star-hero__date {
+.desk-hero__date {
   font-weight: 500;
   letter-spacing: 0.06em;
-  color: var(--sj-ink-3, #9a8d7e);
+  color: var(--sj-ink-3, #928c84);
 }
 
-.star-hero__seal {
+.desk-hero__postmark {
+  position: relative;
   flex: none;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 1.85rem;
-  height: 2.35rem;
-  padding: 0.2rem;
-  border: 1px solid color-mix(in srgb, var(--sj-accent, #b84200) 72%, transparent);
-  border-radius: 2px;
-  color: var(--sj-accent, #b84200);
+  gap: 0.2rem;
+  padding: 0.22rem 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--sj-ink, #292622) 38%, transparent);
+  border-radius: 1px;
   font-family: var(--font-family-display);
-  font-size: 0.58rem;
+  font-size: 0.56rem;
   font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: 0.12em;
-  text-align: center;
-  writing-mode: vertical-rl;
-  background: color-mix(in srgb, var(--sj-accent, #b84200) 5%, transparent);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--sj-accent, #b84200) 18%, transparent);
-  transform: rotate(2.5deg);
+  letter-spacing: 0.16em;
+  color: var(--sj-ink-2, #605b55);
+  transform: rotate(2deg);
 }
 
-.star-hero__epigraph {
+.desk-hero__postmark::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 1px solid color-mix(in srgb, var(--sj-ink, #292622) 16%, transparent);
+  pointer-events: none;
+}
+
+.desk-hero__postmark-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--sj-accent, #8a4132);
+}
+
+.desk-hero__epigraph {
   position: relative;
-  max-width: 26rem;
-  margin: 0.85rem 0 0;
+  max-width: 30rem;
+  margin: 0.9rem 0 0;
   font-family: var(--font-family-display);
-  font-size: clamp(1.32rem, 4.4vw, 1.62rem);
+  font-size: clamp(1.32rem, 4.2vw, 1.6rem);
   font-weight: 560;
   line-height: 1.55;
   letter-spacing: 0.015em;
-  color: var(--sj-ink, #2f251d);
+  color: var(--sj-ink, #292622);
   text-wrap: balance;
   animation: epigraph-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.star-hero__epigraph::before {
+.desk-hero__epigraph::before {
   content: '「';
   position: absolute;
   top: -0.55rem;
-  left: -0.9rem;
-  font-size: 1.1rem;
-  color: color-mix(in srgb, var(--sj-accent, #b84200) 38%, transparent);
+  left: -0.88rem;
+  font-size: 1.05rem;
+  color: color-mix(in srgb, var(--sj-ink, #292622) 26%, transparent);
 }
 
-.star-hero__tagline {
+.desk-hero__tagline {
   margin: 0.55rem 0 0;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   letter-spacing: 0.05em;
-  color: var(--sj-ink-3, #9a8d7e);
+  color: var(--sj-ink-3, #928c84);
 }
 
-.star-hero__foot {
+.desk-hero__foot {
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-top: 0.9rem;
-  padding-bottom: 0.55rem;
+  margin-top: 0.95rem;
+  padding-top: 0.7rem;
+  border-top: 1px dashed color-mix(in srgb, var(--sj-line-strong, #c3bcb2) 70%, transparent);
 }
 
-.star-hero__powered {
+.desk-hero__powered {
   font-family: var(--font-family-display);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.03em;
-  color: var(--sj-ink-3, #9a8d7e);
+  letter-spacing: 0.05em;
+  color: var(--sj-ink-3, #928c84);
   text-decoration: none;
   transition: color 0.18s ease;
 }
 
-.star-hero__powered:hover {
-  color: var(--sj-accent, #b84200);
+.desk-hero__powered:hover {
+  color: var(--sj-ink, #292622);
 }
 
-.star-hero__about {
+.desk-hero__trace {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: flex-end;
+  color: var(--sj-ink-3, #928c84);
+  opacity: 0.72;
+}
+
+.desk-hero__trace svg {
+  width: 7.2rem;
+  height: 2.2rem;
+}
+
+.desk-hero__trace-line {
+  stroke-dasharray: 190;
+  stroke-dashoffset: 190;
+  animation: trace-draw 2.4s cubic-bezier(0.22, 1, 0.36, 1) 0.3s forwards;
+}
+
+.desk-hero__about {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.3rem;
+  height: 1.3rem;
   border-radius: 50%;
-  color: var(--sj-ink-3, #9a8d7e);
+  color: var(--sj-ink-3, #928c84);
   text-decoration: none;
   outline: none;
   transition:
@@ -324,69 +291,34 @@ const skyStars = [
     transform 0.18s ease;
 }
 
-.star-hero__about:hover {
-  color: var(--sj-accent, #b84200);
+.desk-hero__about:hover {
+  color: var(--sj-ink, #292622);
   transform: translateY(-1px);
 }
 
-.star-hero__about:focus-visible {
-  color: var(--sj-accent, #b84200);
-  box-shadow: 0 0 0 2px var(--color-accent-soft);
+.desk-hero__about:focus-visible {
+  color: var(--sj-ink, #292622);
+  box-shadow: 0 0 0 2px var(--sj-line);
 }
 
-.star-hero__about-icon {
-  width: 1rem;
-  height: 1rem;
-  font-size: 1rem;
-  opacity: 0.75;
+.desk-hero__about-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
 }
 
-@keyframes star-twinkle {
-  0%,
-  100% {
-    opacity: 0.2;
-    transform: scale(0.85);
-  }
-
-  50% {
-    opacity: 0.75;
-    transform: scale(1.15);
-  }
-}
-
-@keyframes constellation-draw {
+@keyframes trace-draw {
   to {
     stroke-dashoffset: 0;
-  }
-}
-
-@keyframes star-shoot {
-  0%,
-  86% {
-    opacity: 0;
-    transform: translate(0, 0) rotate(16deg);
-  }
-
-  88% {
-    opacity: 0.9;
-  }
-
-  96% {
-    opacity: 0;
-    transform: translate(20rem, 5.6rem) rotate(16deg);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate(20rem, 5.6rem) rotate(16deg);
   }
 }
 
 @keyframes epigraph-in {
   from {
     opacity: 0;
-    filter: blur(4px);
-    transform: translateY(6px);
+    filter: blur(3px);
+    transform: translateY(5px);
   }
 
   to {
@@ -396,27 +328,43 @@ const skyStars = [
   }
 }
 
+@keyframes hero-settle {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    transform: rotate(-1.4deg) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: rotate(-0.28deg) translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .star-hero__star,
-  .star-hero__constellation-line,
-  .star-hero__shooting,
-  .star-hero__epigraph {
+  .desk-hero,
+  .desk-hero__epigraph,
+  .desk-hero__trace-line {
     animation: none;
   }
 
-  .star-hero__constellation-line {
+  .desk-hero__trace-line {
     stroke-dashoffset: 0;
   }
 }
 
-@media (width <= 480px) {
-  .star-hero {
-    padding: 0.95rem 0.95rem 0.75rem;
-    border-radius: 2px 14px 2px 2px;
+@media (width <= 640px) {
+  .desk-hero {
+    padding: 1rem 0.95rem 0.8rem;
   }
 
-  .star-hero__epigraph {
-    font-size: 1.28rem;
+  .desk-hero__epigraph {
+    font-size: 1.24rem;
+  }
+
+  .desk-hero__trace {
+    display: none;
   }
 }
 </style>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#f2efe9"/>
+  <circle cx="600" cy="150" r="54" fill="none" stroke="#8c867f" stroke-width="1.5" opacity="0.7"/>
+  <path d="M40 430 C140 300 210 340 280 250 C340 172 400 260 470 220 C560 168 640 270 760 200"
+        fill="none" stroke="#3a352f" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+  <path d="M20 470 C150 380 250 430 340 350 C430 270 510 350 600 300 C690 250 740 300 790 270"
+        fill="none" stroke="#5f5a55" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>
+  <path d="M60 520 C180 470 260 500 360 450 C470 395 560 450 680 410 C730 393 770 410 790 400"
+        fill="none" stroke="#8c867f" stroke-width="1.1" stroke-linecap="round" opacity="0.45"/>
+  <path d="M120 350 C150 330 180 336 200 360" fill="none" stroke="#3a352f" stroke-width="1" opacity="0.35"/>
+  <path d="M520 250 C548 226 580 230 604 258" fill="none" stroke="#3a352f" stroke-width="1" opacity="0.3"/>
+  <g fill="#3a352f" opacity="0.22">
+    <circle cx="150" cy="120" r="2"/>
+    <circle cx="250" cy="90" r="1.4"/>
+    <circle cx="350" cy="140" r="1.8"/>
+    <circle cx="470" cy="80" r="1.2"/>
+    <circle cx="700" cy="110" r="1.6"/>
+    <circle cx="740" cy="60" r="1.1"/>
+  </g>
+  <text x="60" y="560" font-family="Georgia, serif" font-size="14" letter-spacing="6" fill="#8c867f" opacity="0.7">INK STUDY · 01</text>
+</svg>

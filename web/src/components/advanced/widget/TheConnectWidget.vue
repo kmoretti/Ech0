@@ -5,13 +5,13 @@
     <template #icon>
       <Connect />
     </template>
-    <div v-if="!loading">
-      <div v-if="!connectsInfo.length" class="text-[var(--color-text-muted)] text-sm mb-2">
+    <div v-if="!displayedLoading">
+      <div v-if="!displayedConnects.length" class="text-[var(--color-text-muted)] text-sm mb-2">
         {{ t('connectWidget.noConnections') }}
       </div>
       <div v-else class="flex flex-wrap gap-3">
         <div
-          v-for="(connect, index) in connectsInfo"
+          v-for="(connect, index) in displayedConnects"
           :key="index"
           class="relative flex flex-col items-center justify-center w-8 h-8 min-w-[2rem] min-h-[2rem] flex-none border-2 border-[var(--color-border-subtle)] shadow-sm rounded-full hover:shadow-md transition duration-200 ease-in-out group"
         >
@@ -64,10 +64,13 @@ import Connect from '@/components/icons/connect.vue'
 import WidgetShell from './WidgetShell.vue'
 import { useConnectStore } from '@/stores'
 import { storeToRefs } from 'pinia'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-defineProps<{ fluid?: boolean }>()
+const props = defineProps<{
+  fluid?: boolean
+  demoConnects?: App.Api.Connect.Connect[]
+}>()
 
 const CONNECT_INFO_POLL_MS = 60_000
 
@@ -75,6 +78,8 @@ const connectStore = useConnectStore()
 const { t } = useI18n()
 const { getConnectInfo } = connectStore
 const { loading, connectsInfo } = storeToRefs(connectStore)
+const displayedConnects = computed(() => props.demoConnects ?? connectsInfo.value)
+const displayedLoading = computed(() => (props.demoConnects ? false : loading.value))
 
 const tooltip = ref<{
   visible: boolean
@@ -111,6 +116,7 @@ const handleVisibilityChange = () => {
 }
 
 onMounted(() => {
+  if (props.demoConnects) return
   void getConnectInfo()
   // The store returns cached data instantly and revalidates in the background;
   // polling only triggers a revalidation once the 30-minute cache expires.

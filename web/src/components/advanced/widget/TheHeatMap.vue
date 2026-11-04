@@ -22,7 +22,7 @@
   </WidgetShell>
   <div
     v-if="tooltip.visible"
-    class="fixed z-50 px-2 py-1 bg-orange-500 text-white text-xs rounded shadow"
+    class="fixed z-50 px-2 py-1 bg-[var(--color-text-primary)] text-[var(--color-bg-surface)] text-xs rounded shadow"
     :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
   >
     {{ tooltip.text }}
@@ -36,9 +36,12 @@ import WidgetShell from './WidgetShell.vue'
 import { fetchGetHeatMap } from '@/service/api'
 import { useI18n } from 'vue-i18n'
 
-defineProps<{ fluid?: boolean }>()
+const props = defineProps<{
+  fluid?: boolean
+  demoData?: App.Api.Ech0.HeatMap
+}>()
 
-const heatmapData = ref<App.Api.Ech0.HeatMap>([])
+const heatmapData = ref<App.Api.Ech0.HeatMap>(props.demoData ?? [])
 const { t } = useI18n()
 
 const grid = computed(() => {
@@ -94,6 +97,7 @@ function hideTooltip() {
 }
 
 onMounted(() => {
+  if (props.demoData) return
   fetchGetHeatMap().then((res) => {
     heatmapData.value = res.data
   })
