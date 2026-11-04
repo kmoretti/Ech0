@@ -242,11 +242,73 @@ onBeforeUnmount(() => {
 .home-page {
   --home-canvas: var(--color-bg-canvas, #f5f3ef);
   --home-accent: #e07020;
-  --home-main-max: 28rem;
+  --home-main-max: 33rem;
+
+  /* Star journal palette — shared by HomeBanner / TheEchos / TheEchoCard */
+  --sj-canvas: #f7f3ea;
+  --sj-paper: #fffdf7;
+  --sj-ink: #2f251d;
+  --sj-ink-2: #6f6357;
+  --sj-ink-3: #9a8d7e;
+  --sj-line: #e6ddcf;
+  --sj-line-strong: #d5c7b4;
+  --sj-accent: #b84200;
+  --sj-gold: #b08a3e;
 
   min-height: 100dvh;
-  background: var(--home-canvas);
+  background:
+    radial-gradient(
+      70rem 42rem at 50% -12%,
+      color-mix(in srgb, var(--sj-gold) 7%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      circle at 1px 1px,
+      color-mix(in srgb, var(--sj-ink) 3.2%, transparent) 1px,
+      transparent 0
+    ),
+    var(--home-canvas);
+  background-size:
+    auto,
+    20px 20px,
+    auto;
   color: var(--color-text-primary);
+}
+
+.sunny .home-page {
+  --sj-canvas: #f8f4e8;
+  --sj-paper: #fffef8;
+  --sj-gold: #a98a45;
+  --sj-accent: #a84812;
+}
+
+.dark .home-page {
+  --sj-canvas: #171412;
+  --sj-paper: #201b17;
+  --sj-ink: #efe6d8;
+  --sj-ink-2: #b9ab99;
+  --sj-ink-3: #8a7c6b;
+  --sj-line: #352c24;
+  --sj-line-strong: #4b3e32;
+  --sj-accent: #e07a3a;
+  --sj-gold: #d0a95f;
+
+  background:
+    radial-gradient(
+      70rem 42rem at 50% -12%,
+      color-mix(in srgb, var(--sj-gold) 8%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      circle at 1px 1px,
+      color-mix(in srgb, var(--sj-ink) 4.2%, transparent) 1px,
+      transparent 0
+    ),
+    var(--home-canvas);
+  background-size:
+    auto,
+    20px 20px,
+    auto;
 }
 
 @media (width >= 820px) {

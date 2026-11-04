@@ -446,8 +446,7 @@
   "homeFeed": {
     "noMore": "没有更多数据了",
     "noMoreFiltered": "没有更多数据了",
-    "loading": "加载中...",
-    "older": "溯往拾遗"
+    "loading": "加载中..."
   },
   "dateTime": {
     "justNow": "刚刚",
@@ -533,8 +532,7 @@
     "deleteSuccess": "删除成功！",
     "exitUpdateModeFirst": "请先退出更新模式！",
     "openDetail": "查看详情",
-    "commentsLabel": "评论",
-    "commentCount": "{count} 条评论"
+    "commentsLabel": "评论"
   },
   "userSetting": {
     "title": "用户中心",
@@ -1296,5 +1294,21 @@
     "switchAccount": "切换账户",
     "adminRequired": "只有管理员可以授权设备登录。",
     "securityHint": "只授权你在自己终端发起的请求。"
+  },
+  "starJournal": {
+    "eyebrow": "今日星语",
+    "seal": "星笺",
+    "words": "{count} 字",
+    "lettersCount": "{count} 枚星笺",
+    "continued": "继续翻阅",
+    "backToTop": "回到顶部",
+    "epigraph1": "慢慢来，比较快。",
+    "epigraph2": "把日子过成诗，把心事折成星。",
+    "epigraph3": "风会记得一朵花的香。",
+    "epigraph4": "且将新火试新茶，诗酒趁年华。",
+    "epigraph5": "万物皆有裂痕，那是光照进来的地方。",
+    "epigraph6": "人间忽晚，山河已秋。",
+    "today": "今日",
+    "end": "拾星至此"
   }
 }

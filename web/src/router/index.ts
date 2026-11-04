@@ -34,6 +34,21 @@ const router = createRouter({
       name: 'publish',
       redirect: { name: 'home', query: { tab: 'publish' } },
     },
+    // Dev-only design preview with built-in sample letters.
+    ...(import.meta.env.DEV
+      ? [
+          {
+            path: '/preview',
+            name: 'preview',
+            component: () => import('../views/preview/DesignPreview.vue'),
+            meta: {
+              title: 'Design Preview',
+              description: 'Local design preview for the star-letter timeline.',
+              noindex: true,
+            },
+          },
+        ]
+      : []),
     {
       path: '/panel',
       name: 'panel',
@@ -209,6 +224,9 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  // The design preview renders fixture data and must not depend on server init.
+  if (to.name === 'preview') return true
+
   const initStore = useInitStore()
   const userStore = useUserStore()
 

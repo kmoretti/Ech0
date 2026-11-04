@@ -446,8 +446,7 @@
   "homeFeed": {
     "noMore": "No more data",
     "noMoreFiltered": "No more data",
-    "loading": "Loading...",
-    "older": "Before"
+    "loading": "Loading..."
   },
   "dateTime": {
     "justNow": "Just now",
@@ -533,8 +532,7 @@
     "deleteSuccess": "Deleted successfully",
     "exitUpdateModeFirst": "Please exit update mode first",
     "openDetail": "Open detail",
-    "commentsLabel": "Comments",
-    "commentCount": "{count} comments"
+    "commentsLabel": "Comments"
   },
   "userSetting": {
     "title": "User Center",
@@ -1296,5 +1294,21 @@
     "switchAccount": "Switch account",
     "adminRequired": "Only administrators can approve device sign-ins.",
     "securityHint": "Only approve codes you started in your own terminal."
+  },
+  "starJournal": {
+    "eyebrow": "Today's Star Note",
+    "seal": "Star Letter",
+    "words": "{count} words",
+    "lettersCount": "{count} letters",
+    "continued": "Keep reading",
+    "backToTop": "Back to top",
+    "epigraph1": "Slow is smooth, and smooth is fast.",
+    "epigraph2": "Fold your thoughts into stars, and let the days become poems.",
+    "epigraph3": "The wind still remembers the scent of a flower.",
+    "epigraph4": "New tea, old friends, and time well spent.",
+    "epigraph5": "There is a crack in everything; that is how the light gets in.",
+    "epigraph6": "Evening falls, and the hills are already autumn.",
+    "today": "Today",
+    "end": "That's all the stars for now"
   }
 }

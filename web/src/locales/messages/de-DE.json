@@ -446,8 +446,7 @@
   "homeFeed": {
     "noMore": "Keine weiteren Daten",
     "noMoreFiltered": "Keine weiteren Daten",
-    "loading": "Wird geladen…",
-    "older": "Älter"
+    "loading": "Wird geladen…"
   },
   "dateTime": {
     "justNow": "Gerade eben",
@@ -533,8 +532,7 @@
     "deleteSuccess": "Gelöscht",
     "exitUpdateModeFirst": "Bitte zuerst den Bearbeitungsmodus verlassen",
     "openDetail": "Detail öffnen",
-    "commentsLabel": "Kommentare",
-    "commentCount": "{count} Kommentare"
+    "commentsLabel": "Kommentare"
   },
   "userSetting": {
     "title": "Benutzerverwaltung",
@@ -1296,5 +1294,21 @@
     "switchAccount": "Konto wechseln",
     "adminRequired": "Nur Administratoren können Geräteanmeldungen genehmigen.",
     "securityHint": "Genehmige nur Codes, die du selbst im Terminal gestartet hast."
+  },
+  "starJournal": {
+    "eyebrow": "Sternennotiz von heute",
+    "seal": "Sternbrief",
+    "words": "{count} Wörter",
+    "lettersCount": "{count} Sternbriefe",
+    "continued": "Weiterblättern",
+    "backToTop": "Nach oben",
+    "epigraph1": "Langsam ist sanft, und sanft ist schnell.",
+    "epigraph2": "Falte deine Gedanken zu Sternen, und die Tage werden zu Gedichten.",
+    "epigraph3": "Der Wind erinnert sich noch an den Duft einer Blume.",
+    "epigraph4": "Neuer Tee, alte Freunde und gute Zeit.",
+    "epigraph5": "In allem ist ein Riss – so kommt das Licht herein.",
+    "epigraph6": "Der Abend kommt, und die Hügel sind schon Herbst.",
+    "today": "Heute",
+    "end": "Mehr Sterne gibt es heute nicht"
   }
 }

@@ -1,117 +1,104 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
-  <div class="echo-timeline group w-full">
-    <div class="echo-header-sticky flex justify-between items-center">
-      <div class="flex justify-start items-center h-9">
-        <div class="flex items-center h-full pr-1">
-          <div class="timeline-marker" :class="{ 'is-first': props.index === 0 }">
-            <div class="w-2 h-2 rounded-full bg-[var(--color-accent)]"></div>
-          </div>
-          <div
-            @click="handleExpandEcho(echo.id)"
-            class="flex items-center h-full justify-start leading-none text-sm font-semibold text-nowrap text-[var(--color-accent)] cursor-pointer hover:underline hover:decoration-offset-3 hover:decoration-1 mr-1"
-          >
-            {{ formatDate(props.echo.created_at) }}
-          </div>
-          <button
-            type="button"
-            class="echo-open-btn flex items-center justify-center w-6 h-6 rounded-sm text-[var(--color-text-muted)] opacity-0 transition-opacity duration-150 hover:text-[var(--color-text-primary)] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-border-subtle)]"
-            :aria-label="t('echoCard.openDetail')"
-            v-tooltip="t('echoCard.openDetail')"
-            @click="handleExpandEcho(echo.id)"
-          >
-            <Open class="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
-      <div
-        v-if="!userStore.isLogin && props.echo.private"
-        v-tooltip="t('echoCard.privateStatus')"
-        class="w-7 h-7 flex items-center justify-center bg-[var(--color-bg-surface)] ring-1 ring-[var(--color-border-subtle)] ring-inset rounded-full shadow-sm"
-      >
-        <Lock class="w-4 h-4" />
-      </div>
-
-      <div v-else-if="userStore.isLogin" class="relative flex items-center justify-center">
-        <button
-          ref="menuTriggerRef"
-          type="button"
-          :aria-label="t('echoCard.moreActions')"
-          :aria-expanded="isMenuOpen"
-          aria-haspopup="menu"
-          class="w-7 h-7 flex items-center justify-center bg-[var(--color-bg-surface)] ring-1 ring-[var(--color-border-subtle)] ring-inset rounded-full shadow-sm transition-shadow duration-150 hover:shadow-md focus:outline-none"
-          @click.stop="toggleMenu"
-        >
-          <More class="w-5 h-5" />
-        </button>
-
-        <Teleport to="body">
-          <transition
-            enter-active-class="transition duration-150 ease-out"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="transition duration-100 ease-in"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-          >
-            <div
-              v-if="isMenuOpen"
-              ref="menuPanelRef"
-              :style="menuPanelStyle"
-              class="fixed z-5000 w-36 origin-top-right rounded-[var(--radius-md)] bg-[var(--color-bg-muted)] ring-1 ring-[var(--color-border-subtle)] shadow-[var(--shadow-md)] p-1"
-            >
-              <div
-                v-if="props.echo.private"
-                class="flex items-center gap-1.5 px-2 pt-1 pb-1.5 text-[var(--color-text-muted)]"
-              >
-                <Lock class="w-3 h-3" />
-                <span class="text-[10px] font-semibold tracking-[0.08em] uppercase">
-                  {{ t('echoCard.privateStatus') }}
-                </span>
-              </div>
-
-              <button
-                type="button"
-                class="menu-row"
-                @click="
-                  () => {
-                    closeMenu()
-                    handleUpdateEcho()
-                  }
-                "
-              >
-                <EditEcho class="w-3.5 h-3.5 shrink-0" />
-                <span>{{ t('echoCard.update') }}</span>
-              </button>
-              <button
-                type="button"
-                class="menu-row menu-row--danger"
-                @click="
-                  () => {
-                    closeMenu()
-                    handleDeleteEcho(props.echo.id)
-                  }
-                "
-              >
-                <Roll class="w-3.5 h-3.5 shrink-0" />
-                <span>{{ t('echoCard.delete') }}</span>
-              </button>
-            </div>
-          </transition>
-        </Teleport>
-      </div>
+  <article
+    class="star-letter group"
+    :class="{
+      'star-letter--featured': featured,
+      'star-letter--dropcap': dropCap,
+      'star-letter--private': echo.private,
+    }"
+  >
+    <div class="star-letter__index" aria-hidden="true">
+      <span class="star-letter__index-num">{{ letterNo || '01' }}</span>
+      <span class="star-letter__index-line"></span>
     </div>
 
-    <div class="timeline-content">
-      <div class="px-4 py-3">
+    <div class="star-letter__paper">
+      <span class="star-letter__fold" aria-hidden="true"></span>
+
+      <header class="star-letter__head">
+        <div class="star-letter__stamp">
+          <span class="star-letter__time">{{ timeLabel }}</span>
+          <span class="star-letter__sep" aria-hidden="true"></span>
+          <span class="star-letter__words">{{ t('starJournal.words', { count: wordCount }) }}</span>
+          <span v-if="props.echo.private" class="star-letter__private">
+            <Lock class="star-letter__private-icon" />
+            {{ t('echoCard.privateStatus') }}
+          </span>
+        </div>
+
+        <div v-if="userStore.isLogin" class="star-letter__menu-wrap">
+          <button
+            ref="menuTriggerRef"
+            type="button"
+            :aria-label="t('echoCard.moreActions')"
+            :aria-expanded="isMenuOpen"
+            aria-haspopup="menu"
+            class="star-letter__menu-btn"
+            @click.stop="toggleMenu"
+          >
+            <More class="w-4 h-4" />
+          </button>
+
+          <Teleport to="body">
+            <transition
+              enter-active-class="transition duration-150 ease-out"
+              enter-from-class="opacity-0 scale-95"
+              enter-to-class="opacity-100 scale-100"
+              leave-active-class="transition duration-100 ease-in"
+              leave-from-class="opacity-100 scale-100"
+              leave-to-class="opacity-0 scale-95"
+            >
+              <div
+                v-if="isMenuOpen"
+                ref="menuPanelRef"
+                :style="menuPanelStyle"
+                class="star-letter__menu"
+              >
+                <div v-if="props.echo.private" class="star-letter__menu-note">
+                  <Lock class="w-3 h-3" />
+                  <span>{{ t('echoCard.privateStatus') }}</span>
+                </div>
+
+                <button
+                  type="button"
+                  class="menu-row"
+                  @click="
+                    () => {
+                      closeMenu()
+                      handleUpdateEcho()
+                    }
+                  "
+                >
+                  <EditEcho class="w-3.5 h-3.5 shrink-0" />
+                  <span>{{ t('echoCard.update') }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="menu-row menu-row--danger"
+                  @click="
+                    () => {
+                      closeMenu()
+                      handleDeleteEcho(props.echo.id)
+                    }
+                  "
+                >
+                  <Roll class="w-3.5 h-3.5 shrink-0" />
+                  <span>{{ t('echoCard.delete') }}</span>
+                </button>
+              </div>
+            </transition>
+          </Teleport>
+        </div>
+      </header>
+
+      <div class="star-letter__body">
         <template v-if="isContentLeadingEcho(props.echo)">
-          <div class="mx-auto w-11/12 pl-1 mb-3">
+          <div class="star-letter__prose">
             <TheMdPreview :content="props.echo.content" />
           </div>
-
-          <div :class="{ 'mx-auto w-11/12 pl-1': isAvEcho }">
+          <div class="star-letter__media" :class="{ 'star-letter__media--av': isAvEcho }">
             <TheMediaPlayer
               :echo="props.echo"
               :layout="props.echo.layout"
@@ -121,25 +108,38 @@
         </template>
 
         <template v-else>
-          <div :class="{ 'mx-auto w-11/12 pl-1': isAvEcho }">
+          <div class="star-letter__media" :class="{ 'star-letter__media--av': isAvEcho }">
             <TheMediaPlayer
               :echo="props.echo"
               :layout="props.echo.layout"
               :priority="props.index === 0"
             />
           </div>
-
-          <div class="mx-auto w-11/12 pl-1 mt-3">
+          <div class="star-letter__prose">
             <TheMdPreview :content="props.echo.content" />
           </div>
         </template>
 
-        <div v-if="props.echo.extension" class="my-2">
+        <div v-if="props.echo.extension" class="star-letter__extension">
           <TheExtensionRenderer :echo="props.echo" />
         </div>
       </div>
+
+      <footer class="star-letter__foot">
+        <ul v-if="tags.length" class="star-letter__tags">
+          <li v-for="tag in tags" :key="tag.id" class="star-letter__tag">
+            <span aria-hidden="true">#</span>{{ tag.name }}
+          </li>
+        </ul>
+        <span v-else class="star-letter__foot-ornament" aria-hidden="true">✦</span>
+
+        <button type="button" class="star-letter__open" @click="handleExpandEcho(echo.id)">
+          <span>{{ t('echoCard.openDetail') }}</span>
+          <Open class="star-letter__open-icon" />
+        </button>
+      </footer>
     </div>
-  </div>
+  </article>
 </template>
 
 <script lang="ts">
@@ -160,8 +160,8 @@ import More from '@/components/icons/more.vue'
 import EditEcho from '@/components/icons/editecho.vue'
 import Open from '@/components/icons/open.vue'
 import { useRouter } from 'vue-router'
-import { getEchoFilesBy, isContentLeadingEcho } from '@/utils/echo'
-import { formatDate } from '@/utils/other'
+import { countWords, getEchoFilesBy, isContentLeadingEcho } from '@/utils/echo'
+import { timeValueToMs } from '@/utils/timeValue'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import { useI18n } from 'vue-i18n'
 
@@ -173,7 +173,7 @@ const TheExtensionRenderer = defineAsyncComponent(
 )
 
 const { openConfirm } = useBaseDialog()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const emit = defineEmits(['refresh'])
 
@@ -182,11 +182,27 @@ type Echo = App.Api.Ech0.Echo
 const props = defineProps<{
   echo: Echo
   index?: number
+  featured?: boolean
+  dropCap?: boolean
+  letterNo?: string
 }>()
 
 const isAvEcho = computed(
   () => getEchoFilesBy(props.echo, { categories: ['audio', 'video'] }).length > 0,
 )
+
+const tags = computed(() => props.echo.tags ?? [])
+const wordCount = computed(() => countWords(props.echo.content))
+
+const timeLabel = computed(() => {
+  const ms = timeValueToMs(props.echo.created_at)
+  if (ms <= 0) return ''
+  return new Intl.DateTimeFormat(locale.value, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(ms))
+})
 
 const userStore = useUserStore()
 
@@ -307,96 +323,385 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="css">
-.echo-header-sticky {
+.star-letter {
+  --sl-ink: var(--sj-ink, #2f251d);
+  --sl-ink-soft: var(--sj-ink-2, #6f6357);
+  --sl-ink-faint: var(--sj-ink-3, #9a8d7e);
+  --sl-line: var(--sj-line, #e6ddcf);
+  --sl-line-strong: var(--sj-line-strong, #d5c7b4);
+  --sl-paper: var(--sj-paper, #fffdf7);
+  --sl-canvas: var(--sj-canvas, #f7f3ea);
+  --sl-accent: var(--sj-accent, #b84200);
+  --sl-gold: var(--sj-gold, #b08a3e);
+
   position: relative;
-  z-index: 1;
-  background-color: var(--color-bg-canvas);
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: 2.1rem minmax(0, 1fr);
+  gap: 0.55rem;
+  width: 100%;
+  min-width: 0;
+  animation: ink-settle 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.echo-timeline {
-  --axis-offset: calc(0.25rem + 1px);
-  --axis-line-width: 2px;
-  --axis-dot-size: 0.5rem;
-  --axis-dot-gap: 0.3rem;
-
-  max-width: 100%;
-  overflow: clip visible;
+.star-letter__index {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding-top: 0.9rem;
+  color: var(--sl-ink-faint);
+  user-select: none;
 }
 
-.timeline-marker {
+.star-letter__index-num {
+  font-family: var(--font-family-display);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+}
+
+.star-letter__index-line {
+  width: 1px;
+  flex: 1 1 auto;
+  min-height: 1.4rem;
+  background: linear-gradient(
+    to bottom,
+    var(--sl-line-strong),
+    color-mix(in srgb, var(--sl-line) 25%, transparent)
+  );
+}
+
+.star-letter__paper {
   position: relative;
-  width: var(--axis-dot-size);
-  height: 100%;
-  margin-right: 0.5rem;
-  margin-left: calc(var(--axis-offset) - (var(--axis-dot-size) / 2));
+  min-width: 0;
+  padding: 0.95rem 1.1rem 0.8rem;
+  background:
+    radial-gradient(
+      120% 90% at 100% 0%,
+      color-mix(in srgb, var(--sl-gold) 6%, transparent),
+      transparent 55%
+    ),
+    var(--sl-paper);
+  border: 1px solid var(--sl-line);
+  border-radius: 3px 15px 3px 3px;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--sl-ink) 4%, transparent),
+    0 14px 30px -26px color-mix(in srgb, var(--sl-ink) 55%, transparent);
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 260ms ease,
+    border-color 260ms ease;
+}
+
+.star-letter__paper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+.star-letter__fold {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 1.15rem;
+  height: 1.15rem;
+  background: linear-gradient(
+    225deg,
+    var(--sl-canvas) 0 47%,
+    var(--sl-line-strong) 48% 51%,
+    var(--sl-paper) 52%
+  );
+  border-bottom-left-radius: 2px;
+  border-top-right-radius: 14px;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: top right;
+}
+
+.star-letter__fold::after {
+  content: '';
+  position: absolute;
+  right: 0.22rem;
+  top: 0.22rem;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--sl-gold);
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+.star-letter__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 1.4rem;
+  margin-bottom: 0.55rem;
+}
+
+.star-letter__stamp {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  font-family: var(--font-family-display);
+  font-size: 0.69rem;
+  letter-spacing: 0.04em;
+  color: var(--sl-ink-faint);
+}
+
+.star-letter__time {
+  font-variant-numeric: tabular-nums;
+  color: var(--sl-ink-soft);
+}
+
+.star-letter__sep {
+  width: 0.9rem;
+  height: 1px;
+  background: var(--sl-line-strong);
+}
+
+.star-letter__words {
+  white-space: nowrap;
+}
+
+.star-letter__private {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.08rem 0.32rem;
+  border: 1px solid color-mix(in srgb, var(--sl-accent) 35%, transparent);
+  border-radius: 2px;
+  color: var(--sl-accent);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+}
+
+.star-letter__private-icon {
+  width: 0.66rem;
+  height: 0.66rem;
+}
+
+.star-letter__menu-wrap {
+  flex: none;
+}
+
+.star-letter__menu-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 50%;
+  color: var(--sl-ink-faint);
+  border: 1px solid transparent;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
 }
 
-.timeline-content {
-  position: relative;
-  margin-left: var(--axis-offset);
-  max-width: 100%;
+.star-letter__menu-btn:hover,
+.star-letter__menu-btn:focus-visible {
+  color: var(--sl-ink);
+  border-color: var(--sl-line-strong);
+  background: color-mix(in srgb, var(--sl-paper) 70%, var(--sl-line) 30%);
+  outline: none;
+}
+
+.star-letter__body {
   min-width: 0;
-  overflow: clip visible;
 }
 
-.timeline-content::before {
-  content: '';
+.star-letter__prose {
+  min-width: 0;
+  color: var(--sl-ink);
+}
+
+.star-letter__prose :deep(.echo-markdown) {
+  font-size: 0.925rem;
+  line-height: 1.78;
+}
+
+.star-letter__prose :deep(.echo-markdown > div > p) {
+  margin-block: 0.35em;
+}
+
+.star-letter__media {
+  margin-bottom: 0.7rem;
+}
+
+.star-letter__media--av {
+  margin-bottom: 0.75rem;
+}
+
+.star-letter__media:empty {
+  display: none;
+}
+
+.star-letter__extension {
+  margin-top: 0.6rem;
+}
+
+.star-letter__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.7rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed color-mix(in srgb, var(--sl-line-strong) 70%, transparent);
+}
+
+.star-letter__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.star-letter__tag {
+  padding: 0.06rem 0.4rem;
+  border: 1px dashed var(--sl-line-strong);
+  border-radius: 2px;
+  font-size: 0.66rem;
+  letter-spacing: 0.03em;
+  color: var(--sl-ink-soft);
+  background: color-mix(in srgb, var(--sl-paper) 82%, var(--sl-line) 18%);
+}
+
+.star-letter__tag > span {
+  color: var(--sl-accent);
+  margin-right: 0.1rem;
+  font-family: var(--font-family-display);
+}
+
+.star-letter__foot-ornament {
+  font-size: 0.62rem;
+  color: color-mix(in srgb, var(--sl-gold) 70%, var(--sl-ink-faint));
+  letter-spacing: 0.2em;
+}
+
+.star-letter__open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  white-space: nowrap;
+  font-family: var(--font-family-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  color: var(--sl-ink-faint);
+  transition: color 180ms ease;
+}
+
+.star-letter__open:hover,
+.star-letter__open:focus-visible {
+  color: var(--sl-accent);
+  outline: none;
+}
+
+.star-letter__open-icon {
+  width: 0.72rem;
+  height: 0.72rem;
+  transition: transform 200ms ease;
+}
+
+.star-letter__open:hover .star-letter__open-icon {
+  transform: translate(1px, -1px);
+}
+
+/* Featured letter of the day */
+.star-letter--featured .star-letter__paper {
+  padding-top: 1.15rem;
+  background:
+    radial-gradient(
+      130% 90% at 100% 0%,
+      color-mix(in srgb, var(--sl-gold) 10%, transparent),
+      transparent 52%
+    ),
+    var(--sl-paper);
+  border-color: color-mix(in srgb, var(--sl-line-strong) 82%, var(--sl-gold) 18%);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--sl-ink) 5%, transparent),
+    0 22px 44px -34px color-mix(in srgb, var(--sl-ink) 65%, transparent);
+}
+
+.star-letter--featured .star-letter__paper::before {
+  content: '“';
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: var(--axis-line-width);
-  background-color: var(--color-border-subtle);
+  top: -0.35rem;
+  right: 0.7rem;
+  font-family: var(--font-family-display);
+  font-size: 4.2rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--sl-accent) 10%, transparent);
   pointer-events: none;
 }
 
+.star-letter--dropcap
+  .star-letter__prose
+  :deep(.echo-markdown > div > p:first-child)::first-letter {
+  float: left;
+  margin: 0.04em 0.1em 0 0;
+  font-family: var(--font-family-display);
+  font-size: 2.7em;
+  font-weight: 600;
+  line-height: 0.82;
+  color: var(--sl-accent);
+}
+
 @media (hover: hover) {
-  .echo-timeline:hover .echo-open-btn {
+  .star-letter__paper:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--sl-line-strong) 82%, var(--sl-gold) 18%);
+    box-shadow:
+      0 1px 0 color-mix(in srgb, var(--sl-ink) 5%, transparent),
+      0 20px 36px -28px color-mix(in srgb, var(--sl-ink) 58%, transparent);
+  }
+
+  .star-letter__paper:hover .star-letter__fold {
+    transform: scale(1.12) rotate(2deg);
+  }
+
+  .star-letter__paper:hover .star-letter__fold::after {
     opacity: 1;
-    animation: echo-open-nudge-left 1200ms ease-out both;
   }
 }
 
-.echo-open-btn:focus-visible {
-  animation: echo-open-nudge-left 1200ms ease-out both;
+.star-letter__menu {
+  position: fixed;
+  z-index: 5000;
+  width: 9rem;
+  padding: 0.25rem;
+  transform-origin: top right;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+  box-shadow:
+    inset 0 0 0 1px var(--color-border-subtle),
+    var(--shadow-md);
 }
 
-@keyframes echo-open-nudge-left {
-  0% {
-    transform: translateX(0);
-  }
+.star-letter__menu-note {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem 0.375rem;
+  color: var(--color-text-muted);
+}
 
-  16% {
-    transform: translateX(-4px);
-  }
-
-  28% {
-    transform: translateX(1px);
-  }
-
-  42% {
-    transform: translateX(-3px);
-  }
-
-  54% {
-    transform: translateX(1px);
-  }
-
-  68% {
-    transform: translateX(-2px);
-  }
-
-  80% {
-    transform: translateX(0);
-  }
-
-  100% {
-    transform: translateX(0);
-  }
+.star-letter__menu-note span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .menu-row {
@@ -429,5 +734,41 @@ onBeforeUnmount(() => {
 
 .menu-row--danger:hover {
   color: var(--color-danger);
+}
+
+@keyframes ink-settle {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .star-letter {
+    animation: none;
+  }
+}
+
+@media (width <= 480px) {
+  .star-letter {
+    grid-template-columns: 1.55rem minmax(0, 1fr);
+    gap: 0.4rem;
+  }
+
+  .star-letter__paper {
+    padding: 0.8rem 0.85rem 0.7rem;
+    border-radius: 2px 12px 2px 2px;
+  }
+
+  .star-letter__stamp {
+    font-size: 0.64rem;
+  }
 }
 </style>

@@ -446,8 +446,7 @@
   "homeFeed": {
     "noMore": "これ以上データはありません",
     "noMoreFiltered": "これ以上データはありません",
-    "loading": "読み込み中...",
-    "older": "以前"
+    "loading": "読み込み中..."
   },
   "dateTime": {
     "justNow": "たった今",
@@ -533,8 +532,7 @@
     "deleteSuccess": "削除しました！",
     "exitUpdateModeFirst": "先に更新モードを終了してください！",
     "openDetail": "詳細を開く",
-    "commentsLabel": "コメント",
-    "commentCount": "{count} 件のコメント"
+    "commentsLabel": "コメント"
   },
   "userSetting": {
     "title": "ユーザーセンター",
@@ -1296,5 +1294,21 @@
     "switchAccount": "アカウントを切り替え",
     "adminRequired": "デバイスのサインインを承認できるのは管理者のみです。",
     "securityHint": "自分のターミナルで開始したコードのみ承認してください。"
+  },
+  "starJournal": {
+    "eyebrow": "今日の星便り",
+    "seal": "星便り",
+    "words": "{count} 文字",
+    "lettersCount": "{count} 通の星便り",
+    "continued": "続きを読む",
+    "backToTop": "トップへ戻る",
+    "epigraph1": "ゆっくり行くことが、いちばん速い。",
+    "epigraph2": "想いを星に折りたたみ、日々を詩にしよう。",
+    "epigraph3": "風はまだ、一輪の花の香りを覚えている。",
+    "epigraph4": "新茶と旧友、そして良い時間を。",
+    "epigraph5": "すべてにひび割れがある。そこから光が差し込む。",
+    "epigraph6": "夕暮れは突然に、山はもう秋。",
+    "today": "今日",
+    "end": "星はここまで"
   }
 }
