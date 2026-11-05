@@ -23,7 +23,7 @@
           </h2>
 
           <div class="flex-none">
-            <Verified class="text-sky-500 w-4 h-4 sm:w-5 sm:h-5" />
+            <Verified class="text-[var(--color-accent)] w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         </div>
       </div>
@@ -36,7 +36,7 @@
         class="flex-none opacity-70 hover:opacity-100 transition-opacity"
       >
         <img
-          src="/favicon.ico"
+          src="/Ech0.png"
           alt="Ech0"
           loading="lazy"
           decoding="async"
