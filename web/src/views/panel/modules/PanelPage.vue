@@ -3,6 +3,8 @@
 <template>
   <div class="panel-page-wrap mt-4">
     <div class="panel-shell border p-4 mx-auto flex flex-col max-w-screen-lg w-full mb-12">
+      <span class="panel-shell__tape" aria-hidden="true"></span>
+
       <section class="panel-welcome mb-5 md:mb-2">
         <div class="panel-welcome-main">
           <h1 class="panel-welcome-username">
@@ -200,17 +202,17 @@ const dateText = computed(() => {
 
 const getButtonClasses = (routeName: string) => {
   const baseClasses =
-    'w-full flex items-center gap-2 pl-3 py-1.5 rounded-[var(--radius-md)] transition-all duration-200 border-none !ring-0 justify-start bg-transparent whitespace-nowrap'
+    'panel-nav__tab w-full flex items-center gap-2 pl-3 py-1.5 rounded-[3px] transition-all duration-200 border-none !ring-0 !shadow-none justify-start bg-transparent whitespace-nowrap'
   const activeClasses =
     currentRoute.value === routeName
-      ? 'text-[var(--color-text-primary)]! bg-[var(--nav-link-active-bg)]! shadow-[var(--shadow-soft)]!'
-      : 'text-[var(--color-text-secondary)] !shadow-none hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)]'
+      ? 'is-active text-[var(--color-text-primary)]!'
+      : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)]'
 
   return `${baseClasses} ${activeClasses}`
 }
 
 const getBottomButtonClasses = () => {
-  return 'w-full flex items-center gap-2 pl-3 py-1.5 rounded-[var(--radius-md)] transition-all duration-200 border-none !shadow-none !ring-0 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] justify-start bg-transparent whitespace-nowrap'
+  return 'panel-nav__tab w-full flex items-center gap-2 pl-3 py-1.5 rounded-[3px] transition-all duration-200 border-none !shadow-none !ring-0 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] hover:text-[var(--color-text-primary)] justify-start bg-transparent whitespace-nowrap'
 }
 
 const routeOptions = computed(() => [
@@ -261,17 +263,75 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.6rem 0.5rem 0;
+  padding: 1.2rem 0.6rem 1.5rem;
 }
 
 .panel-shell {
+  position: relative;
   border-color: var(--color-border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg-canvas);
+  border-radius: 2px 16px 2px 2px;
+  background-color: color-mix(in srgb, var(--color-bg-surface) 91%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--color-text-primary) 4%, transparent),
+    0 24px 44px -42px color-mix(in srgb, var(--color-text-primary) 50%, transparent);
+}
+
+.panel-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='170' height='170' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+.panel-shell > *:not(.panel-shell__tape) {
+  position: relative;
+  z-index: 1;
+}
+
+/* A strip of washi tape holding the admin sheet to the desk. */
+.panel-shell__tape {
+  position: absolute;
+  top: -0.62rem;
+  left: 2.6rem;
+  z-index: 2;
+  width: 5.4rem;
+  height: 1.15rem;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-text-primary) 5%, transparent) 0 1px,
+      transparent 1px 6px
+    ),
+    color-mix(in srgb, var(--color-bg-surface) 62%, var(--color-border-subtle) 38%);
+  opacity: 0.8;
+  transform: rotate(-1.8deg);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+  pointer-events: none;
 }
 
 .panel-nav {
   color: var(--color-text-secondary);
+}
+
+.panel-nav :deep(.panel-nav__tab) {
+  font-family: var(--font-family-display);
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+}
+
+.panel-nav :deep(.panel-nav__tab.is-active) {
+  background: color-mix(in srgb, var(--color-bg-canvas) 55%, var(--color-bg-surface)) !important;
+  box-shadow:
+    inset 2px 0 0 var(--color-accent),
+    0 1px 0 color-mix(in srgb, var(--color-text-primary) 4%, transparent) !important;
+}
+
+.panel-nav > div.h-px {
+  background: color-mix(in srgb, var(--color-border-subtle) 70%, transparent);
 }
 
 .panel-main {
@@ -290,8 +350,8 @@ const handleLogout = () => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.5rem 0.25rem 0.65rem;
-  border-bottom: 1px solid var(--color-border-subtle);
+  padding: 0.5rem 0.25rem 0.8rem;
+  border-bottom: 1px dashed color-mix(in srgb, var(--color-border-strong) 70%, transparent);
 }
 
 .panel-welcome-main {
@@ -332,10 +392,13 @@ const handleLogout = () => {
 .panel-welcome-date {
   display: inline-flex;
   align-items: center;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-family-display);
+  font-size: 0.68rem;
   white-space: nowrap;
   font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
 }
 
 .panel-welcome-actions {
@@ -376,6 +439,8 @@ const handleLogout = () => {
 .wave-hand {
   display: inline-block;
   margin-left: 0.2rem;
+  filter: grayscale(1);
+  opacity: 0.72;
   transform-origin: center;
   will-change: transform;
 }
