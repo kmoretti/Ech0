@@ -128,6 +128,8 @@ const TIMELINE_SCROLL_KEY = 'home:timeline:scrollTop'
 const WINDOW_SCROLL_KEY = 'home:window:scrollTop'
 let timelineScrollRaf: number | null = null
 let windowScrollRaf: number | null = null
+let stopScrollRestoreWatch: (() => void) | null = null
+let scrollRestored = false
 
 const paletteOpen = ref<boolean>(false)
 const chatLauncherOpen = ref<boolean>(false)
@@ -206,22 +208,25 @@ onMounted(async () => {
     mainColumn.value.addEventListener('scroll', saveTimelineScrollPosition, { passive: true })
   }
   window.addEventListener('scroll', saveWindowScrollPosition, { passive: true })
-  const stopScrollRestoreWatch = watch(
+  stopScrollRestoreWatch = watch(
     () => echoStore.echoList.length > 0 && !echoStore.isLoading,
     (ready) => {
-      if (!ready) return
-      stopScrollRestoreWatch()
+      if (!ready || scrollRestored) return
+      scrollRestored = true
+      stopScrollRestoreWatch?.()
       window.requestAnimationFrame(() => {
         restoreTimelineScrollPosition()
       })
     },
     { immediate: true, flush: 'post' },
   )
+  if (scrollRestored) stopScrollRestoreWatch()
   window.addEventListener('keydown', handleGlobalKeydown)
   prefetchHeavyChunks()
 })
 
 onBeforeUnmount(() => {
+  stopScrollRestoreWatch?.()
   if (mainColumn.value) {
     mainColumn.value.removeEventListener('scroll', saveTimelineScrollPosition)
   }
