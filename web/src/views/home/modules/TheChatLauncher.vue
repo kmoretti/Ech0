@@ -178,7 +178,7 @@ watch(
   background: transparent;
   border: 0;
   outline: none;
-  caret-color: var(--color-accent, #e07020);
+  caret-color: var(--color-accent, #8a4132);
   overflow-y: auto;
 }
 
@@ -206,7 +206,7 @@ watch(
 }
 
 .chat-launcher__send--active {
-  background: var(--color-accent, #e07020);
+  background: var(--color-accent, #8a4132);
   color: #fff;
 }
 

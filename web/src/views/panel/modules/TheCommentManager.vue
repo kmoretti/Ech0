@@ -206,31 +206,37 @@
               </td>
               <td class="px-2 py-2">
                 <div class="flex items-center gap-2">
-                  <button class="table-action text-cyan-500" @click="openEcho(item.echo_id)">
+                  <button
+                    class="table-action text-[var(--color-text-secondary)]"
+                    @click="openEcho(item.echo_id)"
+                  >
                     {{ t('commentManager.view') }}
                   </button>
-                  <button class="table-action text-sky-500" @click="openDetail(item.id)">
+                  <button
+                    class="table-action text-[var(--color-text-secondary)]"
+                    @click="openDetail(item.id)"
+                  >
                     {{ t('commentManager.detail') }}
                   </button>
                   <button
-                    class="table-action text-violet-500"
+                    class="table-action text-[var(--color-text-secondary)]"
                     @click="updateHot(item.id, !item.hot)"
                   >
                     {{ item.hot ? t('commentManager.hotUnset') : t('commentManager.hotSet') }}
                   </button>
                   <button
-                    class="table-action text-emerald-500"
+                    class="table-action text-[var(--color-accent)]"
                     @click="updateStatus(item.id, 'approved')"
                   >
                     {{ t('commentManager.approve') }}
                   </button>
                   <button
-                    class="table-action text-amber-500"
+                    class="table-action text-[var(--color-text-secondary)]"
                     @click="updateStatus(item.id, 'rejected')"
                   >
                     {{ t('commentManager.reject') }}
                   </button>
-                  <button class="table-action text-red-500" @click="remove(item.id)">
+                  <button class="table-action text-[var(--color-danger)]" @click="remove(item.id)">
                     {{ t('commentManager.delete') }}
                   </button>
                 </div>
@@ -666,25 +672,25 @@ onMounted(async () => {
 }
 
 .status-approved {
-  color: #059669;
+  color: var(--color-text-primary);
   border-color: var(--comment-status-approved-border);
   background: var(--comment-status-approved-bg);
 }
 
 .status-rejected {
-  color: #d97706;
+  color: var(--color-danger);
   border-color: var(--comment-status-rejected-border);
   background: var(--comment-status-rejected-bg);
 }
 
 .status-pending {
-  color: #0369a1;
+  color: var(--color-text-secondary);
   border-color: var(--comment-status-pending-border);
   background: var(--comment-status-pending-bg);
 }
 
 .status-hot {
-  color: #7c3aed;
+  color: var(--color-text-primary);
   border-color: var(--comment-status-hot-border);
   background: var(--comment-status-hot-bg);
 }

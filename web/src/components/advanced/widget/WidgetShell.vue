@@ -57,6 +57,8 @@ withDefaults(
   width: 1.125rem;
   height: 1.125rem;
   color: var(--color-text-muted);
+  filter: grayscale(1);
+  opacity: 0.72;
 }
 
 .widget-icon :slotted(svg) {

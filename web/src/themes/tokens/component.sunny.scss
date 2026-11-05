@@ -98,7 +98,7 @@
   --md-editor-preview-card-border: rgb(224 221 215 / 92%);
   --md-editor-preview-card-divider: rgb(207 204 199 / 62%);
   --md-editor-preview-card-head-text: #81868b;
-  --md-editor-preview-card-dot: #61a28f;
+  --md-editor-preview-card-dot: #928c84;
   --md-editor-preview-card-dot-ring: rgb(252 251 248 / 88%);
   --md-editor-preview-card-shadow: 0 18px 34px rgb(35 30 26 / 12%), 0 2px 3px rgb(34 31 28 / 8%);
   --md-editor-preview-card-tilt-short: -0.8deg;
@@ -131,14 +131,14 @@
   --comment-danger-border: #e0a29e;
   --comment-danger-bg: #feeeee;
   --comment-danger-hover-bg: #fde5e5;
-  --comment-status-approved-border: rgb(16 185 129 / 45%);
-  --comment-status-approved-bg: rgb(16 185 129 / 12%);
-  --comment-status-rejected-border: rgb(245 158 11 / 45%);
-  --comment-status-rejected-bg: rgb(245 158 11 / 14%);
-  --comment-status-pending-border: rgb(56 189 248 / 45%);
-  --comment-status-pending-bg: rgb(56 189 248 / 14%);
-  --comment-status-hot-border: rgb(139 92 246 / 45%);
-  --comment-status-hot-bg: rgb(139 92 246 / 14%);
+  --comment-status-approved-border: color-mix(in srgb, #292622 48%, transparent);
+  --comment-status-approved-bg: color-mix(in srgb, #292622 6%, transparent);
+  --comment-status-rejected-border: color-mix(in srgb, #9e3b32 45%, transparent);
+  --comment-status-rejected-bg: color-mix(in srgb, #9e3b32 7%, transparent);
+  --comment-status-pending-border: color-mix(in srgb, #292622 30%, transparent);
+  --comment-status-pending-bg: color-mix(in srgb, #292622 3%, transparent);
+  --comment-status-hot-border: color-mix(in srgb, #292622 68%, transparent);
+  --comment-status-hot-bg: color-mix(in srgb, #292622 9%, transparent);
 
   --filter-search-shell-bg: #f6f5f3;
   --filter-search-input-border: rgb(216 213 207 / 55%);
@@ -150,7 +150,7 @@
   --recent-card-before-bg: #eeeae2;
   --card-focus-ring-outer: rgb(139 115 85 / 14.7%);
   --video-provider-badge-bg: #fcfcfb;
-  --connect-status-checking-bg: rgb(235 233 228 / 65%);
+  --color-connect-checking-bg: rgb(235 233 228 / 65%);
   --scrollbar-track-bg: rgb(230 226 218 / 78%);
   --scrollbar-thumb-bg: rgb(137 118 94 / 42%);
   --scrollbar-thumb-hover-bg: rgb(118 96 70 / 58%);

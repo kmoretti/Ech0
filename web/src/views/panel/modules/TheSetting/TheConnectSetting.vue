@@ -329,7 +329,7 @@ onMounted(() => {
 .status-checking {
   color: var(--color-text-muted);
   border-color: var(--color-border-subtle);
-  background: var(--connect-status-checking-bg);
+  background: var(--color-connect-checking-bg);
 }
 
 .version-pill-yellow,

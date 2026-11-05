@@ -313,15 +313,15 @@ select.cron-editor__control::-ms-expand {
   gap: 0.55rem;
   padding: 0.55rem 0.7rem;
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--color-accent, #e07020) 6%, var(--color-bg-muted));
-  border: 1px solid color-mix(in srgb, var(--color-accent, #e07020) 22%, transparent);
+  background: color-mix(in srgb, var(--color-accent, #8a4132) 6%, var(--color-bg-muted));
+  border: 1px solid color-mix(in srgb, var(--color-accent, #8a4132) 22%, transparent);
 }
 
 .cron-editor__summary-icon {
   width: 1rem;
   height: 1rem;
   margin-top: 0.1rem;
-  color: var(--color-accent, #e07020);
+  color: var(--color-accent, #8a4132);
   flex-shrink: 0;
 }
 
