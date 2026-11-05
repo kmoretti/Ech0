@@ -350,9 +350,9 @@ onBeforeUnmount(() => {
   min-width: 0;
   transform: rotate(var(--note-tilt, 0deg)) translateY(var(--note-offset, 0));
   transition:
-    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
-    filter 420ms ease;
-  animation: note-settle 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    transform 480ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 320ms ease;
+  animation: note-settle 720ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 .desk-note--wide {
@@ -418,6 +418,9 @@ onBeforeUnmount(() => {
     0 1px 2px color-mix(in srgb, var(--note-ink) 5%, transparent),
     0 16px 28px -24px color-mix(in srgb, var(--note-ink) 55%, transparent);
   overflow: hidden;
+  transition:
+    border-color 300ms ease,
+    box-shadow 480ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .desk-note__sheet::after {
@@ -696,14 +699,32 @@ onBeforeUnmount(() => {
 @media (hover: hover) {
   .desk-note:hover {
     z-index: 3;
-    transform: rotate(0deg) translateY(calc(var(--note-offset, 0px) - 4px));
+    will-change: transform;
+    transform: rotate(0deg) translateY(calc(var(--note-offset, 0px) - 6px)) scale(1.004);
   }
 
   .desk-note:hover .desk-note__sheet {
+    border-color: var(--note-line-strong);
     box-shadow:
       0 1px 0 color-mix(in srgb, var(--note-ink) 5%, transparent),
-      0 2px 4px color-mix(in srgb, var(--note-ink) 7%, transparent),
-      0 22px 34px -24px color-mix(in srgb, var(--note-ink) 50%, transparent);
+      0 2px 5px color-mix(in srgb, var(--note-ink) 8%, transparent),
+      0 28px 42px -28px color-mix(in srgb, var(--note-ink) 55%, transparent);
+  }
+
+  .desk-note--tape:hover .desk-note__fastener {
+    transform: translateX(-50%) translateY(-1px) rotate(-1.8deg);
+  }
+
+  .desk-note--pin:hover .desk-note__fastener {
+    transform: translate(-50%, -1px);
+  }
+
+  .desk-note--staple:hover .desk-note__fastener {
+    transform: translateY(-1px) rotate(-28deg);
+  }
+
+  .desk-note__fastener {
+    transition: transform 480ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 }
 

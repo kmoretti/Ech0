@@ -108,7 +108,7 @@ const dateLabel = computed(() =>
     0 1px 2px color-mix(in srgb, var(--sj-ink, #292622) 5%, transparent),
     0 26px 40px -36px color-mix(in srgb, var(--sj-ink, #292622) 55%, transparent);
   transform: rotate(-0.28deg);
-  animation: hero-settle 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: hero-settle 760ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 .desk-hero::after {

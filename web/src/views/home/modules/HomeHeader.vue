@@ -265,6 +265,7 @@ onBeforeUnmount(() => {
 
 .home-header__title {
   margin: 0;
+  font-family: var(--font-family-display);
   font-size: 1.125rem;
   font-weight: 700;
   color: var(--color-text-primary);

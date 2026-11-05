@@ -257,18 +257,7 @@ onBeforeUnmount(() => {
   --sj-accent: #8a4132;
 
   min-height: 100dvh;
-  background:
-    radial-gradient(90rem 50rem at 50% -18%, rgb(255 255 255 / 42%), transparent 62%),
-    radial-gradient(
-      circle at 1px 1px,
-      color-mix(in srgb, var(--sj-ink) 3.5%, transparent) 1px,
-      transparent 0
-    ),
-    var(--home-canvas);
-  background-size:
-    auto,
-    20px 20px,
-    auto;
+  background: transparent;
   color: var(--color-text-primary);
 }
 
@@ -293,18 +282,7 @@ onBeforeUnmount(() => {
   --sj-line-strong: #4e4841;
   --sj-accent: #a85c49;
 
-  background:
-    radial-gradient(90rem 50rem at 50% -18%, rgb(255 255 255 / 4%), transparent 62%),
-    radial-gradient(
-      circle at 1px 1px,
-      color-mix(in srgb, var(--sj-ink) 5%, transparent) 1px,
-      transparent 0
-    ),
-    var(--home-canvas);
-  background-size:
-    auto,
-    20px 20px,
-    auto;
+  background: transparent;
 }
 
 @media (width >= 820px) {

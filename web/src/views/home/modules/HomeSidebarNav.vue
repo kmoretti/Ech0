@@ -167,6 +167,7 @@ watch(showSearchTrigger, (visible) => {
 
 .home-sidebar-nav__link {
   display: block;
+  font-family: var(--font-family-display);
   padding: 0.4rem 0.7rem;
   border-radius: var(--radius-xs);
   font-size: 0.9375rem;
