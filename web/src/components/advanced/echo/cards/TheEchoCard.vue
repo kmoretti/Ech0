@@ -131,10 +131,13 @@
         </ul>
         <span v-else class="desk-note__foot-ornament" aria-hidden="true">· ·</span>
 
-        <button type="button" class="desk-note__open" @click="handleExpandEcho(echo.id)">
-          <span>{{ t('echoCard.openDetail') }}</span>
-          <Open class="desk-note__open-icon" />
-        </button>
+        <div class="desk-note__actions">
+          <TheEchoReactions :echo="props.echo" />
+          <button type="button" class="desk-note__open" @click="handleExpandEcho(echo.id)">
+            <span>{{ t('echoCard.openDetail') }}</span>
+            <Open class="desk-note__open-icon" />
+          </button>
+        </div>
       </footer>
     </div>
   </article>
@@ -157,6 +160,7 @@ import Lock from '@/components/icons/lock.vue'
 import More from '@/components/icons/more.vue'
 import EditEcho from '@/components/icons/editecho.vue'
 import Open from '@/components/icons/open.vue'
+import TheEchoReactions from '@/components/advanced/echo/cards/TheEchoReactions.vue'
 import { useRouter } from 'vue-router'
 import { countWords, getEchoFilesBy, isContentLeadingEcho } from '@/utils/echo'
 import { timeValueToMs } from '@/utils/timeValue'
@@ -635,6 +639,24 @@ onBeforeUnmount(() => {
   font-size: 0.6rem;
   letter-spacing: 0.28em;
   color: var(--note-ink-3);
+}
+
+.desk-note__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-left: auto;
+}
+
+.desk-note__actions :deep(.reaction-trigger) {
+  border-color: var(--note-line-strong);
+  color: var(--note-ink-3);
+}
+
+.desk-note__actions :deep(.reaction-trigger:hover:not(:disabled)) {
+  border-color: var(--note-ink-3);
+  background: color-mix(in srgb, var(--note-ink) 5%, transparent);
+  color: var(--note-ink);
 }
 
 .desk-note__open {

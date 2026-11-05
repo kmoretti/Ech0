@@ -7,7 +7,6 @@ import { fetchQueryEchos, fetchGetTags, fetchGetEchoById, fetchCreateTag } from 
 import {
   HOME_CACHE_TTL,
   HOME_ECHO_CACHE_PREFIX,
-  invalidateEchoQueryCache,
   invalidateHomeCaches,
   readHomeCache,
   refreshHomeCacheInBackground,
