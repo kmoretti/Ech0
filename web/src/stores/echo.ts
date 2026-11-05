@@ -127,10 +127,7 @@ export const useEchoStore = defineStore('echoStore', () => {
     return readHomeCache<EchoCachePayload>(cacheKeyForParams(params))
   }
 
-  const writeQueryCache = (
-    params: App.Api.Ech0.EchoQueryParams,
-    payload: EchoCachePayload,
-  ) => {
+  const writeQueryCache = (params: App.Api.Ech0.EchoQueryParams, payload: EchoCachePayload) => {
     writeHomeCache(cacheKeyForParams(params), payload, HOME_CACHE_TTL)
   }
 

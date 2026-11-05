@@ -193,8 +193,8 @@ const showFirstEchoCard = computed(() => {
   if (!echo) return false
   return shouldShowFirstEchoCard({
     isOwner: isLogin.value,
-filtering: hasActiveQuery.value,
-echoTotal: feedTotal.value,
+    filtering: hasActiveQuery.value,
+    echoTotal: feedTotal.value,
     firstEchoPrivate: echo.private === true,
     dismissed: firstEchoSeen.value,
   })
