@@ -285,6 +285,7 @@
     "passkeyLoginFailed": "Passkey 登录失败"
   },
   "init": {
+    "introKicker": "首次设置",
     "ownerEmailPlaceholder": "Owner 邮箱",
     "ownerUsernamePlaceholder": "Owner 用户名",
     "ownerPasswordPlaceholder": "Owner 密码",

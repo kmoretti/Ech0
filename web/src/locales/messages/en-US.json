@@ -285,6 +285,7 @@
     "passkeyLoginFailed": "Passkey login failed"
   },
   "init": {
+    "introKicker": "First run",
     "ownerEmailPlaceholder": "Owner email",
     "ownerUsernamePlaceholder": "Owner username",
     "ownerPasswordPlaceholder": "Owner password",

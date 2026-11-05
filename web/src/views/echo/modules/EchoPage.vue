@@ -1,16 +1,18 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
-  <div class="px-3 pb-4 py-2 mt-4 sm:mt-6 mb-10 mx-auto flex justify-center items-center">
-    <div class="w-full sm:max-w-lg mx-auto">
-      <div v-if="echo" class="w-full sm:mt-1 mx-auto">
+  <div class="echo-page">
+    <article class="echo-sheet">
+      <span class="echo-sheet__tape" aria-hidden="true"></span>
+
+      <div v-if="echo" class="echo-sheet__body">
         <TheEchoDetail :echo="echo" />
         <TheEchoInteractions />
       </div>
-      <div v-else class="w-full sm:mt-1 text-[var(--color-text-muted)]">
-        <p class="text-center">{{ t('echoPage.loadingDetail') }}</p>
+      <div v-else class="echo-sheet__loading">
+        <p>{{ t('echoPage.loadingDetail') }}</p>
       </div>
-    </div>
+    </article>
   </div>
 </template>
 
@@ -111,3 +113,88 @@ onMounted(loadEcho)
 
 onBeforeUnmount(() => clearSeoOverride(route.path))
 </script>
+
+<style scoped>
+.echo-page {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 2.4rem 1rem 3rem;
+}
+
+.echo-sheet {
+  position: relative;
+  width: min(100%, 42rem);
+  padding: 1.4rem 1.5rem 1.6rem;
+  background-color: color-mix(in srgb, var(--color-bg-surface) 94%, transparent);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 2px 14px 2px 2px;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--color-text-primary) 4%, transparent),
+    0 1px 2px color-mix(in srgb, var(--color-text-primary) 5%, transparent),
+    0 28px 44px -40px color-mix(in srgb, var(--color-text-primary) 52%, transparent);
+  animation: echo-sheet-in 680ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.echo-sheet::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='170' height='170' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+.echo-sheet__tape {
+  position: absolute;
+  top: -0.58rem;
+  left: 50%;
+  width: 4.8rem;
+  height: 1.05rem;
+  transform: translateX(-50%) rotate(-1.1deg);
+  background: color-mix(in srgb, var(--color-bg-surface) 62%, var(--color-border-subtle) 38%);
+  opacity: 0.78;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+  pointer-events: none;
+}
+
+.echo-sheet__body {
+  position: relative;
+  z-index: 1;
+}
+
+.echo-sheet__loading {
+  padding: 2rem 0;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+@keyframes echo-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-sheet {
+    animation: none;
+  }
+}
+
+@media (width <= 640px) {
+  .echo-page {
+    padding: 1.2rem 0.6rem 2rem;
+  }
+
+  .echo-sheet {
+    padding: 1.1rem 1rem 1.3rem;
+  }
+}
+</style>

@@ -285,6 +285,7 @@
     "passkeyLoginFailed": "Passkey ログインに失敗しました"
   },
   "init": {
+    "introKicker": "初回設定",
     "ownerEmailPlaceholder": "オーナーメール",
     "ownerUsernamePlaceholder": "オーナーのユーザー名",
     "ownerPasswordPlaceholder": "オーナーのパスワード",

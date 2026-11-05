@@ -175,18 +175,7 @@ const demoComment: App.Api.Comment.CommentItem = {
 
   min-height: 100dvh;
   padding: 1.6rem 0.9rem 4rem;
-  background:
-    radial-gradient(90rem 50rem at 50% -18%, rgb(255 255 255 / 42%), transparent 62%),
-    radial-gradient(
-      circle at 1px 1px,
-      color-mix(in srgb, var(--sj-ink) 3.5%, transparent) 1px,
-      transparent 0
-    ),
-    var(--home-canvas);
-  background-size:
-    auto,
-    20px 20px,
-    auto;
+  background: transparent;
   color: var(--color-text-primary);
 }
 

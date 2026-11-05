@@ -92,10 +92,12 @@ onMounted(load)
 </script>
 
 <template>
-  <main class="flex justify-center items-center min-h-screen px-4 py-10">
-    <div class="w-[min(92vw,28rem)]">
-      <header class="flex flex-col items-center text-center gap-1">
-        <h1 class="text-lg font-semibold text-[var(--color-text-primary)]">
+  <main class="consent-page">
+    <div class="consent-sheet">
+      <span class="consent-sheet__clip" aria-hidden="true"></span>
+
+      <header class="consent-brand">
+        <h1 class="consent-brand__title">
           {{ t('oauthConsent.title') }}
         </h1>
         <p class="text-xs text-[var(--color-text-muted)]">{{ t('oauthConsent.subtitle') }}</p>
@@ -168,3 +170,97 @@ onMounted(load)
     </div>
   </main>
 </template>
+
+<style scoped>
+.consent-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 1.5rem 1rem;
+}
+
+.consent-sheet {
+  position: relative;
+  width: min(92vw, 28rem);
+  padding: 1.6rem 1.35rem 1.4rem;
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 2px 18px 2px 2px;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--color-text-primary) 4%, transparent),
+    0 1px 2px color-mix(in srgb, var(--color-text-primary) 5%, transparent),
+    0 30px 46px -40px color-mix(in srgb, var(--color-text-primary) 55%, transparent);
+  transform: rotate(-0.24deg);
+  animation: consent-settle 760ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.consent-sheet::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+.consent-sheet__clip {
+  position: absolute;
+  z-index: 2;
+  top: -0.42rem;
+  left: 1.6rem;
+  width: 0.6rem;
+  height: 1.35rem;
+  border: 1.5px solid color-mix(in srgb, var(--color-text-primary) 42%, transparent);
+  border-radius: 0.38rem;
+  transform: rotate(8deg);
+  box-shadow: 0 2px 3px -2px color-mix(in srgb, var(--color-text-primary) 35%, transparent);
+}
+
+.consent-sheet__clip::after {
+  content: '';
+  position: absolute;
+  inset: 0.17rem 0.11rem 0.2rem;
+  border: 1px solid color-mix(in srgb, var(--color-text-primary) 30%, transparent);
+  border-radius: 0.28rem;
+}
+
+.consent-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px dashed color-mix(in srgb, var(--color-border-strong) 60%, transparent);
+  text-align: center;
+}
+
+.consent-brand__title {
+  font-family: var(--font-family-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-text-primary);
+}
+
+@keyframes consent-settle {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    transform: rotate(1.1deg) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: rotate(-0.24deg) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .consent-sheet {
+    animation: none;
+  }
+}
+</style>

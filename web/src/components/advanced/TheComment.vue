@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
-  <div id="comments" class="w-full max-w-sm h-auto px-0 py-2 mx-auto">
+  <div id="comments" class="w-full h-auto px-0 py-2 mx-auto">
     <div
       v-if="commentsClosed"
       class="rounded-lg border border-[var(--color-border-subtle)] p-3 text-sm text-[var(--color-text-muted)]"
@@ -190,7 +190,7 @@
                   <Verified
                     v-if="item.source === 'system'"
                     v-tooltip="t('commentSection.verifiedUser')"
-                    class="verified-badge-icon h-3! w-3! shrink-0 text-sky-500"
+                    class="verified-badge-icon h-3! w-3! shrink-0 text-[var(--color-accent)]"
                   />
                   <span class="comment-dot">·</span>
                   <span class="comment-time">{{ formatDate(item.created_at) }}</span>
@@ -237,7 +237,7 @@
                     <Verified
                       v-if="reply.source === 'system'"
                       v-tooltip="t('commentSection.verifiedUser')"
-                      class="verified-badge-icon h-3! w-3! shrink-0 text-sky-500"
+                      class="verified-badge-icon h-3! w-3! shrink-0 text-[var(--color-accent)]"
                     />
                     <span class="comment-dot">·</span>
                     <span class="comment-time">{{ formatDate(reply.created_at) }}</span>

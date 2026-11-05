@@ -285,6 +285,7 @@
     "passkeyLoginFailed": "Passkey-Anmeldung fehlgeschlagen"
   },
   "init": {
+    "introKicker": "Erste Einrichtung",
     "ownerEmailPlaceholder": "Owner-E-Mail",
     "ownerUsernamePlaceholder": "Owner-Benutzername",
     "ownerPasswordPlaceholder": "Owner-Passwort",

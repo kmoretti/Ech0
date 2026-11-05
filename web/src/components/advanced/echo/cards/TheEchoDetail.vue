@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
-  <article class="echo-detail w-full max-w-sm mx-auto">
+  <article class="echo-detail w-full mx-auto">
     <header class="echo-detail-head">
       <img
         :src="logo"
@@ -17,7 +17,7 @@
           >
             {{ SystemSetting.server_name }}
           </h2>
-          <Verified class="text-sky-500 w-5 h-5" />
+          <Verified class="w-5 h-5 text-[var(--color-accent)]" />
         </div>
         <span class="echo-username text-[var(--color-text-secondary)]">@ {{ echo.username }}</span>
       </div>

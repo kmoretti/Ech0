@@ -13,63 +13,70 @@
         <span>{{ t('commonNav.backHome') }}</span>
       </button>
 
-      <div class="about-colophon">
-        <span
-          ref="stickerRef"
-          class="about-sticker"
-          :class="{ 'is-dragging': dragging }"
-          :style="{ transform: `translate(${drag.x}px, ${drag.y}px) rotate(${drag.x * 0.04}deg)` }"
-          aria-hidden="true"
-          @pointerdown="onPointerDown"
-          @pointermove="onPointerMove"
-          @pointerup="onPointerUp"
-          @pointercancel="onPointerUp"
-        >
-          <img class="about-sticker__img" src="/favicon.ico" alt="" draggable="false" />
-        </span>
+      <div class="about-sheet">
+        <span class="about-sheet__tape" aria-hidden="true"></span>
 
-        <div class="about-colophon__body">
-          <h1 class="about-colophon__name">Ech0</h1>
-          <p class="about-colophon__build">
-            v{{ version
-            }}<template v-if="hasCommit">
-              ·
+        <div class="about-colophon">
+          <span
+            ref="stickerRef"
+            class="about-sticker"
+            :class="{ 'is-dragging': dragging }"
+            :style="{
+              transform: `translate(${drag.x}px, ${drag.y}px) rotate(${drag.x * 0.04}deg)`,
+            }"
+            aria-hidden="true"
+            @pointerdown="onPointerDown"
+            @pointermove="onPointerMove"
+            @pointerup="onPointerUp"
+            @pointercancel="onPointerUp"
+          >
+            <img class="about-sticker__img" src="/favicon.ico" alt="" draggable="false" />
+          </span>
+
+          <div class="about-colophon__body">
+            <h1 class="about-colophon__name">Ech0</h1>
+            <p class="about-colophon__build">
+              v{{ version
+              }}<template v-if="hasCommit">
+                ·
+                <a
+                  :href="commitURL"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="about-link about-colophon__commit"
+                  :aria-label="t('about.viewSourceAtCommit', { commit })"
+                  :title="t('about.viewSourceAtCommit', { commit })"
+                  >{{ commit }}</a
+                ></template
+              >
+            </p>
+
+            <p class="about-colophon__links">
               <a
-                :href="commitURL"
+                :href="repoURL"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="about-link about-colophon__commit"
-                :aria-label="t('about.viewSourceAtCommit', { commit })"
-                :title="t('about.viewSourceAtCommit', { commit })"
-                >{{ commit }}</a
-              ></template
-            >
-          </p>
+                class="about-link"
+                :aria-label="t('about.viewSource')"
+                :title="t('about.viewSource')"
+              >
+                {{ t('about.fieldSource')
+                }}<span class="about-link__ext" aria-hidden="true">↗</span>
+              </a>
+              <span class="about-colophon__sep" aria-hidden="true">·</span>
+              <a
+                :href="`${repoURL}/blob/main/LICENSE`"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="about-link"
+              >
+                {{ license }}<span class="about-link__ext" aria-hidden="true">↗</span>
+              </a>
+            </p>
 
-          <p class="about-colophon__links">
-            <a
-              :href="repoURL"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="about-link"
-              :aria-label="t('about.viewSource')"
-              :title="t('about.viewSource')"
-            >
-              {{ t('about.fieldSource') }}<span class="about-link__ext" aria-hidden="true">↗</span>
-            </a>
-            <span class="about-colophon__sep" aria-hidden="true">·</span>
-            <a
-              :href="`${repoURL}/blob/main/LICENSE`"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="about-link"
-            >
-              {{ license }}<span class="about-link__ext" aria-hidden="true">↗</span>
-            </a>
-          </p>
-
-          <p class="about-colophon__copyright">{{ copyright }}</p>
-          <p class="about-colophon__powered">{{ t('about.poweredBy') }}</p>
+            <p class="about-colophon__copyright">{{ copyright }}</p>
+            <p class="about-colophon__powered">{{ t('about.poweredBy') }}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -139,17 +146,18 @@ const commitURL = computed(() => `${repoURL.value}/tree/${commit.value}`)
 <style scoped>
 .about-page {
   display: flex;
+  align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 100vh;
-  padding: 4rem 1.5rem;
+  min-height: 100dvh;
+  padding: 1.5rem 1rem;
 }
 
 .about-frame {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 28rem;
+  max-width: 24rem;
 }
 
 .about-back {
@@ -157,6 +165,7 @@ const commitURL = computed(() => `${repoURL.value}/tree/${commit.value}`)
   align-items: center;
   gap: 0.35rem;
   align-self: flex-start;
+  margin-bottom: 1.1rem;
   padding: 0;
   border: 0;
   background: none;
@@ -164,6 +173,63 @@ const commitURL = computed(() => `${repoURL.value}/tree/${commit.value}`)
   font-size: 0.8125rem;
   cursor: pointer;
   transition: color 0.15s ease;
+}
+
+.about-sheet {
+  position: relative;
+  padding: 1.5rem 1.4rem 1.35rem;
+  background-color: color-mix(in srgb, var(--color-bg-surface) 94%, transparent);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 2px 16px 2px 2px;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--color-text-primary) 4%, transparent),
+    0 1px 2px color-mix(in srgb, var(--color-text-primary) 5%, transparent),
+    0 28px 44px -40px color-mix(in srgb, var(--color-text-primary) 52%, transparent);
+  transform: rotate(-0.3deg);
+  animation: about-settle 760ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.about-sheet::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+.about-sheet__tape {
+  position: absolute;
+  top: -0.58rem;
+  left: 50%;
+  width: 4.4rem;
+  height: 1.05rem;
+  transform: translateX(-50%) rotate(1.2deg);
+  background: color-mix(in srgb, var(--color-bg-surface) 60%, var(--color-border-subtle) 40%);
+  opacity: 0.78;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+  pointer-events: none;
+}
+
+@keyframes about-settle {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    transform: rotate(1deg) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: rotate(-0.3deg) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-sheet {
+    animation: none;
+  }
 }
 
 .about-back:hover {
@@ -182,10 +248,12 @@ const commitURL = computed(() => `${repoURL.value}/tree/${commit.value}`)
 }
 
 .about-colophon {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: flex-start;
   gap: 0.85rem;
-  margin-top: 4rem;
+  margin-top: 0;
 }
 
 .about-colophon__body {
