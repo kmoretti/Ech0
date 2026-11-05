@@ -121,11 +121,6 @@ var spaRoutes = map[string]spaRoute{
 		description: "Reflect on and summarize your past echos with AI.",
 		noindex:     true,
 	},
-	"/zen": {
-		title:       "Zen",
-		description: "Browse all echos in an immersive masonry view.",
-		noindex:     true,
-	},
 }
 
 var panelRoute = spaRoute{
