@@ -359,7 +359,7 @@ const noteStyle = computed(() => ({
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.28rem 0.8rem 0.52rem;
+  padding: 0.28rem 0.8rem 0.66rem;
   font-family: var(--font-family-display);
   font-size: 0.56rem;
   color: rgb(74 62 48 / 48%);
@@ -454,33 +454,30 @@ const noteStyle = computed(() => ({
   border: 0;
   border-radius: 0;
   clip-path: polygon(
-    0% 2%,
-    4% 0%,
-    16% 1.4%,
-    29% 0%,
-    44% 1.2%,
-    58% 0.2%,
-    73% 1.6%,
-    88% 0%,
-    97% 1.8%,
-    100% 12%,
-    98.6% 28%,
-    100% 44%,
-    98.4% 62%,
-    100% 78%,
-    98.8% 92%,
-    96% 100%,
-    82% 98.6%,
-    68% 100%,
-    52% 98.4%,
-    38% 100%,
-    22% 98.6%,
-    9% 100%,
-    0% 96%,
-    1.4% 80%,
-    0% 63%,
-    1.2% 47%,
-    0% 31%
+    0% 0.8%,
+    6% 0%,
+    18% 0.7%,
+    32% 0%,
+    47% 0.6%,
+    62% 0%,
+    76% 0.8%,
+    90% 0%,
+    98% 0.6%,
+    100% 1.4%,
+    99.2% 15%,
+    100% 30%,
+    99.3% 45%,
+    100% 60%,
+    99.2% 75%,
+    100% 88%,
+    100% 100%,
+    0% 100%,
+    0.8% 85%,
+    0% 70%,
+    0.7% 55%,
+    0% 40%,
+    0.8% 25%,
+    0% 10%
   );
   filter: drop-shadow(0 8px 12px rgb(40 26 14 / 22%));
 }
@@ -635,7 +632,7 @@ const noteStyle = computed(() => ({
 /* interaction */
 @media (hover: hover) {
   .wall-note:hover {
-    z-index: 999;
+    z-index: 9990;
     transform: rotate(0deg) translateY(-6px) scale(1.035);
   }
 
@@ -653,7 +650,7 @@ const noteStyle = computed(() => ({
 }
 
 .wall-note:focus-visible {
-  z-index: 1000;
+  z-index: 9995;
   outline: 2px solid #3a2f24;
   outline-offset: 4px;
 }

@@ -30,19 +30,19 @@
   height: 100dvh;
   overflow: hidden;
   color: var(--wall-ink);
-  background-color: #e7dfd2;
+  background-color: #ece9e3;
   background-image:
-    radial-gradient(120% 80% at 12% 0%, rgb(255 253 246 / 55%), transparent 58%),
-    radial-gradient(90% 70% at 92% 100%, rgb(150 122 88 / 12%), transparent 62%),
+    radial-gradient(120% 80% at 12% 0%, rgb(255 253 246 / 46%), transparent 60%),
+    radial-gradient(90% 70% at 92% 100%, rgb(150 122 88 / 7%), transparent 64%),
     repeating-linear-gradient(
       0deg,
-      rgb(112 85 55 / 8%) 0 1px,
-      transparent 1px 13px,
-      rgb(255 255 255 / 20%) 13px 14px,
-      transparent 14px 29px
+      rgb(112 85 55 / 4.5%) 0 1px,
+      transparent 1px 16px,
+      rgb(255 255 255 / 18%) 16px 17px,
+      transparent 17px 33px
     ),
-    repeating-linear-gradient(0deg, rgb(118 92 62 / 3%) 0 1px, transparent 1px 37px),
-    linear-gradient(180deg, #eee7db 0%, #e7dfd2 52%, #dfd6c6 100%);
+    repeating-linear-gradient(0deg, rgb(118 92 62 / 2%) 0 1px, transparent 1px 47px),
+    linear-gradient(180deg, #f2efea 0%, #ece9e3 55%, #e5e1da 100%);
   background-attachment: fixed;
 }
 
@@ -53,9 +53,9 @@
   z-index: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(ellipse 15rem 3.6rem at 17% 22%, rgb(120 92 60 / 10%), transparent 64%),
-    radial-gradient(ellipse 9rem 2.2rem at 74% 61%, rgb(120 92 60 / 8%), transparent 64%),
-    radial-gradient(ellipse 12rem 2.8rem at 43% 88%, rgb(120 92 60 / 7%), transparent 66%);
+    radial-gradient(ellipse 15rem 3.6rem at 17% 22%, rgb(120 92 60 / 5%), transparent 64%),
+    radial-gradient(ellipse 9rem 2.2rem at 74% 61%, rgb(120 92 60 / 4%), transparent 64%),
+    radial-gradient(ellipse 12rem 2.8rem at 43% 88%, rgb(120 92 60 / 3.5%), transparent 66%);
 }
 
 .wall-page::after {
@@ -64,7 +64,7 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  box-shadow: inset 0 0 20rem rgb(92 70 45 / 14%);
+  box-shadow: inset 0 0 20rem rgb(92 70 45 / 7%);
 }
 
 .wall-page__light {
@@ -82,7 +82,7 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.055;
+  opacity: 0.04;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
   mix-blend-mode: soft-light;
 }

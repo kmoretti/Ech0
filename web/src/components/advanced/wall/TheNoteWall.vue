@@ -13,11 +13,6 @@
           {{ t('wall.all') }}
         </button>
       </span>
-
-      <button v-else type="button" class="wall-stage__shuffle" @click="reshuffle">
-        <Repeat class="wall-stage__shuffle-icon" />
-        <span>{{ t('wall.shuffle') }}</span>
-      </button>
     </div>
 
     <div v-if="loading && echoes.length === 0" class="wall-stage__state">
@@ -85,7 +80,6 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useMediaQuery, useResizeObserver } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
-import Repeat from '@/components/icons/repeat.vue'
 import TheLoadingIndicator from '@/components/common/TheLoadingIndicator.vue'
 import TheWallNote from './TheWallNote.vue'
 import {
@@ -127,7 +121,6 @@ const { t } = useI18n()
 const isDesktop = useMediaQuery('(min-width: 1080px)')
 const canvasRef = ref<HTMLElement | null>(null)
 const canvasSize = ref({ width: 0, height: 0 })
-const shuffleNonce = ref(0)
 const placedNotes = ref<Placed[]>([])
 
 const displayEchoes = computed(() => (isDesktop.value ? props.echoes.slice(0, 50) : props.echoes))
@@ -165,12 +158,20 @@ const sizeFor = (index: number, count: number): WallSize => {
   return index % 3 === 0 ? 'sm' : 'xs'
 }
 
+const Z_INDEX: Record<WallSize, number> = {
+  xl: 1000,
+  lg: 2000,
+  md: 3000,
+  sm: 4000,
+  xs: 5000,
+}
+
 const layoutFreeform = (count: number) => {
   const { width, height } = canvasSize.value
   if (!width || !height) return []
   const random = mulberry32(
     hashString(
-      `${displayEchoes.value.map((echo) => echo.id).join('|')}:${props.selectedDate ?? 'all'}:${shuffleNonce.value}`,
+      `${displayEchoes.value.map((echo) => echo.id).join('|')}:${props.selectedDate ?? 'all'}`,
     ),
   )
 
@@ -178,37 +179,32 @@ const layoutFreeform = (count: number) => {
   const rows = Math.max(4, Math.ceil(count / cols))
   const cellWidth = width / cols
   const cellHeight = height / rows
+  const cellArea = cellWidth * cellHeight
   const cells = Array.from({ length: cols * rows }, (_, index) => ({
     col: index % cols,
     row: Math.floor(index / cols),
+    jitterX: (random() - 0.5) * cellWidth * 0.2,
+    jitterY: (random() - 0.5) * cellHeight * 0.18,
   }))
 
-  // Newest notes settle near the calendar (right / top); older ones scatter.
-  const recentCells = [...cells].sort(
-    (a, b) => (b.col - a.col) * 3 + (a.row - b.row) + (random() - 0.5) * 2.4,
-  )
-  const scatteredCells = [...cells].sort(() => random() - 0.5)
-  const order = [...recentCells.slice(0, 8), ...scatteredCells]
-  const used = new Set<string>()
-  const nextCell = () => {
-    for (const cell of order) {
-      const key = `${cell.col}:${cell.row}`
-      if (used.has(key)) continue
-      used.add(key)
-      return cell
-    }
-    return cells[Math.floor(random() * cells.length)]!
-  }
-
   const factors: Record<WallSize, number> = {
-    xs: 1.04,
-    sm: 1.14,
-    md: 1.28,
-    lg: 1.62,
-    xl: 2.05,
+    xs: 1,
+    sm: 1.08,
+    md: 1.18,
+    lg: 1.36,
+    xl: 1.68,
   }
 
   const placed: Placed[] = []
+  const usedCells = new Set<string>()
+
+  const overlapArea = (rect: { x: number; y: number; width: number; height: number }) =>
+    placed.reduce((sum, other) => {
+      const dx = Math.min(rect.x + rect.width, other.x + other.width) - Math.max(rect.x, other.x)
+      const dy = Math.min(rect.y + rect.height, other.y + other.height) - Math.max(rect.y, other.y)
+      return sum + (dx > 0 && dy > 0 ? dx * dy : 0)
+    }, 0)
+
   for (let index = 0; index < count; index++) {
     const echo = displayEchoes.value[index]!
     const size = sizeFor(index, count)
@@ -217,21 +213,64 @@ const layoutFreeform = (count: number) => {
     const scale = Math.min((cellWidth * factor) / shape.width, (cellHeight * factor) / shape.height)
     const noteWidth = Math.round(shape.width * scale)
     const noteHeight = Math.round(shape.height * scale)
-    const cell = nextCell()
-    const jitterX = (random() - 0.5) * cellWidth * 0.34
-    const jitterY = (random() - 0.5) * cellHeight * 0.3
-    const x = cell.col * cellWidth + (cellWidth - noteWidth) / 2 + jitterX
-    const y = cell.row * cellHeight + (cellHeight - noteHeight) / 2 + jitterY
+    const newest = index < 6
 
+    let best: { x: number; y: number; score: number; key: string } | null = null
+    for (const cell of cells) {
+      const key = `${cell.col}:${cell.row}`
+      const x = Math.round(
+        Math.max(
+          18,
+          Math.min(
+            width - noteWidth - 18,
+            cell.col * cellWidth + (cellWidth - noteWidth) / 2 + cell.jitterX,
+          ),
+        ),
+      )
+      const y = Math.round(
+        Math.max(
+          18,
+          Math.min(
+            height - noteHeight - 34,
+            cell.row * cellHeight + (cellHeight - noteHeight) / 2 + cell.jitterY,
+          ),
+        ),
+      )
+      let score = overlapArea({ x, y, width: noteWidth, height: noteHeight }) * 1.25
+      if (usedCells.has(key)) score += cellArea * 1.8
+      if (newest) {
+        // The newest notes stay close to the calendar in the top-right corner.
+        score += (1 - (x + noteWidth / 2) / width) * cellArea * 2.6
+        score += ((y + noteHeight / 2) / height) * cellArea * 1.8
+      }
+      score += random() * cellArea * 0.16
+      if (!best || score < best.score) best = { x, y, score, key }
+    }
+
+    const target = best ?? { x: 18, y: 18, key: '' }
+    for (const cell of cells) {
+      const centerX = cell.col * cellWidth + cellWidth / 2
+      const centerY = cell.row * cellHeight + cellHeight / 2
+      if (
+        centerX >= target.x - cellWidth * 0.18 &&
+        centerX <= target.x + noteWidth + cellWidth * 0.18 &&
+        centerY >= target.y - cellHeight * 0.15 &&
+        centerY <= target.y + noteHeight + cellHeight * 0.15
+      ) {
+        usedCells.add(`${cell.col}:${cell.row}`)
+      }
+    }
     placed.push({
       echo,
       meta: wallNoteMeta(echo, index < 2),
       size,
       width: noteWidth,
       height: noteHeight,
-      x: Math.round(Math.max(18, Math.min(width - noteWidth - 18, x))),
-      y: Math.round(Math.max(18, Math.min(height - noteHeight - 34, y))),
-      zIndex: count - index + 10,
+      x: target.x,
+      y: target.y,
+      // Small notes sit on top of the large background pieces so every
+      // label stays readable in the collage.
+      zIndex: Z_INDEX[size] + (count - index),
     })
   }
 
@@ -310,10 +349,6 @@ const buildLayout = () => {
     props.selectedDate || count <= 4 ? layoutFiltered(count) : layoutFreeform(count)
 }
 
-const reshuffle = () => {
-  shuffleNonce.value += 1
-}
-
 const handleOpen = (payload: { echo: WallEcho; event: MouseEvent }) => {
   const rect = (payload.event.currentTarget as HTMLElement | null)?.getBoundingClientRect()
   if (!rect) return
@@ -340,7 +375,6 @@ watch(
     isDesktop.value,
     canvasSize.value.width,
     canvasSize.value.height,
-    shuffleNonce.value,
   ],
   () => nextTick(buildLayout),
   { immediate: true },
@@ -404,8 +438,7 @@ watch(
   white-space: nowrap;
 }
 
-.wall-stage__clear,
-.wall-stage__shuffle {
+.wall-stage__clear {
   display: inline-flex;
   align-items: center;
   gap: 0.28rem;
@@ -424,35 +457,15 @@ watch(
     background-color 160ms ease;
 }
 
-.wall-stage__clear:hover,
-.wall-stage__shuffle:hover {
+.wall-stage__clear:hover {
   border-color: rgb(52 42 30 / 46%);
   background: rgb(52 42 30 / 7%);
   color: rgb(38 30 21 / 92%);
 }
 
-.wall-stage__shuffle {
-  margin-left: auto;
-  border-color: rgb(90 70 45 / 26%);
-  background: rgb(30 20 10 / 12%);
-  color: rgb(58 50 40 / 68%);
-}
-
-.wall-stage__shuffle:hover {
-  border-color: rgb(90 70 45 / 42%);
-  background: rgb(30 20 10 / 20%);
-  color: rgb(58 50 40 / 92%);
-}
-
-.wall-stage__shuffle:focus-visible,
 .wall-stage__clear:focus-visible {
   outline: 2px solid rgb(90 70 45 / 70%);
   outline-offset: 2px;
-}
-
-.wall-stage__shuffle-icon {
-  width: 0.72rem;
-  height: 0.72rem;
 }
 
 .wall-canvas {
@@ -534,10 +547,6 @@ watch(
 
 .wall-stage--flow .wall-stage__count {
   color: rgb(58 50 40 / 78%);
-}
-
-.wall-stage--flow .wall-stage__shuffle {
-  display: none;
 }
 
 .wall-more {
