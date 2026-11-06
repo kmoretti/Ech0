@@ -119,7 +119,20 @@ onBeforeUnmount(() => clearSeoOverride(route.path))
   display: flex;
   justify-content: center;
   width: 100%;
+  min-height: 100dvh;
   padding: 2.4rem 1rem 3rem;
+  background-color: #e9e3d8;
+  background-image:
+    radial-gradient(120% 80% at 12% 0%, rgb(255 253 246 / 55%), transparent 58%),
+    repeating-linear-gradient(
+      0deg,
+      rgb(118 92 62 / 5.5%) 0 1px,
+      transparent 1px 13px,
+      rgb(255 255 255 / 16%) 13px 14px,
+      transparent 14px 29px
+    ),
+    linear-gradient(180deg, #efeae0 0%, #e8e1d5 52%, #e2dacb 100%);
+  background-attachment: fixed;
 }
 
 .echo-sheet {

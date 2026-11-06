@@ -1,110 +1,151 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
-  <div class="preview-page">
-    <div class="preview-shell">
-      <header class="preview-head">
-        <div class="preview-brand">
-          <span class="preview-brand__mark" aria-hidden="true">提</span>
-          <div>
-            <p class="preview-brand__title">提笔摘星</p>
-            <p class="preview-brand__sub">Star Letters · Design Preview</p>
-          </div>
-        </div>
-        <div class="preview-head__actions">
-          <div class="preview-tabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              :aria-selected="view === 'notes'"
-              :class="{ 'is-active': view === 'notes' }"
-              @click="view = 'notes'"
-            >
-              便笺
-            </button>
-            <button
-              type="button"
-              role="tab"
-              :aria-selected="view === 'objects'"
-              :class="{ 'is-active': view === 'objects' }"
-              @click="view = 'objects'"
-            >
-              桌角物件
-            </button>
-          </div>
-          <span class="preview-head__badge">
-            {{ view === 'notes' ? `${demoEchoes.length} 枚便笺` : '4 件小物' }}
-          </span>
-        </div>
-      </header>
+  <TheWallShell>
+    <template #main>
+      <div v-if="view === 'notes'" class="preview-wall">
+        <TheNoteWall
+          :echoes="filteredEchoes"
+          :selected-date="selectedDate"
+          @open="openEcho"
+          @clear-date="selectedDate = null"
+        />
+      </div>
 
-      <div class="preview-layout">
-        <main class="preview-main">
-          <template v-if="view === 'notes'">
-            <HomeBanner />
-            <TheEchos :demo-echoes="demoEchoes" compact />
-          </template>
-
-          <section v-else class="object-shelf">
-            <div class="object-shelf__intro">
-              <p class="object-shelf__eyebrow">Desk Objects</p>
-              <h2 class="object-shelf__title">桌角的小物件</h2>
-              <p class="object-shelf__desc">
-                这些不是说说，而是“状态”页签里的日常卡片。它们与便笺共用纸色、墨色和阴影。
-              </p>
-            </div>
-            <div class="object-shelf__grid">
-              <div class="object-shelf__item object-shelf__item--a">
-                <TheHeatMap :demo-data="demoHeatmap" />
-              </div>
-              <div class="object-shelf__item object-shelf__item--b">
-                <TheRecentCard :demo-text="demoRecent" />
-              </div>
-              <div class="object-shelf__item object-shelf__item--c">
-                <TheConnectWidget :demo-connects="demoConnects" />
-              </div>
-              <div class="object-shelf__item object-shelf__item--d">
-                <TheCommentWidget :demo-comment="demoComment" />
-              </div>
-            </div>
-          </section>
-        </main>
-
-        <aside class="preview-aside">
-          <div class="preview-aside__card">
-            <p class="preview-aside__eyebrow">设计笔记</p>
-            <ul class="preview-aside__list">
-              <li><span>01</span>纸、胶带、图钉与钉书针</li>
-              <li><span>02</span>双栏错落，按日成组</li>
-              <li><span>03</span>便笺微倾，悬停时被拾起</li>
-              <li><span>04</span>长笺横跨两栏，首字下沉</li>
-              <li><span>05</span>颜色只留纸色、墨色与一点砖红</li>
-              <li><span>06</span>链接、GitHub、地点是纸上的小物件</li>
-            </ul>
-            <p class="preview-aside__note">
-              这是一页只存在于开发环境的预览路由，正式页面仍从接口读取真实动态。
+      <div v-else class="preview-objects">
+        <div class="object-shelf">
+          <div class="object-shelf__intro">
+            <h2 class="object-shelf__title">桌角的小物件</h2>
+            <p class="object-shelf__desc">
+              热力图、AI 摘要、连接节点与评论，与墙上的便签共用纸色、墨色和阴影。
             </p>
           </div>
-          <p class="preview-aside__verse">星汉灿烂<br />若出其里</p>
-        </aside>
+          <div class="object-shelf__grid">
+            <div class="object-shelf__item object-shelf__item--a">
+              <TheHeatMap :demo-data="demoHeatmap" />
+            </div>
+            <div class="object-shelf__item object-shelf__item--b">
+              <TheRecentCard :demo-text="demoRecent" />
+            </div>
+            <div class="object-shelf__item object-shelf__item--c">
+              <TheConnectWidget :demo-connects="demoConnects" />
+            </div>
+            <div class="object-shelf__item object-shelf__item--d">
+              <TheCommentWidget :demo-comment="demoComment" />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </template>
+
+    <template #side>
+      <TheWallRail
+        :echoes="wallPool"
+        :marks="marks"
+        :selected-date="selectedDate"
+        :latest-stamp="latestStamp"
+        active-tab="home"
+        :connects="demoConnects"
+        :agent-enabled="false"
+        :recent-text="demoRecent"
+        :calendar-open="calendarOpen"
+        @update:selected-date="handleSelectDate"
+        @open-tab="handleTab"
+        @open-settings="router.push({ name: 'panel' })"
+        @open-search="router.push({ name: 'home' })"
+        @toggle-calendar="calendarOpen = !calendarOpen"
+      />
+    </template>
+  </TheWallShell>
+
+  <div class="preview-switch" role="tablist">
+    <button
+      type="button"
+      role="tab"
+      :aria-selected="view === 'notes'"
+      :class="{ 'is-active': view === 'notes' }"
+      @click="view = 'notes'"
+    >
+      便笺墙
+    </button>
+    <button
+      type="button"
+      role="tab"
+      :aria-selected="view === 'objects'"
+      :class="{ 'is-active': view === 'objects' }"
+      @click="view = 'objects'"
+    >
+      桌角物件
+    </button>
+    <span class="preview-switch__count">50 枚</span>
   </div>
+
+  <TheEchoLightbox v-model="activeEcho" :origin-rect="activeRect" @view-detail="goDetail" />
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import HomeBanner from '@/views/home/modules/HomeBanner.vue'
-import TheEchos from '@/views/home/modules/TheEchos.vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import TheWallShell from '@/components/advanced/wall/TheWallShell.vue'
+import TheNoteWall from '@/components/advanced/wall/TheNoteWall.vue'
+import TheWallRail from '@/views/home/modules/wall/TheWallRail.vue'
+import TheEchoLightbox from '@/components/advanced/wall/TheEchoLightbox.vue'
 import {
   TheCommentWidget,
   TheConnectWidget,
   TheHeatMap,
   TheRecentCard,
 } from '@/components/advanced/widget'
+import { wallDayKey, wallEchoTime, type WallEcho } from '@/utils/wall'
 import { demoEchoes } from './demoEchoes'
 
+const router = useRouter()
 const view = ref<'notes' | 'objects'>('notes')
+const selectedDate = ref<string | null>(null)
+const activeEcho = ref<WallEcho | null>(null)
+const activeRect = ref<{ left: number; top: number; width: number; height: number } | null>(null)
+const calendarOpen = ref(false)
+
+onMounted(() => document.documentElement.classList.add('wall-mode'))
+onBeforeUnmount(() => document.documentElement.classList.remove('wall-mode'))
+
+const sortedEchoes = computed(() =>
+  [...demoEchoes].sort((a, b) => wallEchoTime(b) - wallEchoTime(a)),
+)
+const wallPool = computed(() => sortedEchoes.value.slice(0, 50))
+const marks = computed(() => [...new Set(wallPool.value.map((echo) => wallDayKey(echo)))])
+const latestStamp = computed(() =>
+  wallPool.value[0] ? wallEchoTime(wallPool.value[0]!) : undefined,
+)
+const filteredEchoes = computed(() =>
+  selectedDate.value
+    ? wallPool.value.filter((echo) => wallDayKey(echo) === selectedDate.value)
+    : wallPool.value,
+)
+
+const handleSelectDate = (value: string | null) => {
+  selectedDate.value = value
+  if (value) calendarOpen.value = false
+}
+
+const openEcho = ({ echo, rect }: { echo: WallEcho; rect: DOMRect }) => {
+  activeEcho.value = echo
+  activeRect.value = {
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    height: rect.height,
+  }
+}
+
+const goDetail = (echo: WallEcho) => {
+  activeEcho.value = null
+  void router.push({ name: 'echo', params: { echoId: String(echo.id) } })
+}
+
+const handleTab = (tab: 'home' | 'publish' | 'hub') => {
+  void router.push(tab === 'home' ? { name: 'home' } : { name: 'home', query: { tab } })
+}
 
 const heatCounts = [
   0, 1, 0, 2, 3, 1, 0, 4, 2, 1, 0, 0, 3, 2, 1, 5, 2, 0, 1, 3, 4, 2, 1, 0, 2, 3, 1, 4, 2, 0,
@@ -137,7 +178,7 @@ const demoConnects: App.Api.Connect.Connect[] = [
   total_echos: 40 + index * 17,
   today_echos: index % 4,
   sys_username: '星野',
-  version: '5.9.3',
+  version: '5.9.5',
 }))
 
 const demoComment: App.Api.Comment.CommentItem = {
@@ -155,188 +196,55 @@ const demoComment: App.Api.Comment.CommentItem = {
 </script>
 
 <style scoped>
-:global(.vue-devtools__anchor),
-:global(.vue-devtools-frame) {
-  display: none !important;
-}
-
-.preview-page {
-  --home-canvas: #ece9e3;
-  --sj-canvas: #ece9e3;
-  --sj-paper: #fbfaf7;
-  --sj-paper-2: #f5f2ec;
-  --sj-kraft: #e7e1d7;
-  --sj-ink: #292622;
-  --sj-ink-2: #605b55;
-  --sj-ink-3: #928c84;
-  --sj-line: #d9d3ca;
-  --sj-line-strong: #c3bcb2;
-  --sj-accent: #8a4132;
-
-  min-height: 100dvh;
-  padding: 1.6rem 0.9rem 4rem;
-  background: transparent;
-  color: var(--color-text-primary);
-}
-
-.dark .preview-page {
-  --home-canvas: #191715;
-  --sj-canvas: #191715;
-  --sj-paper: #23201d;
-  --sj-paper-2: #201d1a;
-  --sj-kraft: #2b2621;
-  --sj-ink: #e9e4dc;
-  --sj-ink-2: #b8b1a8;
-  --sj-ink-3: #8d867d;
-  --sj-line: #3a352f;
-  --sj-line-strong: #4e4841;
-  --sj-accent: #a85c49;
-}
-
-.preview-shell {
+.preview-wall {
   width: 100%;
-  max-width: 64rem;
-  margin: 0 auto;
+  height: 100%;
+  min-height: 0;
 }
 
-.preview-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.9rem;
-  margin-bottom: 1.2rem;
-  padding: 0 0.25rem;
+.preview-objects {
+  width: 100%;
+  height: 100%;
+  padding: 0.2rem 0.2rem 1rem;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 
-.preview-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
-
-.preview-brand__mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border: 1px solid var(--sj-line-strong);
-  border-radius: 2px;
-  color: var(--sj-ink);
-  font-family: var(--font-family-display);
-  font-size: 1.05rem;
-  font-weight: 600;
-  transform: rotate(-1.2deg);
-}
-
-.preview-brand__title {
-  margin: 0;
-  font-family: var(--font-family-display);
-  font-size: 1.05rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  color: var(--sj-ink);
-}
-
-.preview-brand__sub {
-  margin: 0.08rem 0 0;
-  font-family: var(--font-family-display);
-  font-size: 0.62rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--sj-ink-3);
-}
-
-.preview-head__actions {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
-
-.preview-tabs {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.15rem;
-  border: 1px solid var(--sj-line);
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--sj-paper) 62%, transparent);
-}
-
-.preview-tabs button {
-  padding: 0.24rem 0.6rem;
-  font-family: var(--font-family-display);
-  font-size: 0.66rem;
-  letter-spacing: 0.1em;
-  color: var(--sj-ink-3);
-  transition:
-    color 160ms ease,
-    background-color 160ms ease;
-}
-
-.preview-tabs button:hover {
-  color: var(--sj-ink);
-}
-
-.preview-tabs button.is-active {
-  color: var(--sj-ink);
-  background: var(--sj-paper);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--sj-ink) 8%, transparent);
-}
-
-.preview-tabs button:focus-visible {
-  outline: 1px solid var(--sj-line-strong);
-  outline-offset: 1px;
-}
-
-.preview-head__badge {
-  padding: 0.26rem 0.6rem;
-  border: 1px dashed color-mix(in srgb, var(--sj-line-strong) 85%, transparent);
-  border-radius: 2px;
-  font-family: var(--font-family-display);
-  font-size: 0.66rem;
-  letter-spacing: 0.08em;
-  color: var(--sj-ink-3);
+.preview-objects::-webkit-scrollbar {
+  display: none;
 }
 
 .object-shelf {
-  padding-top: 0.25rem;
+  max-width: 52rem;
+  margin: 0 auto;
 }
 
 .object-shelf__intro {
-  margin-bottom: 1.2rem;
-  padding: 1rem 1.1rem 0.9rem;
-  border: 1px solid var(--sj-line);
-  border-radius: 1px;
-  background: color-mix(in srgb, var(--sj-paper) 66%, transparent);
-  transform: rotate(-0.25deg);
-}
-
-.object-shelf__eyebrow {
-  margin: 0;
-  font-family: var(--font-family-display);
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--sj-ink-3);
+  margin-bottom: 1.1rem;
+  padding: 0.95rem 1.1rem 0.85rem;
+  border: 1px solid rgb(92 72 48 / 22%);
+  border-radius: 2px 12px 2px 2px;
+  background: rgb(246 240 227 / 92%);
+  box-shadow: 0 18px 34px -28px rgb(0 0 0 / 65%);
+  transform: rotate(-0.28deg);
 }
 
 .object-shelf__title {
-  margin: 0.3rem 0 0;
+  margin: 0;
   font-family: var(--font-family-display);
   font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: var(--sj-ink);
+  color: #332b22;
 }
 
 .object-shelf__desc {
-  max-width: 30rem;
+  max-width: 32rem;
   margin: 0.4rem 0 0;
-  font-size: 0.78rem;
+  font-family: var(--font-family-display);
+  font-size: 0.76rem;
   line-height: 1.7;
-  color: var(--sj-ink-2);
+  color: rgb(60 50 40 / 68%);
 }
 
 .object-shelf__grid {
@@ -350,13 +258,12 @@ const demoComment: App.Api.Comment.CommentItem = {
   position: relative;
   min-width: 0;
   padding: 0.55rem 0.5rem 0.45rem;
-  border: 1px solid var(--sj-line);
+  border: 1px solid rgb(92 72 48 / 20%);
   border-radius: 1px;
-  background: color-mix(in srgb, var(--sj-paper) 82%, transparent);
+  background: rgb(246 240 227 / 94%);
   box-shadow:
-    0 1px 0 color-mix(in srgb, var(--sj-ink) 4%, transparent),
-    0 14px 24px -24px color-mix(in srgb, var(--sj-ink) 48%, transparent);
-  filter: grayscale(1);
+    0 1px 0 rgb(255 255 255 / 35%),
+    0 18px 30px -26px rgb(0 0 0 / 60%);
   transition:
     transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 320ms ease;
@@ -371,13 +278,9 @@ const demoComment: App.Api.Comment.CommentItem = {
   height: 0.95rem;
   transform: translateX(-50%) rotate(-1.5deg);
   background:
-    repeating-linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--sj-ink) 6%, transparent) 0 2px,
-      transparent 2px 5px
-    ),
-    color-mix(in srgb, #fff 55%, var(--sj-line) 45%);
-  opacity: 0.7;
+    repeating-linear-gradient(90deg, rgb(70 52 32 / 6%) 0 2px, transparent 2px 5px),
+    rgb(244 236 216 / 78%);
+  opacity: 0.8;
   pointer-events: none;
 }
 
@@ -401,8 +304,8 @@ const demoComment: App.Api.Comment.CommentItem = {
   z-index: 2;
   transform: rotate(0deg) translateY(-3px);
   box-shadow:
-    0 1px 0 color-mix(in srgb, var(--sj-ink) 5%, transparent),
-    0 20px 30px -24px color-mix(in srgb, var(--sj-ink) 55%, transparent);
+    0 1px 0 rgb(255 255 255 / 35%),
+    0 24px 36px -26px rgb(0 0 0 / 62%);
 }
 
 .object-shelf__item :deep(.widget-shell) {
@@ -421,99 +324,63 @@ const demoComment: App.Api.Comment.CommentItem = {
   display: none;
 }
 
-@media (width <= 720px) {
-  .object-shelf__grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.preview-layout {
+.preview-switch {
+  position: fixed;
+  right: 1.1rem;
+  bottom: 1.1rem;
+  z-index: 10010;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 2.2rem;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.22rem;
+  background: rgb(246 240 227 / 94%);
+  border: 1px solid rgb(70 52 32 / 26%);
+  border-radius: 2px;
+  box-shadow: 0 12px 28px -18px rgb(0 0 0 / 60%);
+  transform: rotate(-0.4deg);
 }
 
-.preview-main {
-  width: 100%;
-  max-width: 46rem;
-  min-width: 0;
-}
-
-.preview-aside {
-  width: 13rem;
-  flex: none;
-  padding-top: 1.4rem;
-}
-
-.preview-aside__card {
-  padding: 0.9rem 0.95rem;
-  border: 1px solid var(--sj-line);
-  border-radius: 2px 12px 2px 2px;
-  background: color-mix(in srgb, var(--sj-paper) 88%, transparent);
-}
-
-.preview-aside__eyebrow {
-  margin: 0 0 0.55rem;
+.preview-switch button {
+  padding: 0.24rem 0.62rem;
+  border: 0;
+  border-radius: 1px;
+  background: transparent;
   font-family: var(--font-family-display);
   font-size: 0.64rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  color: var(--sj-ink-3);
+  letter-spacing: 0.06em;
+  color: rgb(70 56 40 / 58%);
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
 }
 
-.preview-aside__list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.48rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: 0.72rem;
-  line-height: 1.55;
-  color: var(--sj-ink-2);
+.preview-switch button:hover {
+  color: #2e2720;
 }
 
-.preview-aside__list li > span {
-  margin-right: 0.4rem;
+.preview-switch button.is-active {
+  background: rgb(52 42 30 / 10%);
+  color: #2e2720;
+}
+
+.preview-switch__count {
+  padding: 0 0.45rem;
   font-family: var(--font-family-display);
-  font-size: 0.62rem;
-  color: var(--sj-ink-3);
+  font-size: 0.56rem;
+  letter-spacing: 0.06em;
+  color: rgb(70 56 40 / 42%);
 }
 
-.preview-aside__note {
-  margin: 0.8rem 0 0;
-  padding-top: 0.6rem;
-  border-top: 1px dashed color-mix(in srgb, var(--sj-line-strong) 60%, transparent);
-  font-size: 0.66rem;
-  line-height: 1.6;
-  color: var(--sj-ink-3);
-}
-
-.preview-aside__verse {
-  margin: 2rem 0 0;
-  padding-left: 0.9rem;
-  border-left: 1px solid color-mix(in srgb, var(--sj-ink-3) 35%, transparent);
-  font-family: var(--font-family-display);
-  font-size: 0.82rem;
-  line-height: 1.9;
-  letter-spacing: 0.28em;
-  color: color-mix(in srgb, var(--sj-ink-3) 80%, transparent);
-}
-
-@media (width <= 899.98px) {
-  .preview-aside {
-    display: none;
-  }
-}
-
-@media (width <= 480px) {
-  .preview-page {
-    padding: 1.1rem 0.55rem 3rem;
+@media (width <= 720px) {
+  .preview-switch {
+    right: 0.7rem;
+    bottom: 0.7rem;
+    transform: none;
   }
 
-  .preview-head {
-    margin-bottom: 0.9rem;
+  .object-shelf__grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

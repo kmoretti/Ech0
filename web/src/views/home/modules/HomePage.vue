@@ -1,139 +1,173 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
-  <div class="home-page">
-    <div class="home-shell">
-      <div class="home-layout">
-        <div
-          ref="mainColumn"
-          class="home-main"
-          :class="{ 'home-main--unclipped': activeTab === 'tags' }"
-        >
-          <div class="home-main-track">
-            <HomeHeader class="mb-3 mx-1" />
-            <aside class="home-aside home-aside--mobile">
-              <HomeSidebarNav
-                v-model:mobile-search-open="mobileSearchOpen"
-                class="mx-1"
-                @open-palette="paletteOpen = true"
-                @open-chat="chatLauncherOpen = true"
-              />
-            </aside>
-            <div
-              v-if="activeTab === 'publish'"
-              class="home-content-block home-content-block--publish"
-            >
-              <TheEditor />
-            </div>
-            <div v-else-if="activeTab === 'tags'" class="home-content-block">
-              <TheTagsManager />
-            </div>
+  <TheWallShell>
+    <template #main>
+      <template v-if="activeTab === 'home'">
+        <TheNoteWall
+          :echoes="filteredEchoes"
+          :selected-date="selectedDate"
+          :loading="echoLoading"
+          :can-load-more="canLoadMore"
+          :loading-more="echoStore.isLoading"
+          @open="openEcho"
+          @clear-date="selectedDate = null"
+          @load-more="loadMoreEchoes"
+        />
+      </template>
 
-            <template v-else-if="activeTab === 'home'">
-              <HomeBanner :class="{ 'home-banner--mobile-hidden': shouldHideBannerOnMobile }" />
-
-              <TheEchos compact :scroll-target="mainColumn" />
-            </template>
-
-            <div v-else-if="activeTab === 'status'" class="home-content-block home-status-widgets">
-              <TheHeatMap />
-              <TheRecentCard v-if="AgentSetting.enable" />
-              <TheConnectWidget />
-              <TheCommentWidget />
-            </div>
-            <HubPage v-else embedded :scroll-target="mainColumn" />
-          </div>
+      <div v-else class="wall-tab">
+        <div ref="tabScrollEl" class="wall-tab__sheet">
+          <TheEditor v-if="activeTab === 'publish'" />
+          <TheTagsManager v-else-if="activeTab === 'tags'" />
+          <HubPage v-else-if="activeTab === 'hub'" embedded :scroll-target="tabScrollEl" />
         </div>
-
-        <aside class="home-aside home-aside--rail">
-          <HomeSidebarNav />
-          <div class="home-aside__filter-block">
-            <TheFilter
-              show-chat-trigger
-              @open-palette="paletteOpen = true"
-              @open-chat="chatLauncherOpen = true"
-            />
-            <a
-              href="https://github.com/lin-snow/Ech0"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="home-aside__version"
-            >
-              version: {{ settingStore.hello?.version || '--' }}
-            </a>
-          </div>
-        </aside>
       </div>
-    </div>
-    <TheCommandPalette v-model="paletteOpen" />
-    <TheChatLauncher v-model="chatLauncherOpen" />
-  </div>
+    </template>
+
+    <template #side>
+      <TheWallRail
+        :echoes="wallPool"
+        :marks="marks"
+        :selected-date="selectedDate"
+        :latest-stamp="latestStamp"
+        :active-tab="activeTab"
+        :connects="connectStore.connectsInfo"
+        :agent-enabled="AgentSetting.enable"
+        :chat-available="chatAvailable"
+        :calendar-open="calendarOpen"
+        @update:selected-date="handleSelectDate"
+        @open-tab="handleTab"
+        @open-settings="openSettings"
+        @open-search="paletteOpen = true"
+        @open-chat="chatLauncherOpen = true"
+        @toggle-calendar="calendarOpen = !calendarOpen"
+      />
+    </template>
+  </TheWallShell>
+
+  <TheEchoLightbox v-model="activeEcho" :origin-rect="activeRect" @view-detail="goDetail" />
+  <TheCommandPalette v-model="paletteOpen" />
+  <TheChatLauncher v-model="chatLauncherOpen" />
 </template>
 
 <script setup lang="ts">
-import HomeHeader from './HomeHeader.vue'
-import HomeBanner from './HomeBanner.vue'
-import HomeSidebarNav from './HomeSidebarNav.vue'
-import TheFilter from './TheFilter.vue'
-import TheEchos from './TheEchos.vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useRoute, useRouter } from 'vue-router'
+import { useEchoStore, useUserStore, useSettingStore, useConnectStore } from '@/stores'
+import { wallDayKey, wallEchoTime, type WallEcho } from '@/utils/wall'
+import TheNoteWall from '@/components/advanced/wall/TheNoteWall.vue'
+import TheWallShell from '@/components/advanced/wall/TheWallShell.vue'
+import TheEchoLightbox from '@/components/advanced/wall/TheEchoLightbox.vue'
+import TheWallRail from './wall/TheWallRail.vue'
 import TheCommandPalette from './TheCommandPalette.vue'
 import TheChatLauncher from './TheChatLauncher.vue'
-import { defineAsyncComponent, onMounted, ref, onBeforeUnmount, computed, watch } from 'vue'
-import { useEchoStore, useUserStore, useSettingStore, useConnectStore } from '@/stores'
-import { useRoute } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import {
-  TheCommentWidget,
-  TheConnectWidget,
-  TheHeatMap,
-  TheRecentCard,
-} from '@/components/advanced/widget'
 
-const route = useRoute()
+const props = defineProps<{
+  demoEchoes?: WallEcho[]
+}>()
+
 const TheEditor = defineAsyncComponent(() => import('./TheEditor.vue'))
 const TheTagsManager = defineAsyncComponent(() => import('./TheEditor/TheTagsManager.vue'))
 const HubPage = defineAsyncComponent(() => import('@/views/hub/modules/HubPage.vue'))
 
+const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 const settingStore = useSettingStore()
 const echoStore = useEchoStore()
 const connectStore = useConnectStore()
 const { isLogin } = storeToRefs(userStore)
 const { AgentSetting } = storeToRefs(settingStore)
-const { searchingMode, isFilteringMode } = storeToRefs(echoStore)
-const mobileSearchOpen = ref(false)
-const activeTab = computed<'home' | 'publish' | 'status' | 'tags' | 'hub'>(() => {
+
+const isDemo = computed(() => Array.isArray(props.demoEchoes))
+const activeTab = computed<'home' | 'publish' | 'tags' | 'hub'>(() => {
   if (route.query.tab === 'publish' && isLogin.value) return 'publish'
-  if (route.query.tab === 'status') return 'status'
   if (route.query.tab === 'tags') return 'tags'
   if (route.query.tab === 'hub') return 'hub'
   return 'home'
 })
-const shouldHideBannerOnMobile = computed(
-  () => mobileSearchOpen.value || searchingMode.value || isFilteringMode.value,
+
+const paletteOpen = ref(false)
+const chatLauncherOpen = ref(false)
+const calendarOpen = ref(false)
+const selectedDate = ref<string | null>(null)
+const activeEcho = ref<WallEcho | null>(null)
+const activeRect = ref<{ left: number; top: number; width: number; height: number } | null>(null)
+const tabScrollEl = ref<HTMLElement | null>(null)
+
+const wallEchoes = computed<WallEcho[]>(() => props.demoEchoes ?? echoStore.echoList)
+const sortedWallEchoes = computed(() =>
+  [...wallEchoes.value].sort((a, b) => wallEchoTime(b) - wallEchoTime(a)),
 )
-
-// Start the (potentially slow) connect lookup before the status widgets mount,
-// so it never queues behind the AI Recent request on the status page.
-watch(
-  activeTab,
-  (tab) => {
-    if (tab === 'status') void connectStore.getConnectInfo()
-  },
-  { immediate: true },
+const wallPool = computed(() => sortedWallEchoes.value)
+const marks = computed(() => [...new Set(wallPool.value.map((echo) => wallDayKey(echo)))])
+const latestStamp = computed(() =>
+  wallPool.value[0] ? wallEchoTime(wallPool.value[0]!) : undefined,
 )
-
-const mainColumn = ref<HTMLElement | null>(null)
-const TIMELINE_SCROLL_KEY = 'home:timeline:scrollTop'
-const WINDOW_SCROLL_KEY = 'home:window:scrollTop'
-let timelineScrollRaf: number | null = null
-let windowScrollRaf: number | null = null
-let stopScrollRestoreWatch: (() => void) | null = null
-let scrollRestored = false
-
-const paletteOpen = ref<boolean>(false)
-const chatLauncherOpen = ref<boolean>(false)
+const filteredEchoes = computed(() =>
+  selectedDate.value
+    ? wallPool.value.filter((echo) => wallDayKey(echo) === selectedDate.value)
+    : wallPool.value,
+)
+const echoLoading = computed(
+  () => !isDemo.value && echoStore.isLoading && echoStore.echoList.length === 0,
+)
 const chatAvailable = computed(() => isLogin.value && AgentSetting.value.enable)
+const canLoadMore = computed(() => !isDemo.value && echoStore.currentPage < echoStore.totalPages)
+const loadMoreEchoes = () => {
+  if (!canLoadMore.value || echoStore.isLoading) return
+  void echoStore.loadNextPage()
+}
+
+watch(
+  () => marks.value.join('|'),
+  () => {
+    if (selectedDate.value && !marks.value.includes(selectedDate.value)) {
+      selectedDate.value = null
+    }
+  },
+)
+
+const handleSelectDate = (value: string | null) => {
+  selectedDate.value = value
+  if (value) calendarOpen.value = false
+}
+
+const openEcho = ({ echo, rect }: { echo: WallEcho; rect: DOMRect }) => {
+  activeEcho.value = echo
+  activeRect.value = {
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    height: rect.height,
+  }
+}
+
+const goDetail = (echo: WallEcho) => {
+  activeEcho.value = null
+  void router.push({ name: 'echo', params: { echoId: String(echo.id) } })
+}
+
+const handleTab = (tab: 'home' | 'publish' | 'hub') => {
+  if (tab === 'publish' && !isLogin.value) {
+    void router.push({ name: 'auth', query: { redirect: '/?tab=publish' } })
+    return
+  }
+  const query = { ...route.query }
+  delete query.page
+  if (tab === 'home') {
+    delete query.tab
+  } else {
+    query.tab = tab
+  }
+  void router.push({ name: 'home', query })
+}
+
+const openSettings = () => {
+  void router.push({ name: 'panel' })
+}
 
 const handleGlobalKeydown = (event: KeyboardEvent) => {
   const withModifier = (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey
@@ -152,39 +186,7 @@ const handleGlobalKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape') {
     if (paletteOpen.value) paletteOpen.value = false
     if (chatLauncherOpen.value) chatLauncherOpen.value = false
-  }
-}
-
-const saveTimelineScrollPosition = () => {
-  if (!mainColumn.value || timelineScrollRaf !== null) return
-
-  timelineScrollRaf = window.requestAnimationFrame(() => {
-    timelineScrollRaf = null
-    if (!mainColumn.value) return
-    sessionStorage.setItem(TIMELINE_SCROLL_KEY, String(mainColumn.value.scrollTop))
-  })
-}
-
-const saveWindowScrollPosition = () => {
-  if (windowScrollRaf !== null) return
-  windowScrollRaf = window.requestAnimationFrame(() => {
-    windowScrollRaf = null
-    sessionStorage.setItem(WINDOW_SCROLL_KEY, String(window.scrollY))
-  })
-}
-
-const restoreTimelineScrollPosition = () => {
-  if (mainColumn.value) {
-    const raw = sessionStorage.getItem(TIMELINE_SCROLL_KEY)
-    const scrollTop = raw ? Number(raw) : 0
-    if (Number.isFinite(scrollTop) && scrollTop > 0) {
-      mainColumn.value.scrollTop = scrollTop
-    }
-  }
-  const rawWindow = sessionStorage.getItem(WINDOW_SCROLL_KEY)
-  const windowTop = rawWindow ? Number(rawWindow) : 0
-  if (Number.isFinite(windowTop) && windowTop > 0) {
-    window.scrollTo({ top: windowTop, behavior: 'auto' })
+    if (activeEcho.value) activeEcho.value = null
   }
 }
 
@@ -203,262 +205,56 @@ const prefetchHeavyChunks = () => {
 }
 
 onMounted(async () => {
-  if (mainColumn.value) {
-    mainColumn.value.scrollLeft = 0
-    mainColumn.value.addEventListener('scroll', saveTimelineScrollPosition, { passive: true })
-  }
-  window.addEventListener('scroll', saveWindowScrollPosition, { passive: true })
-  stopScrollRestoreWatch = watch(
-    () => echoStore.echoList.length > 0 && !echoStore.isLoading,
-    (ready) => {
-      if (!ready || scrollRestored) return
-      scrollRestored = true
-      stopScrollRestoreWatch?.()
-      window.requestAnimationFrame(() => {
-        restoreTimelineScrollPosition()
-      })
-    },
-    { immediate: true, flush: 'post' },
-  )
-  if (scrollRestored) stopScrollRestoreWatch()
+  document.documentElement.classList.add('wall-mode')
   window.addEventListener('keydown', handleGlobalKeydown)
+
+  if (!isDemo.value) {
+    void echoStore.fetchCurrentPage()
+    void connectStore.getConnectInfo().catch(() => undefined)
+  }
+
   prefetchHeavyChunks()
 })
 
 onBeforeUnmount(() => {
-  stopScrollRestoreWatch?.()
-  if (mainColumn.value) {
-    mainColumn.value.removeEventListener('scroll', saveTimelineScrollPosition)
-  }
-  if (timelineScrollRaf !== null) {
-    window.cancelAnimationFrame(timelineScrollRaf)
-    timelineScrollRaf = null
-  }
-  if (windowScrollRaf !== null) {
-    window.cancelAnimationFrame(windowScrollRaf)
-    windowScrollRaf = null
-  }
-  window.removeEventListener('scroll', saveWindowScrollPosition)
+  document.documentElement.classList.remove('wall-mode')
   window.removeEventListener('keydown', handleGlobalKeydown)
 })
 </script>
 
 <style scoped>
-.home-page {
-  --home-canvas: #ece9e3;
-  --home-accent: #292622;
-  --home-main-max: 46rem;
-
-  /* Desk palette — paper, graphite and a single restrained brick accent. */
-  --sj-canvas: #ece9e3;
-  --sj-paper: #fbfaf7;
-  --sj-paper-2: #f5f2ec;
-  --sj-kraft: #e7e1d7;
-  --sj-ink: #292622;
-  --sj-ink-2: #605b55;
-  --sj-ink-3: #928c84;
-  --sj-line: #d9d3ca;
-  --sj-line-strong: #c3bcb2;
-  --sj-accent: #8a4132;
-
-  min-height: 100dvh;
-  background: transparent;
-  color: var(--color-text-primary);
-}
-
-.sunny .home-page {
-  --home-canvas: #f1ede5;
-  --sj-canvas: #f1ede5;
-  --sj-paper: #fdfbf6;
-  --sj-paper-2: #f7f3ec;
-  --sj-kraft: #e9e3d8;
-}
-
-.dark .home-page {
-  --home-canvas: #191715;
-  --sj-canvas: #191715;
-  --sj-paper: #23201d;
-  --sj-paper-2: #201d1a;
-  --sj-kraft: #2b2621;
-  --sj-ink: #e9e4dc;
-  --sj-ink-2: #b8b1a8;
-  --sj-ink-3: #8d867d;
-  --sj-line: #3a352f;
-  --sj-line-strong: #4e4841;
-  --sj-accent: #a85c49;
-
-  background: transparent;
-}
-
-@media (width >= 820px) {
-  .home-page {
-    height: 100dvh;
-    overflow: hidden;
-  }
-}
-
-.home-shell {
-  max-width: 64rem;
-  margin: 1rem auto 2.5rem;
-  padding: 0 0.75rem;
-}
-
-@media (width >= 640px) {
-  .home-shell {
-    margin-top: 1.25rem;
-    margin-bottom: 2rem;
-    padding: 0 1rem;
-  }
-}
-
-@media (width >= 820px) {
-  .home-shell {
-    margin: 0 auto;
-    padding: 0 1rem;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-}
-
-.home-layout {
+.wall-tab {
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  align-items: stretch;
-  background: transparent;
-}
-
-@media (width >= 820px) {
-  .home-layout {
-    flex: 1;
-    min-height: 0;
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: center;
-    gap: clamp(1.25rem, 4vw, 2rem);
-    padding: 0;
-  }
-}
-
-.home-main-track {
+  justify-content: center;
   width: 100%;
-  max-width: var(--home-main-max);
-  margin-left: auto;
-  margin-right: auto;
+  height: 100%;
+  min-height: 0;
 }
 
-.home-main {
-  width: 100%;
-  min-width: 0;
-  flex: 1 1 auto;
-  overflow-x: visible;
+.wall-tab__sheet {
+  width: min(100%, 50rem);
+  height: 100%;
+  padding: 1.2rem 1.35rem;
+  overflow-y: auto;
+  scrollbar-width: none;
+  background-color: color-mix(in srgb, var(--color-bg-surface) 94%, transparent);
+  border: 1px solid rgb(92 72 48 / 24%);
+  border-radius: 2px 14px 2px 2px;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 32%),
+    0 30px 60px -40px rgb(14 8 3 / 70%);
+  transform: rotate(-0.16deg);
 }
 
-@media (width >= 820px) {
-  .home-main {
-    min-height: 0;
-    align-self: stretch;
-    overflow-y: auto;
-    scrollbar-gutter: stable;
-    overscroll-behavior: contain;
-    flex: 0 1 var(--home-main-max);
-    max-width: var(--home-main-max);
-    padding: 1.5rem 0 2rem;
-  }
-
-  .home-main--unclipped {
-    overflow: visible auto;
-  }
+.wall-tab__sheet::-webkit-scrollbar {
+  display: none;
 }
 
-.home-aside {
-  display: flex;
-  flex-direction: column;
-  gap: 0.875rem;
-  width: 100%;
-}
-
-.home-aside__filter-block {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.home-aside__version {
-  display: inline-block;
-  margin: 0;
-  margin-top: 0.5rem;
-  padding-inline: 0.5rem;
-  font-family: var(--font-family-display);
-  font-weight: 600;
-  font-size: 0.75rem;
-  line-height: 1.25;
-  letter-spacing: 0.02em;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.home-aside__version:hover {
-  color: var(--color-text-primary);
-}
-
-.home-content-block {
-  width: 100%;
-}
-
-.home-content-block--publish {
-  padding-inline: 0;
-}
-
-.home-status-widgets {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-@media (width >= 768px) {
-  .home-content-block--publish {
-    padding-inline: 1.75rem;
-  }
-}
-
-@media (width >= 1024px) {
-  .home-content-block--publish {
-    padding-inline: 2rem;
-  }
-}
-
-.home-aside--mobile {
-  display: flex;
-  margin-top: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-@media (width >= 820px) {
-  .home-aside--mobile {
-    display: none !important;
-  }
-
-  .home-aside--rail {
-    display: flex;
-    width: 14rem;
-    flex-shrink: 0;
-    align-self: flex-start;
-    margin-top: 1.5rem;
-  }
-}
-
-@media (width <= 819.98px) {
-  .home-banner--mobile-hidden {
-    display: none;
-  }
-
-  .home-aside--rail {
-    display: none !important;
+@media (width <= 899px) {
+  .wall-tab__sheet {
+    height: auto;
+    max-height: none;
+    padding: 1rem;
   }
 }
 </style>
