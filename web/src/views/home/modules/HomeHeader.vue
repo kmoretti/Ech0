@@ -28,7 +28,7 @@
           <Rss class="w-4 h-4" />
         </a>
         <button
-          v-if="isLogin"
+          v-if="isLogin && !hidePanel"
           type="button"
           v-tooltip="t('homeSidebar.panel')"
           :title="t('homeSidebar.panel')"
@@ -94,6 +94,8 @@ import { resolveAvatarUrl, isStaticMode, staticBase } from '@/service/request/sh
 import { useRouter } from 'vue-router'
 import { theToast } from '@/utils/toast'
 import { useBaseDialog } from '@/composables/useBaseDialog'
+
+withDefaults(defineProps<{ hidePanel?: boolean }>(), { hidePanel: false })
 
 const settingStore = useSettingStore()
 const userStore = useUserStore()

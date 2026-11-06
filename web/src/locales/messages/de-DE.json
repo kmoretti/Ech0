@@ -169,7 +169,6 @@
     "bold": "Fett",
     "italic": "Kursiv",
     "heading": "Überschrift",
-    "quote": "Zitat",
     "unorderedList": "Aufzählung",
     "codeBlock": "Codeblock",
     "addedLabel": "Hinzugefügt:",
@@ -433,6 +432,25 @@
     "activeChipDatePrefix": "Datum",
     "rangeSeparator": "bis",
     "activeCountSuffix": "{count} Filter aktiv"
+  },
+  "wall": {
+    "deskCorner": "Schreibtischecke",
+    "loadMore": "Mehr laden",
+    "hasNotes": "Tage mit Notizen",
+    "all": "Alle",
+    "calendar": "Kalender",
+    "shuffle": "Neu mischen",
+    "notesCount": "{count} Notizen",
+    "empty": "Noch keine Notizen an der Wand",
+    "emptyDay": "An diesem Tag gibt es keine Notizen",
+    "openNote": "Notiz öffnen",
+    "viewDetail": "Details ansehen",
+    "close": "Schließen",
+    "previousMonth": "Voriger Monat",
+    "nextMonth": "Nächster Monat",
+    "connected": "Verbindungen",
+    "noConnects": "Noch keine verbundenen Seiten",
+    "aiSummary": "KI-Zusammenfassung"
   },
   "homeSidebar": {
     "home": "Feed",

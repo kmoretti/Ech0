@@ -169,7 +169,6 @@
     "bold": "太字",
     "italic": "斜体",
     "heading": "見出し",
-    "quote": "引用",
     "unorderedList": "箇条書き",
     "codeBlock": "コードブロック",
     "addedLabel": "追加済み：",
@@ -433,6 +432,25 @@
     "activeChipDatePrefix": "日付",
     "rangeSeparator": "〜",
     "activeCountSuffix": "{count} 件のフィルター適用中"
+  },
+  "wall": {
+    "deskCorner": "机の隅",
+    "loadMore": "もっと見る",
+    "hasNotes": "付箋のある日",
+    "all": "すべて",
+    "calendar": "カレンダー",
+    "shuffle": "入れ替え",
+    "notesCount": "{count} 枚の付箋",
+    "empty": "壁にはまだ付箋がありません",
+    "emptyDay": "この日の付箋はありません",
+    "openNote": "付箋を開く",
+    "viewDetail": "詳細を見る",
+    "close": "閉じる",
+    "previousMonth": "前の月",
+    "nextMonth": "次の月",
+    "connected": "つながり",
+    "noConnects": "接続中のサイトはありません",
+    "aiSummary": "AI 要約"
   },
   "homeSidebar": {
     "home": "タイムライン",

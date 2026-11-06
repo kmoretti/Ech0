@@ -169,7 +169,6 @@
     "bold": "粗体",
     "italic": "斜体",
     "heading": "标题",
-    "quote": "引用",
     "unorderedList": "无序列表",
     "codeBlock": "代码块",
     "addedLabel": "已添加：",
@@ -433,6 +432,25 @@
     "activeChipDatePrefix": "日期",
     "rangeSeparator": "至",
     "activeCountSuffix": "{count} 项过滤已启用"
+  },
+  "wall": {
+    "deskCorner": "桌角",
+    "loadMore": "加载更多",
+    "hasNotes": "有便签的日子",
+    "all": "全部",
+    "calendar": "日历",
+    "shuffle": "换一批",
+    "notesCount": "{count} 枚便签",
+    "empty": "墙上还没有便签",
+    "emptyDay": "这一天还没有便签",
+    "openNote": "打开便签",
+    "viewDetail": "查看详情",
+    "close": "关闭",
+    "previousMonth": "上个月",
+    "nextMonth": "下个月",
+    "connected": "连接",
+    "noConnects": "还没有连接的站点",
+    "aiSummary": "AI 摘要"
   },
   "homeSidebar": {
     "home": "动态",

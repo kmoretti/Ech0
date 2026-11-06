@@ -169,7 +169,6 @@
     "bold": "Bold",
     "italic": "Italic",
     "heading": "Heading",
-    "quote": "Quote",
     "unorderedList": "Unordered list",
     "codeBlock": "Code block",
     "addedLabel": "Added:",
@@ -433,6 +432,25 @@
     "activeChipDatePrefix": "Date",
     "rangeSeparator": "to",
     "activeCountSuffix": "{count} filters active"
+  },
+  "wall": {
+    "deskCorner": "Desk corner",
+    "loadMore": "Load more",
+    "hasNotes": "Days with notes",
+    "all": "All",
+    "calendar": "Calendar",
+    "shuffle": "Shuffle",
+    "notesCount": "{count} notes",
+    "empty": "No notes on the wall yet",
+    "emptyDay": "No notes on this day",
+    "openNote": "Open note",
+    "viewDetail": "View details",
+    "close": "Close",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "connected": "Connections",
+    "noConnects": "No connected sites yet",
+    "aiSummary": "AI summary"
   },
   "homeSidebar": {
     "home": "Feed",
