@@ -392,6 +392,7 @@ export const useEchoStore = defineStore('echoStore', () => {
     removeSelectedTag,
     updateEcho,
     setEchoReactions,
+    invalidateEchosCache,
     prefetchEcho,
     getTags,
     ensureTagsLoaded,

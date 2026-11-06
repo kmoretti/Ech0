@@ -91,7 +91,7 @@
 import Verified from '@/components/icons/verified.vue'
 import TheEchoReactions from '@/components/advanced/echo/cards/TheEchoReactions.vue'
 import { TheMdPreview } from '@/components/advanced/md'
-import { defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 import { isContentLeadingEcho } from '@/utils/echo'
 import { formatDate } from '@/utils/other'
 import { useI18n } from 'vue-i18n'

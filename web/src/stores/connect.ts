@@ -135,11 +135,19 @@ export const useConnectStore = defineStore('connectStore', () => {
     return connectsInfoInFlight.value
   }
 
+  const invalidateConnectsInfo = () => {
+    connects.value = []
+    connectsFetchedAt.value = 0
+    connectsInfo.value = []
+    connectsInfoFetchedAt.value = 0
+  }
+
   return {
     connects,
     connectsInfo,
     loading,
     getConnect,
     getConnectInfo,
+    invalidateConnectsInfo,
   }
 })
