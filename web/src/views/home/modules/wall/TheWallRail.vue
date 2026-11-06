@@ -2,7 +2,39 @@
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
   <aside class="wall-rail" :class="{ 'wall-rail--calendar-open': calendarOpen }">
-    <HomeHeader class="wall-rail__header" hide-panel />
+    <HomeHeader class="wall-rail__header" hide-panel>
+      <template #extra-actions>
+        <button
+          type="button"
+          class="wall-rail__head-btn"
+          :aria-label="t('homeTop.searchPlaceholder')"
+          :title="t('homeTop.searchPlaceholder')"
+          @click="emit('open-search')"
+        >
+          <Search class="wall-rail__head-icon" />
+        </button>
+        <button
+          v-if="chatAvailable"
+          type="button"
+          class="wall-rail__head-btn"
+          :aria-label="t('chatLauncher.title')"
+          :title="t('chatLauncher.title')"
+          @click="emit('open-chat')"
+        >
+          <Chat class="wall-rail__head-icon" />
+        </button>
+        <button
+          type="button"
+          class="wall-rail__head-btn wall-rail__calendar-toggle"
+          :aria-expanded="calendarOpen"
+          :aria-label="t('wall.calendar')"
+          :title="t('wall.calendar')"
+          @click="emit('toggle-calendar')"
+        >
+          <Calendar class="wall-rail__head-icon" />
+        </button>
+      </template>
+    </HomeHeader>
 
     <nav class="wall-nav" aria-label="Primary">
       <button
@@ -41,34 +73,6 @@
         <span>{{ t('homeSidebar.panel') }}</span>
       </button>
     </nav>
-
-    <div class="wall-rail__tools">
-      <button type="button" class="wall-rail__search" @click="emit('open-search')">
-        <Search class="wall-rail__tool-icon" />
-        <span>{{ t('homeTop.searchPlaceholder') }}</span>
-        <kbd class="wall-rail__kbd">Ctrl K</kbd>
-      </button>
-      <button
-        v-if="chatAvailable"
-        type="button"
-        class="wall-rail__icon-btn"
-        :aria-label="t('chatLauncher.title')"
-        :title="t('chatLauncher.title')"
-        @click="emit('open-chat')"
-      >
-        <Chat class="wall-rail__tool-icon" />
-      </button>
-      <button
-        type="button"
-        class="wall-rail__icon-btn wall-rail__calendar-toggle"
-        :aria-expanded="calendarOpen"
-        :aria-label="t('wall.calendar')"
-        :title="t('wall.calendar')"
-        @click="emit('toggle-calendar')"
-      >
-        <Calendar class="wall-rail__tool-icon" />
-      </button>
-    </div>
 
     <div class="wall-rail__calendar">
       <TheWallCalendar
@@ -300,86 +304,35 @@ const latestStamp = computed(() => {
   opacity: 0.82;
 }
 
-.wall-rail__tools {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex: none;
-}
-
-.wall-rail__search {
-  display: flex;
-  flex: 1 1 auto;
-  align-items: center;
-  gap: 0.38rem;
-  min-width: 0;
-  padding: 0.36rem 0.5rem;
-  border: 1px solid rgb(90 70 45 / 18%);
-  border-radius: 1px;
-  background: rgb(255 252 244 / 7%);
-  color: rgb(58 50 40 / 60%);
-  font-family: var(--font-family-display);
-  font-size: 0.66rem;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    border-color 160ms ease,
-    background-color 160ms ease,
-    color 160ms ease;
-}
-
-.wall-rail__search:hover {
-  border-color: rgb(90 70 45 / 32%);
-  background: rgb(255 252 244 / 13%);
-  color: rgb(58 50 40 / 88%);
-}
-
-.wall-rail__search:focus-visible,
-.wall-rail__icon-btn:focus-visible {
-  outline: 2px solid rgb(90 70 45 / 70%);
-  outline-offset: 2px;
-}
-
-.wall-rail__tool-icon {
-  flex: none;
-  width: 0.82rem;
-  height: 0.82rem;
-}
-
-.wall-rail__kbd {
-  margin-left: auto;
-  padding: 0.08rem 0.26rem;
-  border: 1px solid rgb(90 70 45 / 18%);
-  border-radius: 1px;
-  font-family: var(--font-family-display);
-  font-size: 0.5rem;
-  letter-spacing: 0.05em;
-  color: rgb(58 50 40 / 46%);
-}
-
-.wall-rail__icon-btn {
+.wall-rail__head-btn {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 1.9rem;
-  height: 1.9rem;
-  padding: 0;
-  border: 1px solid rgb(90 70 45 / 16%);
-  border-radius: 1px;
-  background: rgb(255 252 244 / 6%);
-  color: rgb(58 50 40 / 60%);
+  padding: 0.35rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: rgb(58 50 40 / 58%);
   cursor: pointer;
   transition:
-    border-color 160ms ease,
-    background-color 160ms ease,
-    color 160ms ease;
+    color 160ms ease,
+    background-color 160ms ease;
 }
 
-.wall-rail__icon-btn:hover {
-  border-color: rgb(90 70 45 / 30%);
-  background: rgb(255 252 244 / 14%);
-  color: rgb(58 50 40 / 90%);
+.wall-rail__head-btn:hover {
+  background: rgb(58 50 40 / 9%);
+  color: rgb(58 50 40 / 92%);
+}
+
+.wall-rail__head-btn:focus-visible {
+  outline: 2px solid rgb(90 70 45 / 70%);
+  outline-offset: 2px;
+}
+
+.wall-rail__head-icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 .wall-rail__calendar-toggle {

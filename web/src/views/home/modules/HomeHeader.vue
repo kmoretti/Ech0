@@ -19,6 +19,7 @@
 
     <div class="home-header__actions">
       <div class="home-header__links">
+        <slot name="extra-actions" />
         <a
           :href="rssHref"
           v-tooltip="t('homeTop.rssTitle')"
