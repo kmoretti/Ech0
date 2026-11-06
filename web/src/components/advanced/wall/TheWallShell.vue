@@ -116,7 +116,7 @@
   background: linear-gradient(90deg, transparent, rgb(128 100 66 / 7%));
 }
 
-@media (width <= 899px) {
+@media (width <= 1079px) {
   .wall-page {
     height: auto;
     min-height: 100dvh;
@@ -158,7 +158,7 @@ html.wall-mode ::-webkit-scrollbar {
   height: 0;
 }
 
-@media (width <= 899px) {
+@media (width <= 1079px) {
   html.wall-mode,
   html.wall-mode body {
     overflow: hidden auto;

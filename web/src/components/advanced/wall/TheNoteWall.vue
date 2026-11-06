@@ -124,7 +124,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const isDesktop = useMediaQuery('(min-width: 900px)')
+const isDesktop = useMediaQuery('(min-width: 1080px)')
 const canvasRef = ref<HTMLElement | null>(null)
 const canvasSize = ref({ width: 0, height: 0 })
 const shuffleNonce = ref(0)
@@ -520,7 +520,8 @@ watch(
   position: sticky;
   top: 0;
   z-index: 30;
-  margin: 0 -0.1rem 0.35rem;
+  width: min(100%, 42rem);
+  margin: 0 auto 0.35rem;
   padding: 0.35rem 0.1rem 0.5rem;
   background: linear-gradient(
     to bottom,

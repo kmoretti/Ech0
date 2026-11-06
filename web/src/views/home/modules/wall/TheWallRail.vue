@@ -523,9 +523,11 @@ const latestStamp = computed(() => {
   color: rgb(58 50 40 / 64%);
 }
 
-@media (width <= 899px) {
+@media (width <= 1079px) {
   .wall-rail {
+    width: min(100%, 46rem);
     height: auto;
+    margin: 0 auto;
     padding-bottom: 0.35rem;
     overflow: visible;
   }

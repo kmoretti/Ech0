@@ -250,7 +250,7 @@ onBeforeUnmount(() => {
   display: none;
 }
 
-@media (width <= 899px) {
+@media (width <= 1079px) {
   .wall-tab__sheet {
     height: auto;
     max-height: none;
