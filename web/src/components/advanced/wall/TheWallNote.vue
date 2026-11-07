@@ -1,8 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
-  <button
-    type="button"
+  <div
     class="wall-note"
     :class="[
       `wall-note--${paper}`,
@@ -10,22 +9,21 @@
       `wall-note--fastener-${fastener}`,
       {
         'wall-note--featured': featured,
-        'wall-note--image': !!imageUrl,
+        'wall-note--image': hasImages,
         'wall-note--flow': flow,
         'wall-note--stacked': stacked,
+        'wall-note--still': still,
       },
     ]"
     :style="noteStyle"
-    :aria-label="`${t('wall.openNote')}: ${dateParts.stamp} ${bodyText}`"
-    @click="
-      emit('open', {
-        echo,
-        event: $event,
-        meta: { paper: props.paper, fastener: props.fastener, rotation: props.rotation },
-      })
-    "
+    :role="interactive ? 'button' : undefined"
+    :tabindex="interactive ? 0 : undefined"
+    :aria-label="interactive ? `${t('wall.openNote')}: ${dateParts.stamp} ${bodyText}` : undefined"
+    @click="handleClick"
+    @keydown.enter.prevent="handleKeyOpen"
+    @keydown.space.prevent="handleKeyOpen"
   >
-    <span class="wall-note__sheet">
+    <div class="wall-note__sheet">
       <span class="wall-note__grain" aria-hidden="true"></span>
       <span class="wall-note__fastener" aria-hidden="true"></span>
 
@@ -35,31 +33,40 @@
         <span class="wall-note__clock">{{ dateParts.time }}</span>
       </span>
 
-      <span v-if="imageUrl" class="wall-note__photo">
-        <img :src="imageUrl" alt="" loading="lazy" decoding="async" />
-      </span>
+      <div v-if="hasImages" class="wall-note__media" @click.stop @keydown.stop>
+        <TheMediaPlayer :echo="echo" :layout="echo.layout" compact />
+      </div>
 
       <span class="wall-note__body">
         <span class="wall-note__text">{{ bodyText }}</span>
       </span>
 
-      <span class="wall-note__foot">
+      <span v-if="tags.length || echo.private" class="wall-note__foot">
         <span class="wall-note__tags">
           <span v-for="tag in tags.slice(0, 2)" :key="tag.id">#{{ tag.name }}</span>
         </span>
         <span v-if="echo.private" class="wall-note__private" aria-hidden="true">
           <Lock class="wall-note__lock" />
         </span>
-        <span class="wall-note__mark" aria-hidden="true">↗</span>
       </span>
-    </span>
-  </button>
+
+      <div class="wall-note__actions" @click.stop @pointerdown.stop @keydown.stop>
+        <TheEchoReactions :echo="echo" />
+        <button type="button" class="wall-note__detail" @click.stop="handleDetail">
+          <span>{{ t('wall.viewDetail') }}</span>
+          <Open class="wall-note__detail-icon" />
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Lock from '@/components/icons/lock.vue'
+import Open from '@/components/icons/open.vue'
+import TheEchoReactions from '@/components/advanced/echo/cards/TheEchoReactions.vue'
 import { getEchoFiles } from '@/utils/echo'
 import {
   wallBody,
@@ -71,22 +78,27 @@ import {
 
 type WallSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 
-const props = defineProps<{
-  echo: WallEcho
-  paper: WallPaper
-  fastener: WallFastener
-  size: WallSize
-  width: number
-  height: number
-  x?: number
-  y?: number
-  rotation: number
-  zIndex: number
-  delay?: number
-  featured?: boolean
-  flow?: boolean
-  stacked?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    echo: WallEcho
+    paper: WallPaper
+    fastener: WallFastener
+    size: WallSize
+    width: number
+    height: number
+    x?: number
+    y?: number
+    rotation: number
+    zIndex: number
+    delay?: number
+    featured?: boolean
+    flow?: boolean
+    stacked?: boolean
+    interactive?: boolean
+    still?: boolean
+  }>(),
+  { interactive: true, still: false },
+)
 
 const emit = defineEmits<{
   (
@@ -97,7 +109,12 @@ const emit = defineEmits<{
       meta: { paper: WallPaper; fastener: WallFastener; rotation: number }
     },
   ): void
+  (event: 'view-detail', echo: WallEcho): void
 }>()
+
+const TheMediaPlayer = defineAsyncComponent(
+  () => import('@/components/advanced/media/TheMediaPlayer.vue'),
+)
 
 const { t } = useI18n()
 
@@ -105,17 +122,30 @@ const tags = computed(() => props.echo.tags ?? [])
 const dateParts = computed(() => wallDateStamp(props.echo))
 const bodyText = computed(() => wallBody(props.echo.content, 160))
 
-const imageUrl = computed(() => {
-  const file = getEchoFiles(props.echo).find((item) => item.category === 'image')
-  return file?.url ?? ''
-})
+const hasImages = computed(() => getEchoFiles(props.echo).some((item) => item.category === 'image'))
+
+const handleClick = (event: MouseEvent) => {
+  if (!props.interactive) return
+  emit('open', {
+    echo: props.echo,
+    event,
+    meta: { paper: props.paper, fastener: props.fastener, rotation: props.rotation },
+  })
+}
+
+const handleKeyOpen = (event: KeyboardEvent) => {
+  if (!props.interactive) return
+  handleClick(event as unknown as MouseEvent)
+}
+
+const handleDetail = () => emit('view-detail', props.echo)
 
 const noteStyle = computed(() => ({
   ...(props.flow || props.stacked
     ? {}
     : {
         width: `${props.width}px`,
-        minHeight: `${props.height}px`,
+        ...(props.height > 0 ? { minHeight: `${props.height}px` } : {}),
         left: `${props.x ?? 0}px`,
         top: `${props.y ?? 0}px`,
       }),
@@ -154,7 +184,7 @@ const noteStyle = computed(() => ({
 
 .wall-note--flow .wall-note__text {
   --note-lines: 10;
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   line-height: 1.78;
 }
 
@@ -164,8 +194,17 @@ const noteStyle = computed(() => ({
 }
 
 .wall-note--flow .wall-note__foot {
-  padding-bottom: 0.66rem;
+  padding-bottom: 0.08rem;
   font-size: 0.62rem;
+}
+
+.wall-note--flow .wall-note__actions :deep(.reaction-trigger) {
+  height: 1.45rem;
+  min-width: 1.45rem;
+}
+
+.wall-note--flow .wall-note__detail {
+  font-size: 0.68rem;
 }
 
 .wall-note--flow .wall-note__sheet {
@@ -182,31 +221,36 @@ const noteStyle = computed(() => ({
 
 .wall-note--stacked .wall-note__sheet {
   height: auto;
-  min-height: 6.8rem;
+  min-height: 6.5rem;
 }
 
-.wall-note--flow .wall-note__photo {
-  height: 7rem;
+.wall-note--still {
+  animation: none;
+  cursor: default;
 }
 
 .wall-note__sheet {
+  --note-shadow:
+    0 1px 1px rgb(40 27 16 / 14%), 0 8px 16px -12px rgb(30 20 10 / 55%),
+    0 22px 34px -28px rgb(30 20 10 / 50%);
+  --note-shadow-hover:
+    0 1px 1px rgb(40 27 16 / 15%), 0 16px 26px -14px rgb(30 20 10 / 52%),
+    0 34px 54px -30px rgb(30 20 10 / 55%);
+
   position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
   height: auto;
-  min-height: inherit;
+  min-height: 6.5rem;
   overflow: hidden;
   background-color: #f5efe2;
   background-image:
     radial-gradient(circle at 18% 10%, rgb(255 255 255 / 55%), transparent 42%),
     radial-gradient(circle at 80% 92%, rgb(92 68 42 / 5%), transparent 55%);
-  border: 1px solid rgb(96 74 50 / 22%);
+  border: 1px solid rgb(96 74 50 / 24%);
   border-radius: 1px;
-  box-shadow:
-    0 1px 1px rgb(40 27 16 / 13%),
-    0 8px 16px -12px rgb(30 20 10 / 55%),
-    0 22px 34px -28px rgb(30 20 10 / 50%);
+  box-shadow: var(--note-shadow);
   transition: box-shadow 300ms ease;
 }
 
@@ -321,23 +365,27 @@ const noteStyle = computed(() => ({
   font-variant-numeric: tabular-nums;
 }
 
-.wall-note__photo {
+.wall-note__media {
   position: relative;
   z-index: 1;
-  display: block;
   flex: 0 0 auto;
-  margin: 0.5rem 0.72rem 0;
+  margin: 0.45rem 0.72rem 0;
   overflow: hidden;
-  background: #e7e0d2;
-  border: 1px solid rgb(96 74 50 / 18%);
 }
 
-.wall-note__photo img {
-  display: block;
+.wall-note__media :deep(.image-gallery-container) {
+  width: 100%;
+}
+
+.wall-note__media :deep(.gallery-image-frame) {
+  height: 100%;
+}
+
+.wall-note__media :deep(img) {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: saturate(0.82) contrast(0.98);
+  filter: saturate(0.88) contrast(0.98);
 }
 
 .wall-note__body {
@@ -357,7 +405,7 @@ const noteStyle = computed(() => ({
   flex: none;
   overflow: hidden;
   font-family: var(--font-family-display);
-  font-size: 0.8rem;
+  font-size: 0.84rem;
   line-height: 1.72;
   letter-spacing: 0.01em;
   color: rgb(60 50 40 / 82%);
@@ -375,7 +423,7 @@ const noteStyle = computed(() => ({
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.28rem 0.8rem 0.66rem;
+  padding: 0.28rem 0.8rem 0.08rem;
   font-family: var(--font-family-display);
   font-size: 0.56rem;
   color: rgb(74 62 48 / 48%);
@@ -400,22 +448,99 @@ const noteStyle = computed(() => ({
   height: 0.62rem;
 }
 
-.wall-note__mark {
-  margin-left: auto;
-  font-size: 0.64rem;
-  opacity: 0;
-  transform: translate(-2px, 2px);
-  transition:
-    opacity 200ms ease,
-    transform 260ms ease;
+.wall-note__actions {
+  --color-border-subtle: rgb(96 74 50 / 26%);
+  --color-border-strong: rgb(96 74 50 / 42%);
+  --color-bg-muted: rgb(70 56 40 / 6%);
+  --color-text-muted: rgb(74 62 48 / 62%);
+  --color-text-primary: #2b2621;
+
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-top: 0.12rem;
+  padding: 0.16rem 0.72rem 0.46rem;
+  border-top: 1px dashed rgb(92 72 48 / 18%);
 }
 
-.wall-note__private + .wall-note__mark {
-  margin-left: 0;
+.wall-note__actions :deep(.echo-reactions-anchor) {
+  display: inline-flex;
+}
+
+.wall-note__actions :deep(.reaction-trigger) {
+  height: 1.3rem;
+  min-width: 1.3rem;
+  padding: 0 0.28rem;
+}
+
+.wall-note__actions :deep(.reaction-trigger-icon) {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.wall-note__actions :deep(.reaction-trigger-emoji) {
+  font-size: 0.72rem;
+}
+
+.wall-note__actions :deep(.reaction-trigger-count) {
+  font-size: 0.58rem;
+}
+
+.wall-note__detail {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.2rem;
+  margin-right: -0.24rem;
+  padding: 0.16rem 0.28rem;
+  border: 1px solid transparent;
+  border-radius: 1px;
+  background: transparent;
+  font-family: var(--font-family-display);
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  color: rgb(74 62 48 / 58%);
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.wall-note__detail:hover {
+  border-color: rgb(92 72 48 / 26%);
+  background: rgb(70 56 40 / 5%);
+  color: #2b2621;
+}
+
+.wall-note__detail:focus-visible {
+  outline: 2px solid #3a2f24;
+  outline-offset: 2px;
+}
+
+.wall-note__detail-icon {
+  width: 0.62rem;
+  height: 0.62rem;
+  transition: transform 200ms ease;
+}
+
+.wall-note__detail:hover .wall-note__detail-icon {
+  transform: translate(1px, -1px);
 }
 
 /* paper stocks */
 .wall-note--ruled .wall-note__sheet {
+  --note-shadow:
+    0 1px 1px rgb(40 27 16 / 12%), 0 7px 14px -12px rgb(30 22 12 / 48%),
+    0 20px 30px -28px rgb(30 22 12 / 42%);
+  --note-shadow-hover:
+    0 1px 1px rgb(40 27 16 / 14%), 0 15px 24px -16px rgb(30 22 12 / 50%),
+    0 30px 46px -32px rgb(30 22 12 / 46%);
+
+  border-color: rgb(92 104 118 / 26%);
   background-color: #f7f2e7;
   background-image:
     repeating-linear-gradient(
@@ -431,6 +556,14 @@ const noteStyle = computed(() => ({
 }
 
 .wall-note--grid .wall-note__sheet {
+  --note-shadow:
+    0 1px 1px rgb(40 32 20 / 13%), 0 8px 18px -14px rgb(28 26 18 / 46%),
+    0 24px 36px -30px rgb(28 26 18 / 40%);
+  --note-shadow-hover:
+    0 1px 1px rgb(40 32 20 / 15%), 0 16px 26px -18px rgb(28 26 18 / 48%),
+    0 32px 50px -34px rgb(28 26 18 / 44%);
+
+  border-color: rgb(96 92 70 / 26%);
   background-color: #f2efe5;
   background-image:
     repeating-linear-gradient(
@@ -446,11 +579,18 @@ const noteStyle = computed(() => ({
 }
 
 .wall-note--kraft .wall-note__sheet {
+  --note-shadow:
+    0 1px 1px rgb(60 36 12 / 20%), 0 10px 20px -14px rgb(62 38 14 / 58%),
+    0 26px 40px -30px rgb(62 38 14 / 50%);
+  --note-shadow-hover:
+    0 1px 1px rgb(60 36 12 / 22%), 0 18px 30px -18px rgb(62 38 14 / 60%),
+    0 36px 56px -34px rgb(62 38 14 / 52%);
+
   background-color: #c8a97e;
   background-image:
     radial-gradient(circle at 24% 12%, rgb(255 245 220 / 28%), transparent 46%),
     radial-gradient(circle at 86% 90%, rgb(88 58 28 / 12%), transparent 52%);
-  border-color: rgb(70 48 24 / 28%);
+  border-color: rgb(70 48 24 / 36%);
 }
 
 .wall-note--kraft .wall-note__date,
@@ -464,8 +604,11 @@ const noteStyle = computed(() => ({
 }
 
 .wall-note--torn .wall-note__sheet {
-  border: 0;
-  border-radius: 0;
+  --note-shadow: none;
+  --note-shadow-hover: none;
+
+  border: 1px solid rgb(96 74 50 / 20%);
+  border-radius: 1px;
   clip-path: polygon(
     0% 0.8%,
     6% 0%,
@@ -492,7 +635,7 @@ const noteStyle = computed(() => ({
     0.8% 25%,
     0% 10%
   );
-  filter: drop-shadow(0 8px 12px rgb(40 26 14 / 22%));
+  filter: drop-shadow(0 2px 2px rgb(40 26 14 / 16%)) drop-shadow(0 10px 16px rgb(40 26 14 / 24%));
 }
 
 .wall-note--torn .wall-note__sheet,
@@ -500,43 +643,16 @@ const noteStyle = computed(() => ({
   box-shadow: none;
 }
 
-.wall-note--photo .wall-note__sheet {
-  padding: 0.5rem 0.5rem 0.34rem;
-  background-color: #fbf8f0;
-  border-color: rgb(80 60 38 / 18%);
-}
-
-.wall-note--photo .wall-note__date {
-  order: 3;
-  padding: 0.22rem 0.24rem 0;
-  font-size: 0.52rem;
-}
-
-.wall-note--photo .wall-note__photo {
-  flex: 0 0 auto;
-  margin: 0;
-  aspect-ratio: 4 / 3;
-}
-
-.wall-note--photo .wall-note__body {
-  order: 4;
-  flex: 0 0 auto;
-  padding: 0.3rem 0.24rem 0;
-}
-
-.wall-note--photo .wall-note__text {
-  font-size: 0.72rem;
-  -webkit-line-clamp: 2;
-}
-
-.wall-note--photo .wall-note__foot {
-  order: 5;
-  padding: 0.22rem 0.24rem 0.16rem;
-}
-
 .wall-note--index .wall-note__sheet {
+  --note-shadow:
+    0 1px 0 rgb(40 30 18 / 13%), 0 6px 12px -12px rgb(30 24 14 / 48%),
+    0 16px 26px -24px rgb(30 24 14 / 40%);
+  --note-shadow-hover:
+    0 1px 0 rgb(40 30 18 / 15%), 0 14px 24px -16px rgb(30 24 14 / 50%),
+    0 28px 44px -30px rgb(30 24 14 / 44%);
+
   background-color: #fbfaf4;
-  border-color: rgb(84 70 52 / 20%);
+  border-color: rgb(84 70 52 / 28%);
   background-image:
     repeating-linear-gradient(
       to bottom,
@@ -565,19 +681,15 @@ const noteStyle = computed(() => ({
 @media (hover: hover) {
   .wall-note:hover {
     z-index: 9990;
-    transform: rotate(0deg) translateY(-6px) scale(1.035);
+    transform: rotate(var(--note-rotate, 0deg)) translateY(-3px);
   }
 
   .wall-note:hover .wall-note__sheet {
-    box-shadow:
-      0 1px 1px rgb(40 27 16 / 14%),
-      0 16px 26px -14px rgb(30 20 10 / 52%),
-      0 34px 54px -30px rgb(30 20 10 / 55%);
+    box-shadow: var(--note-shadow-hover);
   }
 
-  .wall-note:hover .wall-note__mark {
-    opacity: 0.72;
-    transform: translate(0, 0);
+  .wall-note--torn:hover .wall-note__sheet {
+    filter: drop-shadow(0 3px 3px rgb(40 26 14 / 18%)) drop-shadow(0 16px 24px rgb(40 26 14 / 28%));
   }
 }
 
@@ -585,6 +697,18 @@ const noteStyle = computed(() => ({
   z-index: 9995;
   outline: 2px solid #3a2f24;
   outline-offset: 4px;
+}
+
+/* A lifted card keeps its exact geometry so the lightbox can scale it one-to-one. */
+@media (hover: hover) {
+  .wall-note--still:hover {
+    z-index: var(--note-z, 1);
+    transform: rotate(var(--note-rotate, 0deg));
+  }
+
+  .wall-note--still:hover .wall-note__sheet {
+    box-shadow: var(--note-shadow);
+  }
 }
 
 @keyframes wall-note-in {

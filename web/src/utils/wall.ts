@@ -77,7 +77,7 @@ export const wallNoteMeta = (echo: WallEcho, featured = false): WallNoteMeta => 
   const random = mulberry32(hashString(`${echo.id}:wall`))
   const image = hasWallImage(echo)
   const pool: WallPaper[] = image
-    ? ['photo', 'photo', 'plain', 'torn', 'index']
+    ? ['plain', 'ruled', 'torn', 'index']
     : ['plain', 'ruled', 'grid', 'kraft', 'torn', 'index']
   const paper = pool[Math.floor(random() * pool.length)] ?? 'plain'
   const fasteners: WallFastener[] = ['pin', 'tape', 'clip', 'staple']
