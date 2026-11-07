@@ -77,10 +77,14 @@
     >
       桌角物件
     </button>
-    <span class="preview-switch__count">50 枚</span>
   </div>
 
-  <TheEchoLightbox v-model="activeEcho" :origin-rect="activeRect" @view-detail="goDetail" />
+  <TheEchoLightbox
+    v-model="activeEcho"
+    :origin-rect="activeRect"
+    :origin-meta="activeMeta"
+    @view-detail="goDetail"
+  />
 </template>
 
 <script setup lang="ts">
@@ -96,7 +100,7 @@ import {
   TheHeatMap,
   TheRecentCard,
 } from '@/components/advanced/widget'
-import { wallDayKey, wallEchoTime, type WallEcho } from '@/utils/wall'
+import { wallDayKey, wallEchoTime, type WallEcho, type WallNoteMeta } from '@/utils/wall'
 import { demoEchoes } from './demoEchoes'
 
 const router = useRouter()
@@ -104,6 +108,7 @@ const view = ref<'notes' | 'objects'>('notes')
 const selectedDate = ref<string | null>(null)
 const activeEcho = ref<WallEcho | null>(null)
 const activeRect = ref<{ left: number; top: number; width: number; height: number } | null>(null)
+const activeMeta = ref<WallNoteMeta | null>(null)
 const calendarOpen = ref(false)
 
 onMounted(() => document.documentElement.classList.add('wall-mode'))
@@ -128,8 +133,17 @@ const handleSelectDate = (value: string | null) => {
   if (value) calendarOpen.value = false
 }
 
-const openEcho = ({ echo, rect }: { echo: WallEcho; rect: DOMRect }) => {
+const openEcho = ({
+  echo,
+  rect,
+  meta,
+}: {
+  echo: WallEcho
+  rect: DOMRect
+  meta: WallNoteMeta
+}) => {
   activeEcho.value = echo
+  activeMeta.value = meta
   activeRect.value = {
     left: rect.left,
     top: rect.top,
@@ -362,14 +376,6 @@ const demoComment: App.Api.Comment.CommentItem = {
 .preview-switch button.is-active {
   background: rgb(52 42 30 / 10%);
   color: #2e2720;
-}
-
-.preview-switch__count {
-  padding: 0 0.45rem;
-  font-family: var(--font-family-display);
-  font-size: 0.56rem;
-  letter-spacing: 0.06em;
-  color: rgb(70 56 40 / 42%);
 }
 
 @media (width <= 720px) {

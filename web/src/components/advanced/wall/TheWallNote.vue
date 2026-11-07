@@ -16,7 +16,13 @@
     ]"
     :style="noteStyle"
     :aria-label="`${t('wall.openNote')}: ${dateParts.stamp} ${headline || excerpt}`"
-    @click="emit('open', { echo, event: $event })"
+    @click="
+      emit('open', {
+        echo,
+        event: $event,
+        meta: { paper: props.paper, fastener: props.fastener, rotation: props.rotation },
+      })
+    "
   >
     <span class="wall-note__sheet">
       <span class="wall-note__grain" aria-hidden="true"></span>
@@ -83,7 +89,14 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: 'open', payload: { echo: WallEcho; event: MouseEvent }): void
+  (
+    event: 'open',
+    payload: {
+      echo: WallEcho
+      event: MouseEvent
+      meta: { paper: WallPaper; fastener: WallFastener; rotation: number }
+    },
+  ): void
 }>()
 
 const { t } = useI18n()
@@ -270,13 +283,26 @@ const noteStyle = computed(() => ({
   display: flex;
   align-items: baseline;
   gap: 0.32rem;
-  padding: 0.72rem 0.8rem 0;
+  padding: 0.72rem 0.8rem 0.22rem;
   font-family: var(--font-family-display);
   font-size: 0.58rem;
   line-height: 1.2;
   letter-spacing: 0.04em;
   color: rgb(74 62 48 / 72%);
   white-space: nowrap;
+}
+
+.wall-note__date::after {
+  content: '';
+  position: absolute;
+  right: 0.8rem;
+  bottom: 0;
+  left: 0.8rem;
+  height: 3px;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='3'%3E%3Cpath d='M0 1.6 Q2.5 0.6 5 1.6 T10 1.6' fill='none' stroke='%23705c44' stroke-opacity='.4' stroke-width='.7' stroke-dasharray='2 1.4'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
 }
 
 .wall-note__stamp {
@@ -349,6 +375,9 @@ const noteStyle = computed(() => ({
   line-height: 1.6;
   letter-spacing: 0.01em;
   color: rgb(60 50 40 / 78%);
+  text-decoration: underline wavy rgb(90 70 45 / 18%);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: var(--note-lines, 3);
 }
@@ -444,6 +473,7 @@ const noteStyle = computed(() => ({
 
 .wall-note--kraft .wall-note__excerpt {
   color: rgb(44 30 14 / 94%);
+  text-decoration-color: rgb(70 44 18 / 26%);
 }
 
 .wall-note--kraft .wall-note__headline {
@@ -612,7 +642,7 @@ const noteStyle = computed(() => ({
 }
 
 .wall-note--xl .wall-note__date {
-  padding: 0.88rem 1rem 0;
+  padding: 0.88rem 1rem 0.22rem;
   font-size: 0.62rem;
 }
 

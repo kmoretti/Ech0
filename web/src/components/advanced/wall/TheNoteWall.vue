@@ -3,9 +3,7 @@
 <template>
   <section class="wall-stage" :class="{ 'wall-stage--flow': !isDesktop }">
     <div class="wall-stage__bar">
-      <span class="wall-stage__count">{{
-        t('wall.notesCount', { count: displayEchoes.length })
-      }}</span>
+      <span class="wall-stage__count">{{ notesCountText }}</span>
 
       <span v-if="selectedDate" class="wall-stage__filter">
         <span class="wall-stage__filter-date">{{ formattedSelectedDate }}</span>
@@ -88,7 +86,9 @@ import {
   mulberry32,
   wallNoteMeta,
   type WallEcho,
+  type WallFastener,
   type WallNoteMeta,
+  type WallPaper,
 } from '@/utils/wall'
 
 type WallSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
@@ -112,7 +112,14 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: 'open', payload: { echo: WallEcho; rect: DOMRect }): void
+  (
+    event: 'open',
+    payload: {
+      echo: WallEcho
+      rect: DOMRect
+      meta: { paper: WallPaper; fastener: WallFastener; rotation: number }
+    },
+  ): void
   (event: 'clear-date'): void
   (event: 'load-more'): void
 }>()
@@ -123,18 +130,27 @@ const canvasRef = ref<HTMLElement | null>(null)
 const canvasSize = ref({ width: 0, height: 0 })
 const placedNotes = ref<Placed[]>([])
 
-const displayEchoes = computed(() => (isDesktop.value ? props.echoes.slice(0, 50) : props.echoes))
+const DESKTOP_LIMIT = 12
+const displayEchoes = computed(() =>
+  isDesktop.value ? props.echoes.slice(0, DESKTOP_LIMIT) : props.echoes,
+)
 
 const formattedSelectedDate = computed(() =>
   props.selectedDate ? formatWallDay(props.selectedDate) : '',
 )
+const notesCountText = computed(() => {
+  const shown = displayEchoes.value.length
+  const total = props.echoes.length
+  const count = isDesktop.value && !props.selectedDate && total > shown ? `${shown} / ${total}` : shown
+  return t('wall.notesCount', { count })
+})
 
 const SHAPES: Record<WallSize, { width: number; height: number }> = {
-  xs: { width: 138, height: 100 },
-  sm: { width: 164, height: 118 },
-  md: { width: 198, height: 146 },
-  lg: { width: 248, height: 180 },
-  xl: { width: 320, height: 232 },
+  xs: { width: 190, height: 150 },
+  sm: { width: 220, height: 175 },
+  md: { width: 260, height: 210 },
+  lg: { width: 310, height: 250 },
+  xl: { width: 370, height: 300 },
 }
 
 const metaCache = new Map<string, WallNoteMeta>()
@@ -175,7 +191,7 @@ const layoutFreeform = (count: number) => {
     ),
   )
 
-  const cols = Math.max(5, Math.round(Math.sqrt((count * width) / height) * 0.88))
+  const cols = Math.max(5, Math.round(Math.sqrt((count * width) / height) * 0.9))
   const rows = Math.max(4, Math.ceil(count / cols))
   const cellWidth = width / cols
   const cellHeight = height / rows
@@ -188,11 +204,11 @@ const layoutFreeform = (count: number) => {
   }))
 
   const factors: Record<WallSize, number> = {
-    xs: 1,
-    sm: 1.08,
-    md: 1.18,
-    lg: 1.36,
-    xl: 1.68,
+    xs: 1.2,
+    sm: 1.3,
+    md: 1.45,
+    lg: 1.65,
+    xl: 1.9,
   }
 
   const placed: Placed[] = []
@@ -210,7 +226,10 @@ const layoutFreeform = (count: number) => {
     const size = sizeFor(index, count)
     const shape = SHAPES[size]
     const factor = factors[size]
-    const scale = Math.min((cellWidth * factor) / shape.width, (cellHeight * factor) / shape.height)
+    const scale = Math.min(
+      1,
+      Math.min((cellWidth * factor) / shape.width, (cellHeight * factor) / shape.height),
+    )
     const noteWidth = Math.round(shape.width * scale)
     const noteHeight = Math.round(shape.height * scale)
     const newest = index < 6
@@ -236,14 +255,14 @@ const layoutFreeform = (count: number) => {
           ),
         ),
       )
-      let score = overlapArea({ x, y, width: noteWidth, height: noteHeight }) * 1.25
-      if (usedCells.has(key)) score += cellArea * 1.8
+      let score = overlapArea({ x, y, width: noteWidth, height: noteHeight }) * 5
+      if (usedCells.has(key)) score += cellArea * 2.5
       if (newest) {
         // The newest notes stay close to the calendar in the top-right corner.
         score += (1 - (x + noteWidth / 2) / width) * cellArea * 2.6
         score += ((y + noteHeight / 2) / height) * cellArea * 1.8
       }
-      score += random() * cellArea * 0.16
+      score += random() * cellArea * 0.06
       if (!best || score < best.score) best = { x, y, score, key }
     }
 
@@ -349,10 +368,14 @@ const buildLayout = () => {
     props.selectedDate || count <= 4 ? layoutFiltered(count) : layoutFreeform(count)
 }
 
-const handleOpen = (payload: { echo: WallEcho; event: MouseEvent }) => {
+const handleOpen = (payload: {
+  echo: WallEcho
+  event: MouseEvent
+  meta: { paper: WallPaper; fastener: WallFastener; rotation: number }
+}) => {
   const rect = (payload.event.currentTarget as HTMLElement | null)?.getBoundingClientRect()
   if (!rect) return
-  emit('open', { echo: payload.echo, rect })
+  emit('open', { echo: payload.echo, rect, meta: payload.meta })
 }
 
 useResizeObserver(canvasRef, (entries) => {

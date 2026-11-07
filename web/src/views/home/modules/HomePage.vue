@@ -50,7 +50,12 @@
     </template>
   </TheWallShell>
 
-  <TheEchoLightbox v-model="activeEcho" :origin-rect="activeRect" @view-detail="goDetail" />
+  <TheEchoLightbox
+    v-model="activeEcho"
+    :origin-rect="activeRect"
+    :origin-meta="activeMeta"
+    @view-detail="goDetail"
+  />
   <TheCommandPalette v-model="paletteOpen" />
   <TheChatLauncher v-model="chatLauncherOpen" />
 </template>
@@ -61,7 +66,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useEchoStore, useUserStore, useSettingStore, useConnectStore } from '@/stores'
-import { wallDayKey, wallEchoTime, type WallEcho } from '@/utils/wall'
+import { wallDayKey, wallEchoTime, type WallEcho, type WallNoteMeta } from '@/utils/wall'
 import TheNoteWall from '@/components/advanced/wall/TheNoteWall.vue'
 import TheWallShell from '@/components/advanced/wall/TheWallShell.vue'
 import TheEchoLightbox from '@/components/advanced/wall/TheEchoLightbox.vue'
@@ -104,6 +109,7 @@ const calendarOpen = ref(false)
 const selectedDate = ref<string | null>(null)
 const activeEcho = ref<WallEcho | null>(null)
 const activeRect = ref<{ left: number; top: number; width: number; height: number } | null>(null)
+const activeMeta = ref<WallNoteMeta | null>(null)
 const tabScrollEl = ref<HTMLElement | null>(null)
 
 const wallEchoes = computed<WallEcho[]>(() => props.demoEchoes ?? echoStore.echoList)
@@ -144,8 +150,17 @@ const handleSelectDate = (value: string | null) => {
   if (value) calendarOpen.value = false
 }
 
-const openEcho = ({ echo, rect }: { echo: WallEcho; rect: DOMRect }) => {
+const openEcho = ({
+  echo,
+  rect,
+  meta,
+}: {
+  echo: WallEcho
+  rect: DOMRect
+  meta: WallNoteMeta
+}) => {
   activeEcho.value = echo
+  activeMeta.value = meta
   activeRect.value = {
     left: rect.left,
     top: rect.top,
