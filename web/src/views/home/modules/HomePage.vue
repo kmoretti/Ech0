@@ -11,6 +11,7 @@
           :can-load-more="canLoadMore"
           :loading-more="echoStore.isLoading"
           @open="openEcho"
+          @view-detail="goDetail"
           @clear-date="selectedDate = null"
           @load-more="loadMoreEchoes"
         />

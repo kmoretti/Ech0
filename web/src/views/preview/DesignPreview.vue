@@ -8,6 +8,7 @@
           :echoes="filteredEchoes"
           :selected-date="selectedDate"
           @open="openEcho"
+          @view-detail="goDetail"
           @clear-date="selectedDate = null"
         />
       </div>
