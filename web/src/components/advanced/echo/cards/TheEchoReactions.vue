@@ -633,7 +633,7 @@ void (async () => {
 
 .reaction-pop {
   position: fixed;
-  z-index: 1000;
+  z-index: 10040;
   transform-origin: bottom center;
 }
 
