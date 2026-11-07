@@ -4,44 +4,39 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { fetchQueryEchos, fetchGetTags, fetchGetEchoById, fetchCreateTag } from '@/service/api'
-import {
-  HOME_CACHE_TTL,
-  HOME_ECHO_CACHE_PREFIX,
-  invalidateHomeCaches,
-  readHomeCache,
-  refreshHomeCacheInBackground,
-  writeHomeCache,
-} from '@/utils/home-cache'
+import { TIMELINE_BASE_PAGE_SIZE } from '@/utils/timeline'
 
-type EchoCachePayload = {
-  total: number
-  items: App.Api.Ech0.Echo[]
-}
+/** Backend clamps to [1, 100]; mirror it so a restored depth cannot overflow. */
+const MAX_PAGE_SIZE = 100
+const PAGE_SIZE = TIMELINE_BASE_PAGE_SIZE
 
-const isEchoCachePayload = (value: unknown): value is EchoCachePayload => {
-  if (!value || typeof value !== 'object') return false
-  const payload = value as Partial<EchoCachePayload>
-  return typeof payload.total === 'number' && Array.isArray(payload.items)
-}
+type LoadPhase = 'first' | 'more'
 
 export const useEchoStore = defineStore('echoStore', () => {
   const normalizeEchoId = (echo: App.Api.Ech0.Echo): string => String(echo?.id ?? '').trim()
 
-  // ─────────────────────────────────────────────
-  //  统一查询状态（普通时间线与标签过滤共享同一套状态）
-  // ─────────────────────────────────────────────
+  const echoList = ref<App.Api.Ech0.Echo[]>([])
+  const echoIndexMap = ref(new Map<string, number>())
+  const isLoading = ref<boolean>(true)
+  const hasFetched = ref<boolean>(false)
+  const isLoadingMore = ref<boolean>(false)
+  const loadError = ref<LoadPhase | null>(null)
+  const total = ref<number>(0)
+  const pageSize = ref<number>(PAGE_SIZE)
 
-  const echoList = ref<App.Api.Ech0.Echo[]>([]) // 当前页展示的 Echo 列表
-  const echoIndexMap = ref(new Map<string, number>()) // id → echoList 下标，用于快速定位
-  const isLoading = ref<boolean>(false)
-  const total = ref<number>(0) // 当前查询条件下的总条数
-  const pageSize = ref<number>(50) // 首页瀑布流默认批量，避免一次渲染全部数据
-  const currentPage = ref<number>(1) // 当前页码（从 1 开始）
+  /**
+   * `undefined` = the current query has not been fetched yet, a string = the
+   * next keyset position, `null` = the feed is exhausted. This single ref is
+   * the only pagination state the view has to understand.
+   */
+  const nextCursor = ref<string | null | undefined>(undefined)
+  const loadedSignature = ref<string | null>(null)
+  /** Page size the current stream was opened with, so a first-load retry restores the same depth. */
+  const refreshPageSize = ref<number | null>(null)
+  let generation = 0
+
   const searchValue = ref<string>('')
   const searchingMode = computed(() => searchValue.value.length > 0)
-  const totalPages = computed(() =>
-    total.value <= 0 ? 1 : Math.max(1, Math.ceil(total.value / pageSize.value)),
-  )
   const echoToUpdate = ref<App.Api.Ech0.EchoToUpdate | null>(null)
 
   const tagList = ref<App.Api.Ech0.Tag[]>([])
@@ -59,6 +54,15 @@ export const useEchoStore = defineStore('echoStore', () => {
 
   const visibilityFilter = ref<App.Api.Ech0.EchoVisibilityFilter>('all')
   const isVisibilityFilterActive = computed(() => visibilityFilter.value !== 'all')
+
+  const canLoadMore = computed(
+    () =>
+      nextCursor.value !== undefined &&
+      nextCursor.value !== null &&
+      !isLoading.value &&
+      !isLoadingMore.value &&
+      loadError.value === null,
+  )
 
   /**
    * True whenever the timeline is showing a narrowed result set. `total` and
@@ -82,7 +86,7 @@ export const useEchoStore = defineStore('echoStore', () => {
 
   function buildQueryParams(): App.Api.Ech0.EchoQueryParams {
     const params: App.Api.Ech0.EchoQueryParams = {
-      page: currentPage.value,
+      page: 1,
       pageSize: pageSize.value,
       search: searchValue.value || undefined,
     }
@@ -106,40 +110,25 @@ export const useEchoStore = defineStore('echoStore', () => {
     return params
   }
 
-  const normalizeItems = (items: App.Api.Ech0.Echo[] = []) =>
-    items.map((item) => ({
-      ...item,
-      id: normalizeEchoId(item),
-    }))
-
-  const rebuildIndexMap = (items: App.Api.Ech0.Echo[]) => {
-    const nextIndex = new Map<string, number>()
-    items.forEach((item, idx) => {
-      if (item.id) nextIndex.set(item.id, idx)
-    })
-    echoIndexMap.value = nextIndex
+  /**
+   * Identifies the filter set currently backing the loaded stream. Mounting the
+   * timeline again (tab switches, back navigation) reuses the loaded pages only
+   * while this still matches.
+   */
+  function querySignature(): string {
+    const params = buildQueryParams()
+    return JSON.stringify([
+      params.search ?? '',
+      [...(params.tagIds ?? [])].sort(),
+      params.dateFrom ?? null,
+      params.dateTo ?? null,
+      visibilityFilter.value,
+    ])
   }
 
-  const cacheKeyForParams = (params: App.Api.Ech0.EchoQueryParams) =>
-    `${HOME_ECHO_CACHE_PREFIX}${JSON.stringify(params)}`
-
-  const readQueryCache = (params: App.Api.Ech0.EchoQueryParams) => {
-    return readHomeCache<EchoCachePayload>(cacheKeyForParams(params))
-  }
-
-  const writeQueryCache = (params: App.Api.Ech0.EchoQueryParams, payload: EchoCachePayload) => {
-    writeHomeCache(cacheKeyForParams(params), payload, HOME_CACHE_TTL)
-  }
-
-  const refreshQueryCacheInBackground = (params: App.Api.Ech0.EchoQueryParams) =>
-    refreshHomeCacheInBackground(cacheKeyForParams(params), HOME_CACHE_TTL, async () => {
-      const res = await fetchQueryEchos(params)
-      if (res.code !== 1) return null
-      return {
-        total: res.data.total,
-        items: normalizeItems(res.data.items ?? []),
-      }
-    })
+  const isTimelineCurrent = computed(
+    () => loadedSignature.value !== null && loadedSignature.value === querySignature(),
+  )
 
   const resetDateRange = () => {
     dateFrom.value = null
@@ -162,122 +151,131 @@ export const useEchoStore = defineStore('echoStore', () => {
     }
   }
 
-  let pendingFetch: Promise<void> | null = null
-  async function fetchCurrentPage(options: { force?: boolean } = {}) {
-    if (pendingFetch) return pendingFetch
+  const normalizeItems = (items: App.Api.Ech0.Echo[] | undefined): App.Api.Ech0.Echo[] =>
+    (items ?? []).map((item) => ({ ...item, id: normalizeEchoId(item) }))
 
-    const params = buildQueryParams()
-    const cached = options.force ? null : readQueryCache(params)
-    if (cached && isEchoCachePayload(cached.data)) {
-      total.value = cached.data.total
-      echoList.value = normalizeItems(cached.data.items)
-      rebuildIndexMap(echoList.value)
-      isLoading.value = false
-      if (!cached.fresh) void refreshQueryCacheInBackground(params)
-      return
-    }
+  const rebuildIndex = () => {
+    const nextIndex = new Map<string, number>()
+    echoList.value.forEach((item, idx) => {
+      if (item.id) nextIndex.set(item.id, idx)
+    })
+    echoIndexMap.value = nextIndex
+  }
 
+  const appendDeduped = (items: App.Api.Ech0.Echo[]) => {
+    const seen = new Set(echoList.value.map((item) => item.id))
+    items.forEach((item) => {
+      if (!item.id || seen.has(item.id)) return
+      seen.add(item.id)
+      echoList.value.push(item)
+    })
+    rebuildIndex()
+  }
+
+  const clampPageSize = (value: number): number =>
+    Math.max(1, Math.min(MAX_PAGE_SIZE, Math.trunc(value) || PAGE_SIZE))
+
+  async function refreshEchos(initialPageSize?: number): Promise<void> {
+    const requestGeneration = ++generation
+    const requestedPageSize = clampPageSize(initialPageSize ?? pageSize.value)
+    refreshPageSize.value = requestedPageSize
+    hasFetched.value = true
     isLoading.value = true
-    pendingFetch = fetchQueryEchos(params)
-      .then((res) => {
-        if (res.code === 1) {
-          total.value = res.data.total
-          const items = normalizeItems(res.data.items ?? [])
-          echoList.value = items
-          rebuildIndexMap(items)
-          writeQueryCache(params, { total: res.data.total, items })
-        }
-      })
-      .catch((error) => {
-        console.warn('[Echo] failed to fetch current page', error)
-      })
-      .finally(() => {
-        isLoading.value = false
-        pendingFetch = null
-      })
-
-    return pendingFetch
-  }
-
-  async function loadNextPage() {
-    if (pendingFetch || currentPage.value >= totalPages.value) return
-
-    const previousPage = currentPage.value
-    currentPage.value += 1
-    const params = buildQueryParams()
-    const cached = readQueryCache(params)
-    if (cached && isEchoCachePayload(cached.data)) {
-      total.value = cached.data.total
-      const knownIds = new Set(echoList.value.map((item) => normalizeEchoId(item)))
-      const appended = normalizeItems(cached.data.items).filter(
-        (item) => item.id && !knownIds.has(item.id),
-      )
-      echoList.value = [...echoList.value, ...appended]
-      rebuildIndexMap(echoList.value)
-      if (!cached.fresh) void refreshQueryCacheInBackground(params)
-      return
-    }
-
-    isLoading.value = true
-    pendingFetch = fetchQueryEchos(params)
-      .then((res) => {
-        if (res.code !== 1) {
-          currentPage.value = previousPage
-          return
-        }
-
-        total.value = res.data.total
-        const knownIds = new Set(echoList.value.map((item) => normalizeEchoId(item)))
-        const pageItems = normalizeItems(res.data.items ?? [])
-        const appended = pageItems.filter((item) => item.id && !knownIds.has(item.id))
-        echoList.value = [...echoList.value, ...appended]
-        rebuildIndexMap(echoList.value)
-        writeQueryCache(params, { total: res.data.total, items: pageItems })
-      })
-      .catch((error) => {
-        currentPage.value = previousPage
-        throw error
-      })
-      .finally(() => {
-        isLoading.value = false
-        pendingFetch = null
-      })
-
-    return pendingFetch
-  }
-
-  async function goToPage(page: number) {
-    const target = Math.max(1, Math.floor(page) || 1)
-    if (target === currentPage.value && echoList.value.length > 0) return
-    currentPage.value = target
-    await fetchCurrentPage()
-  }
-
-  const refreshEchos = () => {
-    currentPage.value = 1
-    total.value = 0
+    isLoadingMore.value = false
+    loadError.value = null
+    loadedSignature.value = null
+    nextCursor.value = undefined
     echoList.value = []
     echoIndexMap.value = new Map()
-    return fetchCurrentPage({ force: true })
+
+    try {
+      const requestQuery = buildQueryParams()
+      // Describe the request with the filters it was built from, not with
+      // whatever the store holds when the response lands.
+      const requestSignature = querySignature()
+      const res = await fetchQueryEchos({
+        ...requestQuery,
+        pageSize: requestedPageSize,
+        cursor: '',
+      })
+      if (requestGeneration !== generation) return
+      if (res.code !== 1 || !res.data) {
+        loadError.value = 'first'
+        return
+      }
+      total.value = res.data.total ?? 0
+      appendDeduped(normalizeItems(res.data.items))
+      nextCursor.value = res.data.nextCursor ?? null
+      loadedSignature.value = requestSignature
+    } catch {
+      if (requestGeneration === generation) {
+        loadError.value = 'first'
+      }
+    } finally {
+      if (requestGeneration === generation) {
+        isLoading.value = false
+      }
+    }
+  }
+
+  async function loadMore(): Promise<void> {
+    const cursor = nextCursor.value
+    if (!cursor || isLoading.value || isLoadingMore.value || loadError.value !== null) return
+    if (!isTimelineCurrent.value) {
+      await refreshEchos()
+      return
+    }
+
+    const requestGeneration = generation
+    isLoadingMore.value = true
+    try {
+      const res = await fetchQueryEchos({
+        ...buildQueryParams(),
+        cursor,
+      })
+      if (requestGeneration !== generation) return
+      if (res.code !== 1 || !res.data) {
+        loadError.value = 'more'
+        return
+      }
+      appendDeduped(normalizeItems(res.data.items))
+      nextCursor.value = res.data.nextCursor ?? null
+      total.value = res.data.total ?? total.value
+    } catch {
+      if (requestGeneration === generation) {
+        loadError.value = 'more'
+      }
+    } finally {
+      if (requestGeneration === generation) {
+        isLoadingMore.value = false
+      }
+    }
+  }
+
+  const retryLoad = async (): Promise<void> => {
+    if (loadError.value === null) return
+    loadError.value = null
+    if (nextCursor.value === undefined) {
+      // Re-open at the depth the timeline was mounted with: a shallow first
+      // page would drop the restored anchor row from the result set.
+      await refreshEchos(refreshPageSize.value ?? undefined)
+      return
+    }
+    await loadMore()
   }
 
   const clearEchos = () => {
-    currentPage.value = 1
+    generation++
+    nextCursor.value = undefined
+    loadedSignature.value = null
+    refreshPageSize.value = null
+    loadError.value = null
     total.value = 0
     echoList.value = []
     echoIndexMap.value = new Map()
-  }
-
-  const invalidateEchosCache = () => {
-    invalidateHomeCaches()
-  }
-
-  /** 仅重置分页指针与列表，不触发加载（搜索场景由调用方控制加载时机）。 */
-  const refreshForSearch = () => {
-    currentPage.value = 1
-    total.value = 0
-    echoList.value = []
-    echoIndexMap.value = new Map()
+    isLoading.value = false
+    isLoadingMore.value = false
+    hasFetched.value = false
   }
 
   const updateEcho = (echo: App.Api.Ech0.Echo) => {
@@ -285,6 +283,21 @@ export const useEchoStore = defineStore('echoStore', () => {
     if (idx !== undefined) {
       echoList.value[idx] = echo
     }
+  }
+
+  const replaceEcho = (echo: App.Api.Ech0.Echo) => {
+    const idx = echoIndexMap.value.get(echo.id)
+    if (idx === undefined) return
+    echoList.value[idx] = { ...echo, id: normalizeEchoId(echo) }
+    rebuildIndex()
+  }
+
+  const removeEcho = (echoId: string) => {
+    const idx = echoIndexMap.value.get(echoId)
+    if (idx === undefined) return
+    echoList.value.splice(idx, 1)
+    total.value = Math.max(0, total.value - 1)
+    rebuildIndex()
   }
 
   const setEchoReactions = (echoId: string, reactions: App.Api.Ech0.ReactionCount[]) => {
@@ -335,12 +348,18 @@ export const useEchoStore = defineStore('echoStore', () => {
   const createTag = async (name: string) => {
     const res = await fetchCreateTag(name)
     if (res.code === 1) {
-      invalidateEchosCache()
       await getTags()
       return res.data
     }
     return null
   }
+
+  /**
+   * The cursor timeline reads straight from the API; there is no page cache
+   * left to invalidate. Kept for the fork's editor/user/tag flows, which pair
+   * it with refreshEchos().
+   */
+  const invalidateEchosCache = () => undefined
 
   let tagsLoadPromise: Promise<void> | null = null
   const ensureTagsLoaded = (): Promise<void> => {
@@ -356,10 +375,15 @@ export const useEchoStore = defineStore('echoStore', () => {
     echoList,
     echoIndexMap,
     isLoading,
+    hasFetched,
+    isLoadingMore,
+    loadError,
     total,
     pageSize,
-    currentPage,
-    totalPages,
+    nextCursor,
+    canLoadMore,
+    isTimelineCurrent,
+    loadedSignature,
     searchValue,
     searchingMode,
     echoToUpdate,
@@ -380,22 +404,22 @@ export const useEchoStore = defineStore('echoStore', () => {
     isVisibilityFilterActive,
     hasActiveQuery,
 
-    fetchCurrentPage,
-    loadNextPage,
-    goToPage,
     refreshEchos,
+    loadMore,
+    retryLoad,
     clearEchos,
-    refreshForSearch,
     resetDateRange,
     resetSelectedTags,
     resetVisibilityFilter,
     removeSelectedTag,
     updateEcho,
+    replaceEcho,
+    removeEcho,
     setEchoReactions,
-    invalidateEchosCache,
     prefetchEcho,
     getTags,
     ensureTagsLoaded,
     createTag,
+    invalidateEchosCache,
   }
 })

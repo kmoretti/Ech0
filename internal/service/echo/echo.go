@@ -472,25 +472,95 @@ func (echoService *EchoService) QueryEchos(
 	if queryDto.SortOrder == "" {
 		queryDto.SortOrder = "desc"
 	}
+	if err := normalizeEchoCursor(&queryDto); err != nil {
+		return commonModel.PageQueryResult[[]model.Echo]{}, err
+	}
 
 	showPrivate, err := echoService.canReadPrivate(ctx)
 	if err != nil {
 		return commonModel.PageQueryResult[[]model.Echo]{}, err
 	}
 
+	cursorMode := queryDto.Cursor != nil
+	pageSize := queryDto.PageSize
+	if cursorMode {
+		// Fetch one extra row so the presence of a next page is known without
+		// making the client issue a guaranteed-empty request when the last page
+		// is exactly full.
+		queryDto.PageSize = pageSize + 1
+	}
+
 	echos, total, err := echoService.echoRepository.QueryEchos(queryDto, showPrivate)
 	if err != nil {
 		return commonModel.PageQueryResult[[]model.Echo]{}, err
 	}
+
+	hasMore := false
+	if cursorMode && len(echos) > pageSize {
+		echos = echos[:pageSize]
+		hasMore = true
+	}
+
 	echos, err = echoService.hydrateReactions(ctx, echos)
 	if err != nil {
 		return commonModel.PageQueryResult[[]model.Echo]{}, err
 	}
 
-	return commonModel.PageQueryResult[[]model.Echo]{
+	result := commonModel.PageQueryResult[[]model.Echo]{
 		Items: echos,
 		Total: total,
-	}, nil
+	}
+	if hasMore {
+		last := echos[len(echos)-1]
+		if last.ID != "" {
+			next := model.EncodeCursor(model.Cursor{CreatedAt: last.CreatedAt, ID: last.ID})
+			result.NextCursor = &next
+		}
+	}
+	return result, nil
+}
+
+const maxEchoCursorLength = 512
+
+// normalizeEchoCursor validates the optional keyset cursor and puts the query
+// in cursor mode. A cursor position is never trusted as a filter: only the
+// (created_at, id) boundary is read, while visibility and every caller filter
+// are re-applied by the repository.
+func normalizeEchoCursor(queryDto *commonModel.EchoQueryDto) error {
+	if queryDto.Cursor == nil {
+		return nil
+	}
+
+	if queryDto.SortBy != "created_at" {
+		return commonModel.NewBizErrorWithMessageKey(
+			commonModel.ErrCodeInvalidQuery,
+			commonModel.ECHO_CURSOR_SORT_UNSUPPORTED,
+			commonModel.MsgKeyEchoCursorSortUnsupported,
+			nil,
+		)
+	}
+
+	cursor := strings.TrimSpace(*queryDto.Cursor)
+	if len(cursor) > maxEchoCursorLength {
+		return invalidEchoCursorError()
+	}
+	if cursor != "" {
+		if _, err := model.DecodeCursor(cursor); err != nil {
+			return invalidEchoCursorError()
+		}
+	}
+	queryDto.Cursor = &cursor
+	queryDto.Page = 1
+	return nil
+}
+
+func invalidEchoCursorError() error {
+	return commonModel.NewBizErrorWithMessageKey(
+		commonModel.ErrCodeInvalidQuery,
+		commonModel.INVALID_ECHO_CURSOR,
+		commonModel.MsgKeyEchoInvalidCursor,
+		nil,
+	)
 }
 
 func isSafeTagName(name string) bool {

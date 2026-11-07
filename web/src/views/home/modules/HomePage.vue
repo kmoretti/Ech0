@@ -9,7 +9,7 @@
           :selected-date="selectedDate"
           :loading="echoLoading"
           :can-load-more="canLoadMore"
-          :loading-more="echoStore.isLoading"
+          :loading-more="echoStore.isLoadingMore"
           @open="openEcho"
           @view-detail="goDetail"
           @clear-date="selectedDate = null"
@@ -128,10 +128,10 @@ const echoLoading = computed(
   () => !isDemo.value && echoStore.isLoading && echoStore.echoList.length === 0,
 )
 const chatAvailable = computed(() => isLogin.value && AgentSetting.value.enable)
-const canLoadMore = computed(() => !isDemo.value && echoStore.currentPage < echoStore.totalPages)
+const canLoadMore = computed(() => !isDemo.value && echoStore.canLoadMore)
 const loadMoreEchoes = () => {
-  if (!canLoadMore.value || echoStore.isLoading) return
-  void echoStore.loadNextPage()
+  if (!canLoadMore.value || echoStore.isLoadingMore) return
+  void echoStore.loadMore()
 }
 
 watch(
@@ -222,7 +222,7 @@ onMounted(async () => {
   window.addEventListener('keydown', handleGlobalKeydown)
 
   if (!isDemo.value) {
-    void echoStore.fetchCurrentPage()
+    void echoStore.refreshEchos()
     void connectStore.getConnectInfo().catch(() => undefined)
   }
 

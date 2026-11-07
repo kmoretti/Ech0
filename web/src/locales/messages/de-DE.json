@@ -463,7 +463,12 @@
   "homeFeed": {
     "noMore": "Keine weiteren Daten",
     "noMoreFiltered": "Keine weiteren Daten",
-    "loading": "Wird geladen…"
+    "loading": "Wird geladen…",
+    "loadingMore": "Weitere werden geladen…",
+    "loadMoreFailed": "Weitere Daten konnten nicht geladen werden",
+    "loadFailed": "Die Zeitleiste konnte nicht geladen werden",
+    "retry": "Erneut versuchen",
+    "allLoaded": "Das war alles"
   },
   "dateTime": {
     "justNow": "Gerade eben",
@@ -548,6 +553,8 @@
     "deleteConfirmDesc": "Diese Aktion kann nicht rückgängig gemacht werden.",
     "deleteSuccess": "Gelöscht",
     "exitUpdateModeFirst": "Bitte zuerst den Bearbeitungsmodus verlassen",
+    "editAnotherEchoTitle": "Anderen Echo bearbeiten?",
+    "editAnotherEchoDesc": "Du bearbeitest bereits einen Echo. Aktuelle Änderungen verwerfen und diesen Echo bearbeiten?",
     "openDetail": "Detail öffnen",
     "commentsLabel": "Kommentare"
   },
@@ -1316,16 +1323,11 @@
     "eyebrow": "Sternennotiz von heute",
     "seal": "Sternbrief",
     "words": "{count} Wörter",
-    "lettersCount": "{count} Notizen",
-    "continued": "Weiterblättern",
-    "backToTop": "Nach oben",
     "epigraph1": "Langsam ist sanft, und sanft ist schnell.",
     "epigraph2": "Falte deine Gedanken zu Sternen, und die Tage werden zu Gedichten.",
     "epigraph3": "Der Wind erinnert sich noch an den Duft einer Blume.",
     "epigraph4": "Neuer Tee, alte Freunde und gute Zeit.",
     "epigraph5": "In allem ist ein Riss – so kommt das Licht herein.",
-    "epigraph6": "Der Abend kommt, und die Hügel sind schon Herbst.",
-    "today": "Heute",
-    "end": "Mehr Sterne gibt es heute nicht"
+    "epigraph6": "Der Abend kommt, und die Hügel sind schon Herbst."
   }
 }

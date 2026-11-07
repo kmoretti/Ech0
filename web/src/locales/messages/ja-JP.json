@@ -463,7 +463,12 @@
   "homeFeed": {
     "noMore": "これ以上データはありません",
     "noMoreFiltered": "これ以上データはありません",
-    "loading": "読み込み中..."
+    "loading": "読み込み中...",
+    "loadingMore": "さらに読み込み中...",
+    "loadMoreFailed": "読み込みに失敗しました",
+    "loadFailed": "タイムラインを読み込めませんでした",
+    "retry": "再試行",
+    "allLoaded": "最後まで表示しました"
   },
   "dateTime": {
     "justNow": "たった今",
@@ -548,6 +553,8 @@
     "deleteConfirmDesc": "削除すると復元できません。慎重に操作してください",
     "deleteSuccess": "削除しました！",
     "exitUpdateModeFirst": "先に更新モードを終了してください！",
+    "editAnotherEchoTitle": "別の Echo を編集しますか？",
+    "editAnotherEchoDesc": "すでに別の Echo を編集中です。現在の変更を破棄してこの Echo を編集しますか？",
     "openDetail": "詳細を開く",
     "commentsLabel": "コメント"
   },
@@ -1316,16 +1323,11 @@
     "eyebrow": "今日の星便り",
     "seal": "星便り",
     "words": "{count} 文字",
-    "lettersCount": "{count} 枚の便箋",
-    "continued": "続きを読む",
-    "backToTop": "トップへ戻る",
     "epigraph1": "ゆっくり行くことが、いちばん速い。",
     "epigraph2": "想いを星に折りたたみ、日々を詩にしよう。",
     "epigraph3": "風はまだ、一輪の花の香りを覚えている。",
     "epigraph4": "新茶と旧友、そして良い時間を。",
     "epigraph5": "すべてにひび割れがある。そこから光が差し込む。",
-    "epigraph6": "夕暮れは突然に、山はもう秋。",
-    "today": "今日",
-    "end": "星はここまで"
+    "epigraph6": "夕暮れは突然に、山はもう秋。"
   }
 }

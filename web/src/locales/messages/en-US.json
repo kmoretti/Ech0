@@ -463,7 +463,12 @@
   "homeFeed": {
     "noMore": "No more data",
     "noMoreFiltered": "No more data",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "loadingMore": "Loading more...",
+    "loadMoreFailed": "Could not load more",
+    "loadFailed": "Could not load the timeline",
+    "retry": "Retry",
+    "allLoaded": "You're all caught up"
   },
   "dateTime": {
     "justNow": "Just now",
@@ -548,6 +553,8 @@
     "deleteConfirmDesc": "This action cannot be undone.",
     "deleteSuccess": "Deleted successfully",
     "exitUpdateModeFirst": "Please exit update mode first",
+    "editAnotherEchoTitle": "Edit another Echo?",
+    "editAnotherEchoDesc": "You are already editing an Echo. Discard those changes and edit this one?",
     "openDetail": "Open detail",
     "commentsLabel": "Comments"
   },
@@ -1316,16 +1323,11 @@
     "eyebrow": "Today's Star Note",
     "seal": "Star Letter",
     "words": "{count} words",
-    "lettersCount": "{count} notes",
-    "continued": "Keep reading",
-    "backToTop": "Back to top",
     "epigraph1": "Slow is smooth, and smooth is fast.",
     "epigraph2": "Fold your thoughts into stars, and let the days become poems.",
     "epigraph3": "The wind still remembers the scent of a flower.",
     "epigraph4": "New tea, old friends, and time well spent.",
     "epigraph5": "There is a crack in everything; that is how the light gets in.",
-    "epigraph6": "Evening falls, and the hills are already autumn.",
-    "today": "Today",
-    "end": "That's all the stars for now"
+    "epigraph6": "Evening falls, and the hills are already autumn."
   }
 }
