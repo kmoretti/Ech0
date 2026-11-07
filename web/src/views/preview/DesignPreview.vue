@@ -49,12 +49,10 @@
         :connects="demoConnects"
         :agent-enabled="false"
         :recent-text="demoRecent"
-        :calendar-open="calendarOpen"
         @update:selected-date="handleSelectDate"
         @open-tab="handleTab"
         @open-settings="router.push({ name: 'panel' })"
         @open-search="router.push({ name: 'home' })"
-        @toggle-calendar="calendarOpen = !calendarOpen"
       />
     </template>
   </TheWallShell>
@@ -110,7 +108,6 @@ const selectedDate = ref<string | null>(null)
 const activeEcho = ref<WallEcho | null>(null)
 const activeRect = ref<{ left: number; top: number; width: number; height: number } | null>(null)
 const activeMeta = ref<WallNoteMeta | null>(null)
-const calendarOpen = ref(false)
 
 onMounted(() => document.documentElement.classList.add('wall-mode'))
 onBeforeUnmount(() => document.documentElement.classList.remove('wall-mode'))
@@ -131,18 +128,9 @@ const filteredEchoes = computed(() =>
 
 const handleSelectDate = (value: string | null) => {
   selectedDate.value = value
-  if (value) calendarOpen.value = false
 }
 
-const openEcho = ({
-  echo,
-  rect,
-  meta,
-}: {
-  echo: WallEcho
-  rect: DOMRect
-  meta: WallNoteMeta
-}) => {
+const openEcho = ({ echo, rect, meta }: { echo: WallEcho; rect: DOMRect; meta: WallNoteMeta }) => {
   activeEcho.value = echo
   activeMeta.value = meta
   activeRect.value = {

@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
-  <aside class="wall-rail" :class="{ 'wall-rail--calendar-open': calendarOpen }">
+  <aside class="wall-rail">
     <HomeHeader class="wall-rail__header" hide-panel>
       <template #extra-actions>
         <button
@@ -22,16 +22,6 @@
           @click="emit('open-chat')"
         >
           <Chat class="wall-rail__head-icon" />
-        </button>
-        <button
-          type="button"
-          class="wall-rail__head-btn wall-rail__calendar-toggle"
-          :aria-expanded="calendarOpen"
-          :aria-label="t('wall.calendar')"
-          :title="t('wall.calendar')"
-          @click="emit('toggle-calendar')"
-        >
-          <Calendar class="wall-rail__head-icon" />
         </button>
       </template>
     </HomeHeader>
@@ -127,7 +117,6 @@ import Hub from '@/components/icons/hub.vue'
 import Setting from '@/components/icons/setting.vue'
 import Search from '@/components/icons/search.vue'
 import Chat from '@/components/icons/chat.vue'
-import Calendar from '@/components/icons/calendar.vue'
 import { wallEchoTime, type WallEcho } from '@/utils/wall'
 
 const props = defineProps<{
@@ -139,7 +128,6 @@ const props = defineProps<{
   connects?: App.Api.Connect.Connect[]
   agentEnabled?: boolean
   chatAvailable?: boolean
-  calendarOpen?: boolean
   recentText?: string
 }>()
 
@@ -149,7 +137,6 @@ const emit = defineEmits<{
   (event: 'open-settings'): void
   (event: 'open-search'): void
   (event: 'open-chat'): void
-  (event: 'toggle-calendar'): void
 }>()
 
 const { t } = useI18n()
@@ -335,10 +322,6 @@ const latestStamp = computed(() => {
   height: 1rem;
 }
 
-.wall-rail__calendar-toggle {
-  display: none;
-}
-
 .wall-rail__calendar {
   flex: none;
 }
@@ -510,18 +493,8 @@ const latestStamp = computed(() => {
     right: 0.3rem;
   }
 
-  .wall-rail__calendar-toggle {
-    display: inline-flex;
-  }
-
   .wall-rail__calendar {
     display: none;
-  }
-
-  .wall-rail--calendar-open .wall-rail__calendar {
-    display: block;
-    max-width: 23rem;
-    margin: 0 auto;
   }
 
   .wall-explore {

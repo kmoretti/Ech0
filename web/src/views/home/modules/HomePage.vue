@@ -40,13 +40,11 @@
         :connects="connectStore.connectsInfo"
         :agent-enabled="AgentSetting.enable"
         :chat-available="chatAvailable"
-        :calendar-open="calendarOpen"
         @update:selected-date="handleSelectDate"
         @open-tab="handleTab"
         @open-settings="openSettings"
         @open-search="paletteOpen = true"
         @open-chat="chatLauncherOpen = true"
-        @toggle-calendar="calendarOpen = !calendarOpen"
       />
     </template>
   </TheWallShell>
@@ -106,7 +104,6 @@ const tabTitle = computed(() =>
 
 const paletteOpen = ref(false)
 const chatLauncherOpen = ref(false)
-const calendarOpen = ref(false)
 const selectedDate = ref<string | null>(null)
 const activeEcho = ref<WallEcho | null>(null)
 const activeRect = ref<{ left: number; top: number; width: number; height: number } | null>(null)
@@ -148,18 +145,9 @@ watch(
 
 const handleSelectDate = (value: string | null) => {
   selectedDate.value = value
-  if (value) calendarOpen.value = false
 }
 
-const openEcho = ({
-  echo,
-  rect,
-  meta,
-}: {
-  echo: WallEcho
-  rect: DOMRect
-  meta: WallNoteMeta
-}) => {
+const openEcho = ({ echo, rect, meta }: { echo: WallEcho; rect: DOMRect; meta: WallNoteMeta }) => {
   activeEcho.value = echo
   activeMeta.value = meta
   activeRect.value = {
