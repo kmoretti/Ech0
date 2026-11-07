@@ -117,7 +117,7 @@ onBeforeUnmount(() => document.documentElement.classList.remove('wall-mode'))
 const sortedEchoes = computed(() =>
   [...demoEchoes].sort((a, b) => wallEchoTime(b) - wallEchoTime(a)),
 )
-const wallPool = computed(() => sortedEchoes.value.slice(0, 50))
+const wallPool = computed(() => sortedEchoes.value.slice(0, 16))
 const marks = computed(() => [...new Set(wallPool.value.map((echo) => wallDayKey(echo)))])
 const latestStamp = computed(() =>
   wallPool.value[0] ? wallEchoTime(wallPool.value[0]!) : undefined,

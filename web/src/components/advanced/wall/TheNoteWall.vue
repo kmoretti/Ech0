@@ -26,31 +26,27 @@
 
     <div
       v-else-if="isDesktop"
-      class="wall-board"
-      :class="{ 'wall-board--filtered': !!selectedDate }"
-      :style="{ '--wall-columns': noteColumns.length }"
+      ref="canvasRef"
+      class="wall-canvas"
+      :class="{ 'wall-canvas--ready': layoutReady }"
     >
-      <div
-        v-for="(column, columnIndex) in noteColumns"
-        :key="columnIndex"
-        class="wall-board__column"
-      >
-        <TheWallNote
-          v-for="(echo, index) in column"
-          :key="echo.id"
-          stacked
-          :echo="echo"
-          :paper="flowMeta(echo).paper"
-          :fastener="flowMeta(echo).fastener"
-          size="md"
-          :width="0"
-          :height="0"
-          :rotation="flowMeta(echo).rotation * 0.5"
-          :z-index="index + 1"
-          :delay="Math.min((columnIndex * 3 + index) * 16, 220)"
-          @open="handleOpen"
-        />
-      </div>
+      <TheWallNote
+        v-for="(placed, index) in placedNotes"
+        :key="placed.echo.id"
+        :echo="placed.echo"
+        :paper="placed.meta.paper"
+        :fastener="placed.meta.fastener"
+        :size="placed.size"
+        :width="placed.width"
+        :height="0"
+        :x="placed.x"
+        :y="placed.y"
+        :rotation="placed.meta.rotation"
+        :z-index="placed.zIndex"
+        :delay="Math.min(index * 16, 220)"
+        @open="handleOpen"
+        @view-detail="handleViewDetail"
+      />
     </div>
 
     <div v-else class="wall-flow">
@@ -67,16 +63,17 @@
           :z-index="index + 1"
           :delay="Math.min(index * 8, 180)"
           @open="handleOpen"
+          @view-detail="handleViewDetail"
         />
       </div>
     </div>
 
     <button
-      v-if="!isDesktop && canLoadMore"
+      v-if="!isDesktop && hasMoreMobile"
       type="button"
       class="wall-more"
       :disabled="loadingMore"
-      @click="emit('load-more')"
+      @click="handleMobileMore"
     >
       {{ loadingMore ? t('homeFeed.loading') : t('wall.loadMore') }}
     </button>
@@ -84,13 +81,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useMediaQuery } from '@vueuse/core'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useMediaQuery, useResizeObserver } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
+import { getEchoFiles } from '@/utils/echo'
 import TheLoadingIndicator from '@/components/common/TheLoadingIndicator.vue'
 import TheWallNote from './TheWallNote.vue'
 import {
   formatWallDay,
+  hashString,
+  mulberry32,
   wallBody,
   wallNoteMeta,
   type WallEcho,
@@ -116,17 +116,58 @@ const emit = defineEmits<{
       meta: { paper: WallPaper; fastener: WallFastener; rotation: number }
     },
   ): void
+  (event: 'view-detail', echo: WallEcho): void
   (event: 'clear-date'): void
   (event: 'load-more'): void
 }>()
 
+type WallSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+type Placed = {
+  echo: WallEcho
+  meta: WallNoteMeta
+  size: WallSize
+  width: number
+  height: number
+  x: number
+  y: number
+  zIndex: number
+}
+
 const { t } = useI18n()
 const isDesktop = useMediaQuery('(min-width: 1080px)')
+const canvasRef = ref<HTMLElement | null>(null)
+const canvasSize = ref({ width: 0, height: 0 })
+const placedNotes = ref<Placed[]>([])
+const measuredHeights = ref<Record<string, number>>({})
+const layoutReady = ref(false)
 
-const DESKTOP_LIMIT = 9
+const WALL_PAGE_SIZE = 16
+const DESKTOP_LIMIT = WALL_PAGE_SIZE
+const mobileVisibleCount = ref(WALL_PAGE_SIZE)
 const displayEchoes = computed(() =>
-  isDesktop.value ? props.echoes.slice(0, DESKTOP_LIMIT) : props.echoes,
+  isDesktop.value
+    ? props.echoes.slice(0, DESKTOP_LIMIT)
+    : props.echoes.slice(0, mobileVisibleCount.value),
 )
+const hasMoreMobile = computed(
+  () => mobileVisibleCount.value < props.echoes.length || Boolean(props.canLoadMore),
+)
+
+const handleMobileMore = () => {
+  mobileVisibleCount.value += WALL_PAGE_SIZE
+  if (mobileVisibleCount.value >= props.echoes.length && props.canLoadMore) emit('load-more')
+}
+
+watch(
+  () => props.selectedDate,
+  () => {
+    mobileVisibleCount.value = WALL_PAGE_SIZE
+  },
+)
+
+watch(isDesktop, (desktop) => {
+  if (!desktop) mobileVisibleCount.value = WALL_PAGE_SIZE
+})
 
 const formattedSelectedDate = computed(() =>
   props.selectedDate ? formatWallDay(props.selectedDate) : '',
@@ -148,36 +189,162 @@ const flowMeta = (echo: WallEcho): WallNoteMeta => {
   return meta
 }
 
-const columnCount = computed(() => {
-  if (!isDesktop.value) return 1
-  if (props.selectedDate) return Math.min(3, Math.max(1, displayEchoes.value.length))
-  return 3
-})
+const WIDTHS: Record<WallSize, number> = {
+  xs: 240,
+  sm: 270,
+  md: 305,
+  lg: 345,
+  xl: 390,
+}
 
-// Newest notes arrive at the right column, next to the calendar. The rest
-// fill the column with the least estimated paper height so the wall stays level.
-const noteColumns = computed<WallEcho[][]>(() => {
-  const count = columnCount.value
-  const columns = Array.from({ length: count }, () => [] as WallEcho[])
-  const heights = Array.from({ length: count }, () => 0)
-  const estimate = (echo: WallEcho): number => {
-    const text = wallBody(echo.content, 160)
-    const lines = Math.min(
-      8,
-      text.split('\n').reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 23)), 0),
-    )
-    const image = (echo.echo_files?.length ?? 0) > 0 ? 110 : 0
-    return 74 + lines * 22 + image
-  }
+const sizeAt = (index: number): WallSize =>
+  (['xl', 'lg', 'lg', 'lg', 'md', 'md', 'md', 'sm', 'sm'][index] ?? 'sm') as WallSize
+
+const estimateHeight = (echo: WallEcho, width: number): number => {
+  const text = wallBody(echo.content, 160)
+  const charsPerLine = Math.max(8, Math.floor((width - 34) / 13))
+  const lines = Math.min(
+    12,
+    text
+      .split('\n')
+      .reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / charsPerLine)), 0),
+  )
+  const hasImages = getEchoFiles(echo).some((file) => file.category === 'image')
+  const media = hasImages ? Math.min(width * 0.9, width) : 0
+  return 74 + lines * 21.5 + (echo.tags?.length ? 22 : 0) + media + 36
+}
+
+const intersection = (
+  a: { x: number; y: number; w: number; h: number },
+  b: { x: number; y: number; w: number; h: number },
+) => {
+  const dx = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)
+  const dy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y)
+  return dx > 0 && dy > 0 ? dx * dy : 0
+}
+
+const placeNotes = (heights: Record<string, number>): Placed[] => {
+  const { width: wallWidth, height: wallHeight } = canvasSize.value
+  if (!wallWidth || !wallHeight) return []
+  const random = mulberry32(
+    hashString(
+      `${displayEchoes.value.map((echo) => echo.id).join('|')}:${props.selectedDate ?? 'all'}`,
+    ),
+  )
+  const placed: Placed[] = []
+  const rects: { x: number; y: number; w: number; h: number }[] = []
+  const count = displayEchoes.value.length
+  const single = count === 1
 
   displayEchoes.value.forEach((echo, index) => {
-    const target =
-      index < count ? count - 1 - index : heights.indexOf(Math.min(...heights))
-    columns[target]!.push(echo)
-    heights[target]! += estimate(echo) + 18
+    const size = sizeAt(index)
+    const width = Math.min(WIDTHS[size], wallWidth - 40)
+    const height = Math.max(
+      90,
+      Math.min(heights[echo.id] ?? estimateHeight(echo, width), wallHeight - 32),
+    )
+
+    let bestX = 16
+    let bestY = 16
+    if (single) {
+      bestX = Math.max(16, (wallWidth - width) / 2)
+      bestY = Math.max(16, (wallHeight - height) / 2)
+    } else {
+      let bestScore = Number.POSITIVE_INFINITY
+      for (let attempt = 0; attempt < 110; attempt++) {
+        const x = 16 + random() * Math.max(0, wallWidth - width - 32)
+        const y = 16 + random() * Math.max(0, wallHeight - height - 40)
+        const rect = { x, y, w: width, h: height }
+        let score = rects.reduce((sum, other) => sum + intersection(rect, other), 0) * 1.7
+        if (index < 3) {
+          score += (1 - (x + width / 2) / wallWidth) * wallWidth * wallHeight * 0.5
+          score += ((y + height / 2) / wallHeight) * wallWidth * wallHeight * 0.28
+        }
+        score += random() * wallWidth * wallHeight * 0.008
+        if (score < bestScore) {
+          bestScore = score
+          bestX = x
+          bestY = y
+        }
+      }
+    }
+
+    const x = Math.round(Math.min(Math.max(16, bestX), Math.max(16, wallWidth - width - 16)))
+    const y = Math.round(Math.min(Math.max(16, bestY), Math.max(16, wallHeight - height - 20)))
+    placed.push({
+      echo,
+      meta: wallNoteMeta(echo, index < 2),
+      size,
+      width: Math.round(width),
+      height: Math.round(height),
+      x,
+      y,
+      zIndex: count - index + 10,
+    })
+    rects.push({ x, y, w: width, h: height })
   })
-  return columns
+
+  return placed
+}
+
+const measureAndPlace = async () => {
+  await nextTick()
+  const nodes = canvasRef.value?.querySelectorAll<HTMLElement>('.wall-note')
+  if (nodes?.length) {
+    const next = { ...measuredHeights.value }
+    let changed = false
+    placedNotes.value.forEach((placed, index) => {
+      const height = nodes[index]?.offsetHeight ?? 0
+      if (height > 0 && Math.abs((next[placed.echo.id] ?? 0) - height) > 1) {
+        next[placed.echo.id] = height
+        changed = true
+      }
+    })
+    if (changed) {
+      measuredHeights.value = next
+      placedNotes.value = placeNotes(next)
+      await nextTick()
+    }
+  }
+  layoutReady.value = true
+}
+
+const buildLayout = async () => {
+  if (!isDesktop.value || !canvasSize.value.width) {
+    placedNotes.value = []
+    layoutReady.value = false
+    return
+  }
+  layoutReady.value = false
+  placedNotes.value = placeNotes(measuredHeights.value)
+  await measureAndPlace()
+}
+
+useResizeObserver(canvasRef, (entries) => {
+  const entry = entries[0]
+  if (!entry) return
+  const { width, height } = entry.contentRect
+  if (
+    Math.abs(width - canvasSize.value.width) < 2 &&
+    Math.abs(height - canvasSize.value.height) < 2
+  )
+    return
+  canvasSize.value = { width, height }
+  void buildLayout()
 })
+
+watch(
+  () => [displayEchoes.value.map((echo) => echo.id).join('|'), props.selectedDate, isDesktop.value],
+  () => void buildLayout(),
+  { immediate: true },
+)
+
+let remeasureTimer = 0
+onMounted(() => {
+  // The async media galleries can change a note's height after the first pass.
+  remeasureTimer = window.setTimeout(() => void buildLayout(), 450)
+})
+onBeforeUnmount(() => window.clearTimeout(remeasureTimer))
 
 const handleOpen = (payload: {
   echo: WallEcho
@@ -189,6 +356,7 @@ const handleOpen = (payload: {
   emit('open', { echo: payload.echo, rect, meta: payload.meta })
 }
 
+const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
 </script>
 
 <style scoped>
@@ -271,44 +439,17 @@ const handleOpen = (payload: {
   outline-offset: 2px;
 }
 
-.wall-board {
-  display: grid;
-  grid-template-columns: repeat(var(--wall-columns, 3), minmax(0, 1fr));
-  gap: clamp(0.9rem, 1.6vw, 1.4rem);
-  align-items: start;
+.wall-canvas {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
-  padding: 0.15rem 0.5rem 0;
   overflow: hidden;
+  opacity: 0;
+  transition: opacity 260ms ease;
 }
 
-.wall-board__column {
-  display: flex;
-  flex-direction: column;
-  gap: 1.05rem;
-  min-width: 0;
-}
-
-.wall-board__column:nth-child(1) {
-  padding-top: 1rem;
-}
-
-.wall-board__column:nth-child(2) {
-  padding-top: 0.15rem;
-}
-
-.wall-board__column:nth-child(3) {
-  padding-top: 0.55rem;
-}
-
-.wall-board--filtered {
-  grid-template-columns: repeat(var(--wall-columns, 3), minmax(0, 21rem));
-  place-content: center;
-  padding-top: 0.4rem;
-}
-
-.wall-board--filtered .wall-board__column {
-  padding-top: 0;
+.wall-canvas--ready {
+  opacity: 1;
 }
 
 .wall-stage__state {
