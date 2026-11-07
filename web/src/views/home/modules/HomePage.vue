@@ -222,7 +222,10 @@ onMounted(async () => {
   window.addEventListener('keydown', handleGlobalKeydown)
 
   if (!isDemo.value) {
-    void echoStore.refreshEchos()
+    // The fixed wall renders 16 notes; load exactly one wall page up front so
+    // the first paint is full and each "load more" advances by the same unit.
+    echoStore.pageSize = 16
+    void echoStore.refreshEchos(16)
     void connectStore.getConnectInfo().catch(() => undefined)
   }
 
