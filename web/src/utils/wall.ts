@@ -86,7 +86,7 @@ export const wallNoteMeta = (echo: WallEcho, featured = false): WallNoteMeta => 
   return { paper, fastener, rotation }
 }
 
-export const wallSnippet = (content: string | null | undefined, limit = 150): string => {
+export const wallBody = (content: string | null | undefined, limit = 480): string => {
   const text = String(content ?? '')
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
@@ -94,23 +94,10 @@ export const wallSnippet = (content: string | null | undefined, limit = 150): st
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/^>\s?/gm, '')
     .replace(/[*_~`]/g, '')
-    .replace(/\s+/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
     .trim()
   if (text.length <= limit) return text
   return `${text.slice(0, limit).trimEnd()}…`
 }
 
-export const wallHeadline = (content: string | null | undefined): string => {
-  const first = String(content ?? '')
-    .split('\n')
-    .map((line) =>
-      line
-        .replace(/```[\s\S]*?```/g, ' ')
-        .replace(/^#{1,6}\s+/gm, '')
-        .replace(/^>\s?/gm, '')
-        .replace(/[*_~`]/g, '')
-        .trim(),
-    )
-    .find(Boolean)
-  return first ?? ''
-}

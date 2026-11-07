@@ -117,19 +117,11 @@ const cardWidth = () => {
   return Math.max(200, Math.min(preferred, viewport, 760))
 }
 
-const cardHeight = () => {
-  const viewport = Math.max(0, window.innerHeight * 0.84)
-  const preferred = props.originRect?.height ?? 300
-  return Math.max(180, Math.min(preferred, viewport))
-}
-
 const buildOriginStyle = () => {
   const width = cardWidth()
-  const height = cardHeight()
   const origin = props.originRect
   const style: Record<string, string> = {
     width: `${width}px`,
-    height: `${height}px`,
   }
   if (!origin) {
     return {
@@ -221,7 +213,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   max-width: 92vw;
-  max-height: 84dvh;
+  max-height: 86dvh;
+  overflow: hidden;
   color: #2c2620;
   background-color: #f5efe2;
   background-image:
@@ -502,26 +495,37 @@ onBeforeUnmount(() => {
 .wall-lightbox__scroll {
   position: relative;
   z-index: 1;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-height: 0;
   padding: 0.65rem 0.8rem 0.5rem;
-  overflow-y: auto;
-  scrollbar-width: none;
-}
-
-.wall-lightbox__scroll::-webkit-scrollbar {
-  display: none;
+  overflow: hidden;
 }
 
 .wall-lightbox__media {
   margin-bottom: 0.7rem;
+  max-height: 30dvh;
+  overflow: hidden;
+}
+
+.wall-lightbox__media :deep(*) {
+  max-height: 30dvh;
 }
 
 .wall-lightbox__prose {
+  max-height: 52dvh;
+  overflow: hidden;
   font-family: var(--font-family-display);
   font-size: 0.82rem;
   line-height: 1.8;
   color: #332b23;
+  mask-image: linear-gradient(to bottom, #000 94%, transparent);
+}
+
+.wall-lightbox__prose :deep(img) {
+  max-height: 28dvh;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 .wall-lightbox__prose :deep(.echo-markdown p),

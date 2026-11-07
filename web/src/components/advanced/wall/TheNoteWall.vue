@@ -24,24 +24,33 @@
       </div>
     </div>
 
-    <div v-else-if="isDesktop" ref="canvasRef" class="wall-canvas">
-      <TheWallNote
-        v-for="(placed, index) in placedNotes"
-        :key="placed.echo.id"
-        :echo="placed.echo"
-        :paper="placed.meta.paper"
-        :fastener="placed.meta.fastener"
-        :size="placed.size"
-        :width="placed.width"
-        :height="placed.height"
-        :x="placed.x"
-        :y="placed.y"
-        :rotation="placed.meta.rotation"
-        :z-index="placed.zIndex"
-        :delay="Math.min(index * 9, 240)"
-        :featured="index < 2"
-        @open="handleOpen"
-      />
+    <div
+      v-else-if="isDesktop"
+      class="wall-board"
+      :class="{ 'wall-board--filtered': !!selectedDate }"
+      :style="{ '--wall-columns': noteColumns.length }"
+    >
+      <div
+        v-for="(column, columnIndex) in noteColumns"
+        :key="columnIndex"
+        class="wall-board__column"
+      >
+        <TheWallNote
+          v-for="(echo, index) in column"
+          :key="echo.id"
+          stacked
+          :echo="echo"
+          :paper="flowMeta(echo).paper"
+          :fastener="flowMeta(echo).fastener"
+          size="md"
+          :width="0"
+          :height="0"
+          :rotation="flowMeta(echo).rotation * 0.5"
+          :z-index="index + 1"
+          :delay="Math.min((columnIndex * 3 + index) * 16, 220)"
+          @open="handleOpen"
+        />
+      </div>
     </div>
 
     <div v-else class="wall-flow">
@@ -75,33 +84,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
-import { useMediaQuery, useResizeObserver } from '@vueuse/core'
+import { computed } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import TheLoadingIndicator from '@/components/common/TheLoadingIndicator.vue'
 import TheWallNote from './TheWallNote.vue'
 import {
   formatWallDay,
-  hashString,
-  mulberry32,
+  wallBody,
   wallNoteMeta,
   type WallEcho,
   type WallFastener,
   type WallNoteMeta,
   type WallPaper,
 } from '@/utils/wall'
-
-type WallSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
-type Placed = {
-  echo: WallEcho
-  meta: WallNoteMeta
-  size: WallSize
-  width: number
-  height: number
-  x: number
-  y: number
-  zIndex: number
-}
 
 const props = defineProps<{
   echoes: WallEcho[]
@@ -126,11 +122,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const isDesktop = useMediaQuery('(min-width: 1080px)')
-const canvasRef = ref<HTMLElement | null>(null)
-const canvasSize = ref({ width: 0, height: 0 })
-const placedNotes = ref<Placed[]>([])
 
-const DESKTOP_LIMIT = 12
+const DESKTOP_LIMIT = 9
 const displayEchoes = computed(() =>
   isDesktop.value ? props.echoes.slice(0, DESKTOP_LIMIT) : props.echoes,
 )
@@ -141,17 +134,10 @@ const formattedSelectedDate = computed(() =>
 const notesCountText = computed(() => {
   const shown = displayEchoes.value.length
   const total = props.echoes.length
-  const count = isDesktop.value && !props.selectedDate && total > shown ? `${shown} / ${total}` : shown
+  const count =
+    isDesktop.value && !props.selectedDate && total > shown ? `${shown} / ${total}` : shown
   return t('wall.notesCount', { count })
 })
-
-const SHAPES: Record<WallSize, { width: number; height: number }> = {
-  xs: { width: 190, height: 150 },
-  sm: { width: 220, height: 175 },
-  md: { width: 260, height: 210 },
-  lg: { width: 310, height: 250 },
-  xl: { width: 370, height: 300 },
-}
 
 const metaCache = new Map<string, WallNoteMeta>()
 const flowMeta = (echo: WallEcho): WallNoteMeta => {
@@ -162,211 +148,36 @@ const flowMeta = (echo: WallEcho): WallNoteMeta => {
   return meta
 }
 
-const sizeFor = (index: number, count: number): WallSize => {
-  if (props.selectedDate) {
-    if (count === 1) return 'xl'
-    if (count <= 3) return 'lg'
-    return 'md'
-  }
-  if (index === 0) return 'xl'
-  if (index <= 3) return 'lg'
-  if (index <= 9) return 'md'
-  return index % 3 === 0 ? 'sm' : 'xs'
-}
+const columnCount = computed(() => {
+  if (!isDesktop.value) return 1
+  if (props.selectedDate) return Math.min(3, Math.max(1, displayEchoes.value.length))
+  return 3
+})
 
-const Z_INDEX: Record<WallSize, number> = {
-  xl: 1000,
-  lg: 2000,
-  md: 3000,
-  sm: 4000,
-  xs: 5000,
-}
-
-const layoutFreeform = (count: number) => {
-  const { width, height } = canvasSize.value
-  if (!width || !height) return []
-  const random = mulberry32(
-    hashString(
-      `${displayEchoes.value.map((echo) => echo.id).join('|')}:${props.selectedDate ?? 'all'}`,
-    ),
-  )
-
-  const cols = Math.max(5, Math.round(Math.sqrt((count * width) / height) * 0.9))
-  const rows = Math.max(4, Math.ceil(count / cols))
-  const cellWidth = width / cols
-  const cellHeight = height / rows
-  const cellArea = cellWidth * cellHeight
-  const cells = Array.from({ length: cols * rows }, (_, index) => ({
-    col: index % cols,
-    row: Math.floor(index / cols),
-    jitterX: (random() - 0.5) * cellWidth * 0.2,
-    jitterY: (random() - 0.5) * cellHeight * 0.18,
-  }))
-
-  const factors: Record<WallSize, number> = {
-    xs: 1.2,
-    sm: 1.3,
-    md: 1.45,
-    lg: 1.65,
-    xl: 1.9,
-  }
-
-  const placed: Placed[] = []
-  const usedCells = new Set<string>()
-
-  const overlapArea = (rect: { x: number; y: number; width: number; height: number }) =>
-    placed.reduce((sum, other) => {
-      const dx = Math.min(rect.x + rect.width, other.x + other.width) - Math.max(rect.x, other.x)
-      const dy = Math.min(rect.y + rect.height, other.y + other.height) - Math.max(rect.y, other.y)
-      return sum + (dx > 0 && dy > 0 ? dx * dy : 0)
-    }, 0)
-
-  for (let index = 0; index < count; index++) {
-    const echo = displayEchoes.value[index]!
-    const size = sizeFor(index, count)
-    const shape = SHAPES[size]
-    const factor = factors[size]
-    const scale = Math.min(
-      1,
-      Math.min((cellWidth * factor) / shape.width, (cellHeight * factor) / shape.height),
+// Newest notes arrive at the right column, next to the calendar. The rest
+// fill the column with the least estimated paper height so the wall stays level.
+const noteColumns = computed<WallEcho[][]>(() => {
+  const count = columnCount.value
+  const columns = Array.from({ length: count }, () => [] as WallEcho[])
+  const heights = Array.from({ length: count }, () => 0)
+  const estimate = (echo: WallEcho): number => {
+    const text = wallBody(echo.content, 160)
+    const lines = Math.min(
+      8,
+      text.split('\n').reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 23)), 0),
     )
-    const noteWidth = Math.round(shape.width * scale)
-    const noteHeight = Math.round(shape.height * scale)
-    const newest = index < 6
-
-    let best: { x: number; y: number; score: number; key: string } | null = null
-    for (const cell of cells) {
-      const key = `${cell.col}:${cell.row}`
-      const x = Math.round(
-        Math.max(
-          18,
-          Math.min(
-            width - noteWidth - 18,
-            cell.col * cellWidth + (cellWidth - noteWidth) / 2 + cell.jitterX,
-          ),
-        ),
-      )
-      const y = Math.round(
-        Math.max(
-          18,
-          Math.min(
-            height - noteHeight - 34,
-            cell.row * cellHeight + (cellHeight - noteHeight) / 2 + cell.jitterY,
-          ),
-        ),
-      )
-      let score = overlapArea({ x, y, width: noteWidth, height: noteHeight }) * 5
-      if (usedCells.has(key)) score += cellArea * 2.5
-      if (newest) {
-        // The newest notes stay close to the calendar in the top-right corner.
-        score += (1 - (x + noteWidth / 2) / width) * cellArea * 2.6
-        score += ((y + noteHeight / 2) / height) * cellArea * 1.8
-      }
-      score += random() * cellArea * 0.06
-      if (!best || score < best.score) best = { x, y, score, key }
-    }
-
-    const target = best ?? { x: 18, y: 18, key: '' }
-    for (const cell of cells) {
-      const centerX = cell.col * cellWidth + cellWidth / 2
-      const centerY = cell.row * cellHeight + cellHeight / 2
-      if (
-        centerX >= target.x - cellWidth * 0.18 &&
-        centerX <= target.x + noteWidth + cellWidth * 0.18 &&
-        centerY >= target.y - cellHeight * 0.15 &&
-        centerY <= target.y + noteHeight + cellHeight * 0.15
-      ) {
-        usedCells.add(`${cell.col}:${cell.row}`)
-      }
-    }
-    placed.push({
-      echo,
-      meta: wallNoteMeta(echo, index < 2),
-      size,
-      width: noteWidth,
-      height: noteHeight,
-      x: target.x,
-      y: target.y,
-      // Small notes sit on top of the large background pieces so every
-      // label stays readable in the collage.
-      zIndex: Z_INDEX[size] + (count - index),
-    })
+    const image = (echo.echo_files?.length ?? 0) > 0 ? 110 : 0
+    return 74 + lines * 22 + image
   }
 
-  return placed
-}
-
-const layoutFiltered = (count: number) => {
-  const { width, height } = canvasSize.value
-  if (!width || !height) return []
-  const columns = count <= 1 ? 1 : count <= 4 ? 2 : 3
-  const gap = Math.max(22, Math.min(42, width * 0.028))
-  const shapeFor = () => (count === 1 ? SHAPES.xl : count <= 4 ? SHAPES.lg : SHAPES.md)
-  const rows: { echo: WallEcho; size: WallSize; width: number; height: number }[][] = []
-
-  let row: (typeof rows)[number] = []
-  rows.push(row)
-  for (let index = 0; index < count; index++) {
-    const echo = displayEchoes.value[index]!
-    const size = count === 1 ? 'xl' : count <= 4 ? 'lg' : 'md'
-    const shape = shapeFor()
-    const fitWidth = (width - gap * 2) / columns - gap * 0.2
-    const preferred = shape.width * (count <= 2 ? 1.45 : count <= 4 ? 1.2 : 1.12)
-    const targetWidth = Math.min(fitWidth, preferred)
-    const scale = targetWidth / shape.width
-    const item = {
-      echo,
-      size: size as WallSize,
-      width: Math.round(targetWidth),
-      height: Math.round(shape.height * scale),
-    }
-    const rowWidth = row.reduce((sum, cell) => sum + cell.width, 0) + gap * row.length
-    if (row.length > 0 && (row.length >= columns || rowWidth + gap + item.width > width - 24)) {
-      row = []
-      rows.push(row)
-    }
-    row.push(item)
-  }
-
-  const rowHeights = rows.map((cells) => Math.max(...cells.map((cell) => cell.height), 0))
-  const totalHeight = rowHeights.reduce((sum, value) => sum + value, 0) + gap * (rows.length - 1)
-  let cursorY = Math.max(12, (height - totalHeight) / 2)
-  const placed: Placed[] = []
-  let order = 0
-
-  rows.forEach((cells, rowIndex) => {
-    const rowWidth = cells.reduce((sum, cell) => sum + cell.width, 0) + gap * (cells.length - 1)
-    let cursorX = Math.max(12, (width - rowWidth) / 2)
-    cells.forEach((cell) => {
-      const meta = wallNoteMeta(cell.echo, true)
-      placed.push({
-        echo: cell.echo,
-        meta,
-        size: cell.size as WallSize,
-        width: cell.width,
-        height: cell.height,
-        x: Math.round(cursorX),
-        y: Math.round(cursorY),
-        zIndex: 20 + order,
-      })
-      cursorX += cell.width + gap
-      order += 1
-    })
-    cursorY += rowHeights[rowIndex]! + gap
+  displayEchoes.value.forEach((echo, index) => {
+    const target =
+      index < count ? count - 1 - index : heights.indexOf(Math.min(...heights))
+    columns[target]!.push(echo)
+    heights[target]! += estimate(echo) + 18
   })
-
-  return placed
-}
-
-const buildLayout = () => {
-  if (!isDesktop.value) {
-    placedNotes.value = []
-    return
-  }
-  const count = displayEchoes.value.length
-  placedNotes.value =
-    props.selectedDate || count <= 4 ? layoutFiltered(count) : layoutFreeform(count)
-}
+  return columns
+})
 
 const handleOpen = (payload: {
   echo: WallEcho
@@ -378,37 +189,6 @@ const handleOpen = (payload: {
   emit('open', { echo: payload.echo, rect, meta: payload.meta })
 }
 
-useResizeObserver(canvasRef, (entries) => {
-  const entry = entries[0]
-  if (!entry) return
-  const { width, height } = entry.contentRect
-  if (
-    Math.abs(width - canvasSize.value.width) < 2 &&
-    Math.abs(height - canvasSize.value.height) < 2
-  )
-    return
-  canvasSize.value = { width, height }
-  nextTick(buildLayout)
-})
-
-watch(
-  () => [
-    displayEchoes.value.map((echo) => echo.id).join('|'),
-    props.selectedDate,
-    isDesktop.value,
-    canvasSize.value.width,
-    canvasSize.value.height,
-  ],
-  () => nextTick(buildLayout),
-  { immediate: true },
-)
-
-watch(
-  () => displayEchoes.value.length,
-  () => {
-    metaCache.clear()
-  },
-)
 </script>
 
 <style scoped>
@@ -491,11 +271,44 @@ watch(
   outline-offset: 2px;
 }
 
-.wall-canvas {
-  position: relative;
+.wall-board {
+  display: grid;
+  grid-template-columns: repeat(var(--wall-columns, 3), minmax(0, 1fr));
+  gap: clamp(0.9rem, 1.6vw, 1.4rem);
+  align-items: start;
   flex: 1 1 auto;
   min-height: 0;
+  padding: 0.15rem 0.5rem 0;
   overflow: hidden;
+}
+
+.wall-board__column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.05rem;
+  min-width: 0;
+}
+
+.wall-board__column:nth-child(1) {
+  padding-top: 1rem;
+}
+
+.wall-board__column:nth-child(2) {
+  padding-top: 0.15rem;
+}
+
+.wall-board__column:nth-child(3) {
+  padding-top: 0.55rem;
+}
+
+.wall-board--filtered {
+  grid-template-columns: repeat(var(--wall-columns, 3), minmax(0, 21rem));
+  place-content: center;
+  padding-top: 0.4rem;
+}
+
+.wall-board--filtered .wall-board__column {
+  padding-top: 0;
 }
 
 .wall-stage__state {

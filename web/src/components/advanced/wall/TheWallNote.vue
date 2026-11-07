@@ -12,10 +12,11 @@
         'wall-note--featured': featured,
         'wall-note--image': !!imageUrl,
         'wall-note--flow': flow,
+        'wall-note--stacked': stacked,
       },
     ]"
     :style="noteStyle"
-    :aria-label="`${t('wall.openNote')}: ${dateParts.stamp} ${headline || excerpt}`"
+    :aria-label="`${t('wall.openNote')}: ${dateParts.stamp} ${bodyText}`"
     @click="
       emit('open', {
         echo,
@@ -39,8 +40,7 @@
       </span>
 
       <span class="wall-note__body">
-        <span v-if="headline" class="wall-note__headline">{{ headline }}</span>
-        <span class="wall-note__excerpt">{{ excerpt }}</span>
+        <span class="wall-note__text">{{ bodyText }}</span>
       </span>
 
       <span class="wall-note__foot">
@@ -62,9 +62,8 @@ import { useI18n } from 'vue-i18n'
 import Lock from '@/components/icons/lock.vue'
 import { getEchoFiles } from '@/utils/echo'
 import {
+  wallBody,
   wallDateStamp,
-  wallHeadline,
-  wallSnippet,
   type WallEcho,
   type WallFastener,
   type WallPaper,
@@ -86,6 +85,7 @@ const props = defineProps<{
   delay?: number
   featured?: boolean
   flow?: boolean
+  stacked?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -103,12 +103,7 @@ const { t } = useI18n()
 
 const tags = computed(() => props.echo.tags ?? [])
 const dateParts = computed(() => wallDateStamp(props.echo))
-const headline = computed(() => wallHeadline(props.echo.content))
-const excerpt = computed(() => {
-  const snippet = wallSnippet(props.echo.content, props.size === 'xl' ? 240 : 170)
-  if (!headline.value || !snippet.startsWith(headline.value)) return snippet
-  return wallSnippet(snippet.slice(headline.value.length), 200)
-})
+const bodyText = computed(() => wallBody(props.echo.content, 160))
 
 const imageUrl = computed(() => {
   const file = getEchoFiles(props.echo).find((item) => item.category === 'image')
@@ -116,7 +111,7 @@ const imageUrl = computed(() => {
 })
 
 const noteStyle = computed(() => ({
-  ...(props.flow
+  ...(props.flow || props.stacked
     ? {}
     : {
         width: `${props.width}px`,
@@ -157,21 +152,10 @@ const noteStyle = computed(() => ({
   height: auto;
 }
 
-.wall-note--flow .wall-note__sheet {
-  height: auto;
-  min-height: 8.6rem;
-}
-
-.wall-note--flow .wall-note__headline {
-  font-size: 1.06rem;
-  line-height: 1.46;
-  -webkit-line-clamp: 3;
-}
-
-.wall-note--flow .wall-note__excerpt {
-  --note-lines: 6;
-  font-size: 0.82rem;
-  line-height: 1.72;
+.wall-note--flow .wall-note__text {
+  --note-lines: 10;
+  font-size: 0.86rem;
+  line-height: 1.78;
 }
 
 .wall-note--flow .wall-note__date {
@@ -182,6 +166,23 @@ const noteStyle = computed(() => ({
 .wall-note--flow .wall-note__foot {
   padding-bottom: 0.66rem;
   font-size: 0.62rem;
+}
+
+.wall-note--flow .wall-note__sheet {
+  height: auto;
+  min-height: 6.5rem;
+}
+
+.wall-note--stacked {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.wall-note--stacked .wall-note__sheet {
+  height: auto;
+  min-height: 6.8rem;
 }
 
 .wall-note--flow .wall-note__photo {
@@ -351,35 +352,21 @@ const noteStyle = computed(() => ({
   overflow: hidden;
 }
 
-.wall-note__headline {
+.wall-note__text {
   display: -webkit-box;
   flex: none;
   overflow: hidden;
   font-family: var(--font-family-display);
-  font-size: 0.92rem;
-  font-weight: 600;
-  line-height: 1.38;
+  font-size: 0.8rem;
+  line-height: 1.72;
   letter-spacing: 0.01em;
-  color: #2b2621;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.wall-note__excerpt {
-  display: -webkit-box;
-  flex: 0 1 auto;
-  min-height: 0;
-  overflow: hidden;
-  font-family: var(--font-family-display);
-  font-size: 0.68rem;
-  line-height: 1.6;
-  letter-spacing: 0.01em;
-  color: rgb(60 50 40 / 78%);
+  color: rgb(60 50 40 / 82%);
   text-decoration: underline wavy rgb(90 70 45 / 18%);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: var(--note-lines, 3);
+  -webkit-line-clamp: var(--note-lines, 12);
+  white-space: pre-line;
 }
 
 .wall-note__foot {
@@ -471,13 +458,9 @@ const noteStyle = computed(() => ({
   color: rgb(54 38 20 / 78%);
 }
 
-.wall-note--kraft .wall-note__excerpt {
+.wall-note--kraft .wall-note__text {
   color: rgb(44 30 14 / 94%);
   text-decoration-color: rgb(70 44 18 / 26%);
-}
-
-.wall-note--kraft .wall-note__headline {
-  color: #2c1e0e;
 }
 
 .wall-note--torn .wall-note__sheet {
@@ -541,13 +524,9 @@ const noteStyle = computed(() => ({
   padding: 0.3rem 0.24rem 0;
 }
 
-.wall-note--photo .wall-note__headline {
+.wall-note--photo .wall-note__text {
   font-size: 0.72rem;
-  -webkit-line-clamp: 1;
-}
-
-.wall-note--photo .wall-note__excerpt {
-  display: none;
+  -webkit-line-clamp: 2;
 }
 
 .wall-note--photo .wall-note__foot {
@@ -580,83 +559,6 @@ const noteStyle = computed(() => ({
 
 .wall-note--index .wall-note__date {
   padding-top: 0.62rem;
-}
-
-/* sizes */
-.wall-note--xs .wall-note__headline {
-  font-size: 0.74rem;
-  -webkit-line-clamp: 1;
-}
-
-.wall-note--xs .wall-note__excerpt {
-  --note-lines: 2;
-  font-size: 0.6rem;
-}
-
-.wall-note--xs .wall-note__date,
-.wall-note--xs .wall-note__foot {
-  font-size: 0.5rem;
-}
-
-.wall-note--sm .wall-note__headline {
-  -webkit-line-clamp: 1;
-}
-
-.wall-note--sm .wall-note__excerpt {
-  --note-lines: 2;
-}
-
-.wall-note--md .wall-note__headline {
-  -webkit-line-clamp: 2;
-}
-
-.wall-note--md .wall-note__excerpt {
-  --note-lines: 2;
-}
-
-.wall-note--lg .wall-note__headline {
-  font-size: 1.06rem;
-}
-
-.wall-note--lg .wall-note__headline {
-  -webkit-line-clamp: 2;
-}
-
-.wall-note--lg .wall-note__excerpt {
-  --note-lines: 3;
-  font-size: 0.72rem;
-}
-
-.wall-note--xl .wall-note__headline {
-  font-size: 1.28rem;
-  -webkit-line-clamp: 3;
-}
-
-.wall-note--xl .wall-note__headline {
-  -webkit-line-clamp: 2;
-}
-
-.wall-note--xl .wall-note__excerpt {
-  --note-lines: 4;
-  font-size: 0.78rem;
-}
-
-.wall-note--xl .wall-note__date {
-  padding: 0.88rem 1rem 0.22rem;
-  font-size: 0.62rem;
-}
-
-.wall-note--xl .wall-note__body {
-  padding: 0.5rem 1rem 0;
-}
-
-.wall-note--xl .wall-note__foot {
-  padding: 0.4rem 1rem 0.7rem;
-  font-size: 0.6rem;
-}
-
-.wall-note--image .wall-note__excerpt {
-  --note-lines: 2;
 }
 
 /* interaction */
