@@ -20,7 +20,7 @@ export async function fetchGetEchosByPage(searchParams: App.Api.Ech0.ParamsByPag
 }
 
 export function fetchAddEcho(echoToAdd: App.Api.Ech0.EchoToAdd) {
-  return request({
+  return request<App.Api.Ech0.Echo>({
     url: `/echo`,
     method: 'POST',
     data: echoToAdd,
@@ -28,24 +28,39 @@ export function fetchAddEcho(echoToAdd: App.Api.Ech0.EchoToAdd) {
 }
 
 export function fetchDeleteEcho(echoId: string) {
-  return request({
+  return request<null>({
     url: `/echo/${echoId}`,
     method: 'DELETE',
   })
 }
 
 export function fetchUpdateEcho(echo: App.Api.Ech0.EchoToUpdate) {
-  return request({
+  return request<App.Api.Ech0.Echo>({
     url: `/echo`,
     method: 'PUT',
     data: echo,
   })
 }
 
-export function fetchLikeEcho(echoId: string) {
-  return request({
-    url: `/echo/like/${echoId}`,
+export function fetchReactionCatalog() {
+  return request<App.Api.Ech0.ReactionCatalogItem[]>({
+    url: `/reactions`,
+    method: 'GET',
+    silentError: true,
+  })
+}
+
+export function fetchReactEcho(echoId: string, emoji: string) {
+  return request<App.Api.Ech0.ReactionCount[]>({
+    url: `/echo/${echoId}/reactions/${encodeURIComponent(emoji)}`,
     method: 'PUT',
+  })
+}
+
+export function fetchUnreactEcho(echoId: string, emoji: string) {
+  return request<App.Api.Ech0.ReactionCount[]>({
+    url: `/echo/${echoId}/reactions/${encodeURIComponent(emoji)}`,
+    method: 'DELETE',
   })
 }
 

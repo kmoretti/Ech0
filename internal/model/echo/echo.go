@@ -21,8 +21,19 @@ type Echo struct {
 	UserID    string         `gorm:"type:char(36);not null;index"                  json:"user_id"`
 	Extension *EchoExtension `gorm:"foreignKey:EchoID;constraint:OnDelete:CASCADE" json:"extension,omitempty"`
 	Tags      []Tag          `gorm:"many2many:echo_tags;"                          json:"tags,omitempty"`
-	FavCount  int            `gorm:"default:0"                                     json:"fav_count"`
 	CreatedAt int64          `gorm:"autoCreateTime;index:idx_echos_private_created,priority:2" json:"created_at"`
+
+	// Reactions is a request-scoped projection hydrated by the service from
+	// echo_reactions; it is never persisted with the echo row and therefore
+	// never enters the shared echo cache.
+	Reactions []ReactionCount `gorm:"-" json:"reactions,omitempty"`
+}
+
+// EchoRef is the minimal projection of an echo used by machine-readable
+// indexes (the sitemap), so they never hydrate files or tags.
+type EchoRef struct {
+	ID        string `gorm:"column:id"          json:"id"`
+	CreatedAt int64  `gorm:"column:created_at" json:"created_at"`
 }
 
 type EchoExtension struct {
@@ -35,10 +46,10 @@ type EchoExtension struct {
 }
 
 type Tag struct {
-	ID         string `gorm:"type:char(36);primaryKey"              json:"id"`
-	Name       string `gorm:"type:varchar(50);uniqueIndex;not null" json:"name"`
-	UsageCount int    `gorm:"default:0"                             json:"usage_count"`
-	CreatedAt  int64  `gorm:"autoCreateTime"                        json:"created_at"`
+	ID         string `gorm:"type:char(36);primaryKey"              json:"id" doc:"标签 ID，提交时忽略"`
+	Name       string `gorm:"type:varchar(50);uniqueIndex;not null" json:"name" doc:"标签名；同名标签复用"`
+	UsageCount int    `gorm:"default:0"                             json:"usage_count" doc:"引用次数，提交时忽略"`
+	CreatedAt  int64  `gorm:"autoCreateTime"                        json:"created_at" doc:"创建时间，提交时忽略"`
 }
 
 type EchoTag struct {

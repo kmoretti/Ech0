@@ -2,131 +2,101 @@
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
   <article
-    class="echo-timeline group w-full"
-    :class="{ 'echo-timeline--masonry': props.variant === 'masonry' }"
+    class="desk-note group"
+    :class="[
+      noteStyleClass,
+      fastenerClass,
+      {
+        'desk-note--wide': wide,
+        'desk-note--dropcap': dropCap,
+        'desk-note--private': echo.private,
+      },
+    ]"
+    :style="noteInlineStyle"
   >
-    <div class="echo-header-sticky flex justify-between items-center">
-      <div class="flex justify-start items-center h-9">
-        <div class="flex items-center h-full pr-1">
-          <div
-            v-if="props.variant !== 'masonry'"
-            class="timeline-marker"
-            :class="{ 'is-first': props.index === 0 }"
-          >
-            <div class="w-2 h-2 rounded-full bg-[var(--color-accent)]"></div>
-          </div>
+    <span class="desk-note__fastener" aria-hidden="true"></span>
+
+    <div class="desk-note__sheet">
+      <header class="desk-note__head">
+        <span class="desk-note__serial">No.{{ letterNo || '01' }}</span>
+        <span class="desk-note__time">{{ timeLabel }}</span>
+        <span class="desk-note__dot" aria-hidden="true"></span>
+        <span class="desk-note__words">{{ t('starJournal.words', { count: wordCount }) }}</span>
+        <span v-if="props.echo.private" class="desk-note__private">
+          {{ t('echoCard.privateStatus') }}
+        </span>
+
+        <div v-if="userStore.isLogin" class="desk-note__menu-wrap">
           <button
+            ref="menuTriggerRef"
             type="button"
-            @click="handleExpandEcho(echo.id)"
-            class="flex items-center h-full justify-start leading-none text-sm font-semibold text-nowrap text-[var(--color-accent)] cursor-pointer hover:underline hover:decoration-offset-3 hover:decoration-1 mr-1"
+            :aria-label="t('echoCard.moreActions')"
+            :aria-expanded="isMenuOpen"
+            aria-haspopup="menu"
+            class="desk-note__menu-btn"
+            @click.stop="toggleMenu"
           >
-            {{ formatDate(props.echo.created_at) }}
+            <More class="w-4 h-4" />
           </button>
-          <button
-            type="button"
-            class="echo-open-btn flex items-center justify-center w-6 h-6 rounded-sm text-[var(--color-text-muted)] opacity-0 transition-opacity duration-150 hover:text-[var(--color-text-primary)] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-border-subtle)]"
-            :aria-label="t('echoCard.openDetail')"
-            v-tooltip="t('echoCard.openDetail')"
-            @click="handleExpandEcho(echo.id)"
-          >
-            <Open class="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
 
-      <div
-        v-if="!userStore.isLogin && props.echo.private"
-        v-tooltip="t('echoCard.privateStatus')"
-        class="w-7 h-7 flex items-center justify-center bg-[var(--color-bg-surface)] ring-1 ring-[var(--color-border-subtle)] ring-inset rounded-full shadow-sm"
-      >
-        <Lock class="w-4 h-4" />
-      </div>
-
-      <div v-else-if="userStore.isLogin" class="relative flex items-center justify-center">
-        <button
-          ref="menuTriggerRef"
-          type="button"
-          :aria-label="t('echoCard.moreActions')"
-          :aria-expanded="isMenuOpen"
-          aria-haspopup="menu"
-          class="w-7 h-7 flex items-center justify-center bg-[var(--color-bg-surface)] ring-1 ring-[var(--color-border-subtle)] ring-inset rounded-full shadow-sm transition-shadow duration-150 hover:shadow-md focus:outline-none"
-          @click.stop="toggleMenu"
-        >
-          <More class="w-5 h-5" />
-        </button>
-
-        <Teleport to="body">
-          <transition
-            enter-active-class="transition duration-150 ease-out"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="transition duration-100 ease-in"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-          >
-            <div
-              v-if="isMenuOpen"
-              ref="menuPanelRef"
-              :style="menuPanelStyle"
-              class="fixed z-5000 w-36 origin-top-right rounded-[var(--radius-md)] bg-[var(--color-bg-muted)] ring-1 ring-[var(--color-border-subtle)] shadow-[var(--shadow-md)] p-1"
+          <Teleport to="body">
+            <transition
+              enter-active-class="transition duration-150 ease-out"
+              enter-from-class="opacity-0 scale-95"
+              enter-to-class="opacity-100 scale-100"
+              leave-active-class="transition duration-100 ease-in"
+              leave-from-class="opacity-100 scale-100"
+              leave-to-class="opacity-0 scale-95"
             >
               <div
-                v-if="props.echo.private"
-                class="flex items-center gap-1.5 px-2 pt-1 pb-1.5 text-[var(--color-text-muted)]"
+                v-if="isMenuOpen"
+                ref="menuPanelRef"
+                :style="menuPanelStyle"
+                class="desk-note__menu"
               >
-                <Lock class="w-3 h-3" />
-                <span class="text-[10px] font-semibold tracking-[0.08em] uppercase">
-                  {{ t('echoCard.privateStatus') }}
-                </span>
+                <div v-if="props.echo.private" class="desk-note__menu-note">
+                  <Lock class="w-3 h-3" />
+                  <span>{{ t('echoCard.privateStatus') }}</span>
+                </div>
+
+                <button
+                  type="button"
+                  class="menu-row"
+                  @click="
+                    () => {
+                      closeMenu()
+                      handleUpdateEcho()
+                    }
+                  "
+                >
+                  <EditEcho class="w-3.5 h-3.5 shrink-0" />
+                  <span>{{ t('echoCard.update') }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="menu-row menu-row--danger"
+                  @click="
+                    () => {
+                      closeMenu()
+                      handleDeleteEcho(props.echo.id)
+                    }
+                  "
+                >
+                  <Roll class="w-3.5 h-3.5 shrink-0" />
+                  <span>{{ t('echoCard.delete') }}</span>
+                </button>
               </div>
+            </transition>
+          </Teleport>
+        </div>
+      </header>
 
-              <button
-                type="button"
-                class="menu-row"
-                @click="
-                  () => {
-                    closeMenu()
-                    handleUpdateEcho()
-                  }
-                "
-              >
-                <EditEcho class="w-3.5 h-3.5 shrink-0" />
-                <span>{{ t('echoCard.update') }}</span>
-              </button>
-              <button
-                type="button"
-                class="menu-row menu-row--danger"
-                @click="
-                  () => {
-                    closeMenu()
-                    handleDeleteEcho(props.echo.id)
-                  }
-                "
-              >
-                <Roll class="w-3.5 h-3.5 shrink-0" />
-                <span>{{ t('echoCard.delete') }}</span>
-              </button>
-            </div>
-          </transition>
-        </Teleport>
-      </div>
-    </div>
-
-    <div class="timeline-content">
-      <div
-        class="echo-card-body px-4 py-3"
-        :class="{ 'echo-card-body--clamped': isLongMasonryContent }"
-      >
+      <div class="desk-note__body">
         <template v-if="isContentLeadingEcho(props.echo)">
-          <div class="mx-auto w-11/12 pl-1 mb-3">
-            <TheMdPreview :content="preview.content" />
-            <div v-if="preview.hasTruncatedMarkdownImage" class="echo-card-image-placeholder">
-              <ImageIcon aria-hidden="true" class="w-4 h-4 shrink-0" />
-              <span>{{ t('echoCard.imagePreviewTruncated') }}</span>
-            </div>
+          <div class="desk-note__prose">
+            <TheMdPreview :content="props.echo.content" />
           </div>
-
-          <div :class="{ 'mx-auto w-11/12 pl-1': isAvEcho }">
+          <div class="desk-note__media" :class="{ 'desk-note__media--av': isAvEcho }">
             <TheMediaPlayer
               :echo="props.echo"
               :layout="props.echo.layout"
@@ -136,57 +106,39 @@
         </template>
 
         <template v-else>
-          <div :class="{ 'mx-auto w-11/12 pl-1': isAvEcho }">
+          <div class="desk-note__media" :class="{ 'desk-note__media--av': isAvEcho }">
             <TheMediaPlayer
               :echo="props.echo"
               :layout="props.echo.layout"
               :priority="props.index === 0"
             />
           </div>
-
-          <div class="mx-auto w-11/12 pl-1 mt-3">
-            <TheMdPreview :content="preview.content" />
-            <div v-if="preview.hasTruncatedMarkdownImage" class="echo-card-image-placeholder">
-              <ImageIcon aria-hidden="true" class="w-4 h-4 shrink-0" />
-              <span>{{ t('echoCard.imagePreviewTruncated') }}</span>
-            </div>
+          <div class="desk-note__prose">
+            <TheMdPreview :content="props.echo.content" />
           </div>
         </template>
 
-        <div v-if="props.echo.extension" class="my-2">
+        <div v-if="props.echo.extension" class="desk-note__extension">
           <TheExtensionRenderer :echo="props.echo" />
         </div>
       </div>
-      <button
-        v-if="isLongMasonryContent"
-        type="button"
-        class="echo-card-more"
-        @click="handleExpandEcho(echo.id)"
-      >
-        {{ t('echoCard.openDetail') }}
-      </button>
-      <div v-if="props.variant === 'masonry' && props.comments?.length" class="echo-card-comments">
-        <div class="echo-card-comments__divider">
-          <span>{{ t('echoCard.commentCount', { count: props.comments.length }) }}</span>
+
+      <footer class="desk-note__foot">
+        <ul v-if="tags.length" class="desk-note__tags">
+          <li v-for="tag in tags" :key="tag.id" class="desk-note__tag">
+            <span aria-hidden="true">#</span>{{ tag.name }}
+          </li>
+        </ul>
+        <span v-else class="desk-note__foot-ornament" aria-hidden="true">· ·</span>
+
+        <div class="desk-note__actions">
+          <TheEchoReactions :echo="props.echo" />
+          <button type="button" class="desk-note__open" @click="handleExpandEcho(echo.id)">
+            <span>{{ t('echoCard.openDetail') }}</span>
+            <Open class="desk-note__open-icon" />
+          </button>
         </div>
-        <button
-          v-for="comment in props.comments.slice(0, 5)"
-          :key="comment.id"
-          type="button"
-          class="echo-card-comment"
-          @click="handleExpandEcho(echo.id)"
-        >
-          <span class="echo-card-comment__author">{{ comment.nickname }}</span>
-          <span class="echo-card-comment__content">{{ comment.content }}</span>
-        </button>
-      </div>
-      <TheEchoMeta
-        v-if="props.variant === 'masonry'"
-        class="echo-card-meta echo-card-meta--stats"
-        mode="stats"
-        :echo="props.echo"
-        @update-like-count="handleUpdateLikeCount"
-      />
+      </footer>
     </div>
   </article>
 </template>
@@ -194,9 +146,6 @@
 <script lang="ts">
 import { ref } from 'vue'
 
-// Module-scoped: whichever echo id is currently showing its action menu.
-// Declared in a non-setup <script> so it runs once per module, not per instance.
-// Setting this id auto-closes any other card's menu (only one open at a time).
 const activeMenuId = ref<string | null>(null)
 </script>
 
@@ -210,12 +159,11 @@ import Roll from '@/components/icons/roll.vue'
 import Lock from '@/components/icons/lock.vue'
 import More from '@/components/icons/more.vue'
 import EditEcho from '@/components/icons/editecho.vue'
-import ImageIcon from '@/components/icons/image.vue'
 import Open from '@/components/icons/open.vue'
-import TheEchoMeta from '@/components/advanced/echo/cards/TheEchoMeta.vue'
+import TheEchoReactions from '@/components/advanced/echo/cards/TheEchoReactions.vue'
 import { useRouter } from 'vue-router'
-import { getEchoFilesBy, isContentLeadingEcho } from '@/utils/echo'
-import { formatDate } from '@/utils/other'
+import { countWords, getEchoFilesBy, isContentLeadingEcho } from '@/utils/echo'
+import { timeValueToMs } from '@/utils/timeValue'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import { useI18n } from 'vue-i18n'
 
@@ -227,53 +175,51 @@ const TheExtensionRenderer = defineAsyncComponent(
 )
 
 const { openConfirm } = useBaseDialog()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const emit = defineEmits(['refresh'])
 
 type Echo = App.Api.Ech0.Echo
 
+type NoteStyle = 'plain' | 'ruled' | 'grid' | 'kraft' | 'trace'
+type Fastener = 'tape' | 'pin' | 'staple'
+
 const props = defineProps<{
   echo: Echo
   index?: number
-  variant?: 'timeline' | 'masonry'
-  comments?: App.Api.Comment.CommentItem[]
+  featured?: boolean
+  dropCap?: boolean
+  letterNo?: string
+  noteStyle?: NoteStyle
+  fastener?: Fastener
+  tilt?: number
+  offset?: number
+  wide?: boolean
 }>()
 
-const CONTENT_PREVIEW_LIMIT = 200
-const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\([^)]*\)/g
+const noteStyleClass = computed(() => `desk-note--${props.noteStyle ?? 'plain'}`)
+const fastenerClass = computed(() => `desk-note--${props.fastener ?? 'tape'}`)
+const noteInlineStyle = computed(() => ({
+  '--note-tilt': `${props.tilt ?? 0}deg`,
+  '--note-offset': `${props.offset ?? 0}px`,
+}))
 
-const isLongMasonryContent = computed(
-  () =>
-    props.variant === 'masonry' &&
-    Array.from(props.echo.content || '').length > CONTENT_PREVIEW_LIMIT,
-)
-const preview = computed(() => {
-  const content = props.echo.content || ''
-  if (!isLongMasonryContent.value) {
-    return { content, hasTruncatedMarkdownImage: false }
-  }
-
-  const truncatedImage = Array.from(content.matchAll(MARKDOWN_IMAGE_PATTERN)).find((match) => {
-    const start = Array.from(content.slice(0, match.index)).length
-    const end = start + Array.from(match[0]).length
-    return start < CONTENT_PREVIEW_LIMIT && end > CONTENT_PREVIEW_LIMIT
-  })
-  if (!truncatedImage) {
-    return { content, hasTruncatedMarkdownImage: false }
-  }
-
-  const imageStart = Array.from(content.slice(0, truncatedImage.index)).length
-  return {
-    content: Array.from(content).slice(0, imageStart).join(''),
-    hasTruncatedMarkdownImage: true,
-  }
-})
-
-// 音视频作为「正文级」区块，与正文同宽对齐；图片保持满宽铺满卡片。
 const isAvEcho = computed(
   () => getEchoFilesBy(props.echo, { categories: ['audio', 'video'] }).length > 0,
 )
+
+const tags = computed(() => props.echo.tags ?? [])
+const wordCount = computed(() => countWords(props.echo.content))
+
+const timeLabel = computed(() => {
+  const ms = timeValueToMs(props.echo.created_at)
+  if (ms <= 0) return ''
+  return new Intl.DateTimeFormat(locale.value, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(ms))
+})
 
 const userStore = useUserStore()
 
@@ -288,15 +234,10 @@ const handleDeleteEcho = (echoId: string) => {
     onConfirm: () => {
       fetchDeleteEcho(echoId).then(() => {
         theToast.success(String(t('echoCard.deleteSuccess')))
-        echoStore.invalidateEchosCache()
         emit('refresh')
       })
     },
   })
-}
-
-const handleUpdateLikeCount = (echoId: string) => {
-  echoStore.updateLikeCount(echoId)
 }
 
 const handleUpdateEcho = async () => {
@@ -314,7 +255,6 @@ const handleUpdateEcho = async () => {
   }
 
   editorStore.isUpdateMode = true
-  // 保留当前的 ?page 等 query，编辑完返回时间线时才能回到原来那一页（而非跳回第 1 页）
   await router.push({
     name: 'home',
     query: { ...router.currentRoute.value.query, tab: 'publish' },
@@ -365,8 +305,6 @@ const handleEscape = (event: KeyboardEvent) => {
   if (event.key === 'Escape') closeMenu()
 }
 
-// scroll 用 capture 是因为内层 .home-main 容器滚动不会冒泡到 window；
-// passive 让浏览器知道我们只读坐标、不会 preventDefault，可与合成并行。
 const SCROLL_LISTENER_OPTIONS: AddEventListenerOptions = { passive: true, capture: true }
 
 const bindGlobalListeners = () => {
@@ -402,460 +340,442 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="css">
-.echo-header-sticky {
+.desk-note {
+  --note-ink: var(--sj-ink, #292622);
+  --note-ink-2: var(--sj-ink-2, #605b55);
+  --note-ink-3: var(--sj-ink-3, #928c84);
+  --note-line: var(--sj-line, #d9d3ca);
+  --note-line-strong: var(--sj-line-strong, #c3bcb2);
+  --note-paper: var(--sj-paper, #fbfaf7);
+
   position: relative;
-  z-index: 1;
-  background-color: var(--color-bg-canvas);
-  overflow: hidden;
-}
-
-.echo-timeline {
-  --axis-offset: calc(0.25rem + 1px);
-  --axis-line-width: 2px;
-  --axis-dot-size: 0.5rem;
-  --axis-dot-gap: 0.3rem;
-
-  max-width: 100%;
-  overflow: clip visible;
-
-  /* 纵向允许溢出绘制，避免时间线内图片（如照片流 hover 放大）被裁切 */
-}
-
-.echo-timeline--masonry {
-  overflow: clip visible;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--color-bg-surface) 96%, transparent);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 5%);
-  transition:
-    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 220ms ease,
-    border-color 220ms ease;
-}
-
-.echo-timeline--masonry:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-border-strong);
-  box-shadow: 0 14px 34px rgb(0 0 0 / 8%);
-}
-
-.echo-timeline--masonry .echo-header-sticky {
-  min-height: 2rem;
-  padding: 0.45rem 0.65rem 0;
-  background: transparent;
-}
-
-.echo-timeline--masonry .timeline-content {
-  margin-left: 0;
-}
-
-.echo-timeline--masonry .timeline-content::before {
-  display: none;
-}
-
-.echo-timeline--masonry .echo-card-body {
-  padding-bottom: 0.55rem;
-}
-
-.echo-card-body--clamped {
-  position: relative;
-  max-height: 18rem;
-  overflow: hidden;
-}
-
-.echo-card-body--clamped::after {
-  content: '';
-  position: absolute;
-  inset: auto 0 0;
-  height: 6rem;
-  pointer-events: none;
-  background: linear-gradient(to bottom, transparent, var(--color-bg-surface));
-}
-
-.echo-card-more {
-  display: flex;
-  width: calc(100% - 1.5rem);
-  margin: -0.1rem 0.75rem 0.75rem;
-  padding: 0.45rem 0;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-accent);
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-top: 1px solid var(--color-border-subtle);
-}
-
-.echo-card-image-placeholder {
-  display: flex;
+  grid-row: span var(--note-rows, 1);
   width: 100%;
   min-width: 0;
-  margin: 0.75rem 0;
-  padding: 0.5rem 0.65rem;
+  transform: rotate(var(--note-tilt, 0deg)) translateY(var(--note-offset, 0));
+  transition:
+    transform 480ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 320ms ease;
+  animation: note-settle 720ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.desk-note--wide {
+  grid-column: 1 / -1;
+}
+
+.desk-note__fastener {
+  position: absolute;
+  z-index: 2;
+  top: -0.52rem;
+  left: 50%;
+  pointer-events: none;
+}
+
+.desk-note--tape .desk-note__fastener {
+  width: 4.6rem;
+  height: 1.2rem;
+  transform: translateX(-50%) rotate(-1.8deg);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--note-ink) 7%, transparent) 0 2px,
+      transparent 2px 5px
+    ),
+    color-mix(in srgb, #fff 55%, var(--note-line) 45%);
+  opacity: 0.72;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--note-ink) 8%, transparent);
+  clip-path: polygon(2% 6%, 98% 0, 100% 92%, 0 100%);
+}
+
+.desk-note--pin .desk-note__fastener {
+  width: 0.62rem;
+  height: 0.62rem;
+  transform: translate(-50%, 0);
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #fff 0 18%, #a8a29a 42%, #625d57 100%);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--note-ink) 30%, transparent),
+    0 4px 7px -3px color-mix(in srgb, var(--note-ink) 35%, transparent);
+}
+
+.desk-note--staple .desk-note__fastener {
+  top: 0.32rem;
+  left: 0.55rem;
+  width: 0.7rem;
+  height: 0.42rem;
+  transform: rotate(-28deg);
+  border-top: 1.5px solid color-mix(in srgb, var(--note-ink) 45%, transparent);
+  border-bottom: 1.5px solid color-mix(in srgb, var(--note-ink) 30%, transparent);
+  opacity: 0.55;
+}
+
+.desk-note__sheet {
+  position: relative;
+  min-width: 0;
+  padding: 1.05rem 1.1rem 0.82rem;
+  color: var(--note-ink);
+  background-color: var(--note-paper);
+  border: 1px solid var(--note-line);
+  border-radius: 2px;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--note-ink) 4%, transparent),
+    0 1px 2px color-mix(in srgb, var(--note-ink) 5%, transparent),
+    0 16px 28px -24px color-mix(in srgb, var(--note-ink) 55%, transparent);
+  overflow: hidden;
+  transition:
+    border-color 300ms ease,
+    box-shadow 480ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.desk-note__sheet::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+/* Paper stocks */
+.desk-note--ruled .desk-note__sheet {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 1.62rem,
+    color-mix(in srgb, var(--note-ink) 8%, transparent) 1.62rem calc(1.62rem + 1px)
+  );
+  background-position: 0 3.25rem;
+}
+
+.desk-note--grid .desk-note__sheet {
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 1.3rem,
+      color-mix(in srgb, var(--note-ink) 7%, transparent) 1.3rem calc(1.3rem + 1px)
+    ),
+    repeating-linear-gradient(
+      to right,
+      transparent 0 1.3rem,
+      color-mix(in srgb, var(--note-ink) 7%, transparent) 1.3rem calc(1.3rem + 1px)
+    );
+  background-position: 0 3.25rem;
+}
+
+.desk-note--kraft .desk-note__sheet {
+  background-color: var(--sj-kraft, #e7e1d7);
+}
+
+.desk-note--trace .desk-note__sheet {
+  background-color: color-mix(in srgb, var(--note-paper) 76%, var(--sj-canvas, #ece9e3) 24%);
+}
+
+.desk-note--trace .desk-note__sheet::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    118deg,
+    transparent 0 42%,
+    color-mix(in srgb, #fff 55%, transparent) 46%,
+    transparent 58%
+  );
+  opacity: 0.35;
+}
+
+.desk-note__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.42rem;
+  min-height: 1.25rem;
+  margin-bottom: 0.55rem;
+  font-family: var(--font-family-display);
+  font-size: 0.64rem;
+  letter-spacing: 0.07em;
+  color: var(--note-ink-3);
+}
+
+.desk-note__serial {
+  padding: 0.02rem 0.28rem;
+  border: 1px solid var(--note-line);
+  color: var(--note-ink-2);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+}
+
+.desk-note__time {
+  color: var(--note-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-note__dot {
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--note-line-strong);
+}
+
+.desk-note__private {
+  padding: 0.02rem 0.3rem;
+  border: 1px solid var(--note-line-strong);
+  color: var(--note-ink-2);
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+}
+
+.desk-note__menu-wrap {
+  margin-left: auto;
+  flex: none;
+}
+
+.desk-note__menu-btn {
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  border: 1px dashed var(--color-border-subtle);
-  border-radius: 6px;
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-  line-height: 1.4;
-  text-align: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 50%;
+  color: var(--note-ink-3);
+  border: 1px solid transparent;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
 }
 
-.echo-card-image-placeholder > span {
-  overflow-wrap: anywhere;
+.desk-note__menu-btn:hover,
+.desk-note__menu-btn:focus-visible {
+  color: var(--note-ink);
+  border-color: var(--note-line-strong);
+  background: color-mix(in srgb, var(--note-paper) 70%, var(--note-line) 30%);
+  outline: none;
 }
 
-.echo-card-meta {
-  margin-inline: 0.75rem;
+.desk-note__body {
+  min-width: 0;
 }
 
-.echo-card-meta--stats {
-  margin-top: 0.35rem;
+.desk-note__prose {
+  min-width: 0;
+  color: var(--note-ink);
+}
+
+.desk-note__prose :deep(.echo-markdown) {
+  font-size: 0.9rem;
+  line-height: 1.78;
+}
+
+.desk-note__prose :deep(.echo-markdown > div > p) {
+  margin-block: 0.32em;
+}
+
+.desk-note__media {
+  margin-bottom: 0.65rem;
+}
+
+.desk-note__media--av {
   margin-bottom: 0.7rem;
 }
 
-.echo-card-comments + .echo-card-meta--stats {
-  margin-top: 0.55rem;
-}
-
-.echo-card-meta :deep(.echo-meta) {
-  padding-top: 0;
-}
-
-.echo-card-meta :deep(.echo-meta-line) {
-  gap: 0.32rem;
-  font-size: 0.68rem;
-}
-
-.echo-card-meta :deep(.echo-meta-actions) {
-  gap: 0.45rem;
-}
-
-.echo-card-meta :deep(.echo-meta-actions button) {
-  color: var(--color-text-muted);
-}
-
-.echo-card-meta :deep(.echo-meta-actions button:hover) {
-  color: var(--color-accent);
-}
-
-.echo-card-comments {
-  display: grid;
-  gap: 0.4rem;
-  margin: 0 0.75rem;
-  padding-top: 0;
-}
-
-.echo-card-comments__divider {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  margin: 0 0 0.25rem;
-  color: var(--color-text-muted);
-  font-size: 0.68rem;
-}
-
-.echo-card-comments__divider::before,
-.echo-card-comments__divider::after {
-  content: '';
-  height: 1px;
-  background: var(--color-border-subtle);
-}
-
-.echo-card-comments__divider::before {
+.desk-note__media:empty {
   display: none;
 }
 
-.echo-card-comments__divider::after {
-  flex: 1 1 auto;
+.desk-note__extension {
+  margin-top: 0.6rem;
 }
 
-.echo-card-comments__divider span {
-  padding: 0.16rem 0.5rem;
-  color: var(--color-text-secondary);
-  background: color-mix(in srgb, var(--color-bg-surface) 88%, var(--color-accent) 12%);
-  border: 1px solid color-mix(in srgb, var(--color-accent) 22%, var(--color-border-subtle));
-  border-radius: 999px;
-  line-height: 1;
+.desk-note__extension :deep(.extension-card-shell) {
+  border-color: var(--note-line);
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--note-paper) 82%, var(--sj-canvas, #ece9e3) 18%);
+  box-shadow: none;
 }
 
-.echo-card-comment {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  width: 100%;
-  min-width: 0;
-  color: var(--color-text-secondary);
-  font-size: 0.75rem;
-  line-height: 1.5;
-  text-align: left;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.echo-card-comment__author {
-  flex: 0 0 auto;
-  max-width: 38%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--color-accent);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.echo-card-comment__content {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.echo-timeline--masonry {
-  overflow: clip visible;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--color-bg-surface) 96%, transparent);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 5%);
-  transition:
-    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 220ms ease,
-    border-color 220ms ease;
-}
-
-.echo-timeline--masonry:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-border-strong);
-  box-shadow: 0 14px 34px rgb(0 0 0 / 8%);
-}
-
-.echo-timeline--masonry .echo-header-sticky {
-  min-height: 2rem;
-  padding: 0.45rem 0.65rem 0;
+.desk-note__extension :deep(.extension-card-shell__header) {
+  border-bottom: 1px dashed var(--note-line);
   background: transparent;
+  color: var(--note-ink-3);
 }
 
-.echo-timeline--masonry .timeline-content {
-  margin-left: 0;
-}
-
-.echo-timeline--masonry .timeline-content::before {
-  display: none;
-}
-
-.echo-timeline--masonry .echo-card-body {
-  padding-bottom: 0.55rem;
-}
-
-.echo-card-body--clamped {
-  position: relative;
-  max-height: 18rem;
-  overflow: hidden;
-}
-
-.echo-card-body--clamped::after {
-  content: '';
-  position: absolute;
-  inset: auto 0 0;
-  height: 6rem;
-  pointer-events: none;
-  background: linear-gradient(to bottom, transparent, var(--color-bg-surface));
-}
-
-.echo-card-more {
+.desk-note__foot {
   display: flex;
-  width: calc(100% - 1.5rem);
-  margin: -0.1rem 0.75rem 0.75rem;
-  padding: 0.45rem 0;
   align-items: center;
-  justify-content: center;
-  color: var(--color-accent);
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-top: 1px solid var(--color-border-subtle);
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-top: 0.65rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed color-mix(in srgb, var(--note-line-strong) 75%, transparent);
 }
 
-.echo-card-meta {
-  margin-inline: 0.75rem;
+.desk-note__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.echo-card-meta--stats {
-  margin-top: 0.35rem;
-  margin-bottom: 0.7rem;
+.desk-note__tag {
+  padding: 0.04rem 0.36rem;
+  border: 1px dashed var(--note-line-strong);
+  border-radius: 1px;
+  font-size: 0.63rem;
+  letter-spacing: 0.03em;
+  color: var(--note-ink-2);
 }
 
-.echo-card-comments + .echo-card-meta--stats {
-  margin-top: 0.55rem;
+.desk-note__tag > span {
+  margin-right: 0.08rem;
+  color: var(--note-ink-3);
+  font-family: var(--font-family-display);
 }
 
-.echo-card-meta :deep(.echo-meta) {
-  padding-top: 0;
+.desk-note__foot-ornament {
+  font-size: 0.6rem;
+  letter-spacing: 0.28em;
+  color: var(--note-ink-3);
 }
 
-.echo-card-meta :deep(.echo-meta-line) {
-  gap: 0.32rem;
-  font-size: 0.68rem;
-}
-
-.echo-card-meta :deep(.echo-meta-actions) {
-  gap: 0.45rem;
-}
-
-.echo-card-meta :deep(.echo-meta-actions button) {
-  color: var(--color-text-muted);
-}
-
-.echo-card-meta :deep(.echo-meta-actions button:hover) {
-  color: var(--color-accent);
-}
-
-.echo-card-comments {
-  display: grid;
-  gap: 0.4rem;
-  margin: 0 0.75rem;
-  padding-top: 0;
-}
-
-.echo-card-comments__divider {
+.desk-note__actions {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  margin: 0 0 0.25rem;
-  color: var(--color-text-muted);
+  margin-left: auto;
+}
+
+.desk-note__actions :deep(.reaction-trigger) {
+  border-color: var(--note-line-strong);
+  color: var(--note-ink-3);
+}
+
+.desk-note__actions :deep(.reaction-trigger:hover:not(:disabled)) {
+  border-color: var(--note-ink-3);
+  background: color-mix(in srgb, var(--note-ink) 5%, transparent);
+  color: var(--note-ink);
+}
+
+.desk-note__open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.24rem;
+  white-space: nowrap;
+  font-family: var(--font-family-display);
   font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  color: var(--note-ink-3);
+  transition: color 180ms ease;
 }
 
-.echo-card-comments__divider::before,
-.echo-card-comments__divider::after {
-  content: '';
-  height: 1px;
-  background: var(--color-border-subtle);
+.desk-note__open:hover,
+.desk-note__open:focus-visible {
+  color: var(--note-ink);
+  outline: none;
 }
 
-.echo-card-comments__divider::before {
-  display: none;
+.desk-note__open-icon {
+  width: 0.68rem;
+  height: 0.68rem;
+  transition: transform 200ms ease;
 }
 
-.echo-card-comments__divider::after {
-  flex: 1 1 auto;
+.desk-note__open:hover .desk-note__open-icon {
+  transform: translate(1px, -1px);
 }
 
-.echo-card-comments__divider span {
-  padding: 0.16rem 0.5rem;
-  color: var(--color-text-secondary);
-  background: color-mix(in srgb, var(--color-bg-surface) 88%, var(--color-accent) 12%);
-  border: 1px solid color-mix(in srgb, var(--color-accent) 22%, var(--color-border-subtle));
-  border-radius: 999px;
-  line-height: 1;
+/* Wide opener: a little more air, a faint quotation mark, no colour. */
+.desk-note--wide .desk-note__sheet {
+  padding: 1.2rem 1.35rem 0.9rem;
 }
 
-.echo-card-comment {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  width: 100%;
-  min-width: 0;
-  color: var(--color-text-secondary);
-  font-size: 0.75rem;
-  line-height: 1.5;
-  text-align: left;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.echo-card-comment__author {
-  flex: 0 0 auto;
-  max-width: 38%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--color-accent);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.echo-card-comment__content {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.timeline-marker {
-  position: relative;
-  width: var(--axis-dot-size);
-  height: 100%;
-  margin-right: 0.5rem;
-  margin-left: calc(var(--axis-offset) - (var(--axis-dot-size) / 2));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.timeline-content {
-  position: relative;
-  margin-left: var(--axis-offset);
-  max-width: 100%;
-  min-width: 0;
-  overflow: clip visible;
-}
-
-.timeline-content::before {
-  content: '';
+.desk-note--wide .desk-note__sheet::before {
+  content: '“';
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: var(--axis-line-width);
-  background-color: var(--color-border-subtle);
+  top: -0.4rem;
+  right: 0.8rem;
+  font-family: var(--font-family-display);
+  font-size: 4.2rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--note-ink) 8%, transparent);
   pointer-events: none;
 }
 
-/* Only reveal the open button on hover-capable (mouse) devices. On touch
-   devices the first tap would otherwise just trigger this reveal (sticky
-   hover), swallowing the click and forcing a second tap on the date. */
+.desk-note--wide .desk-note__prose :deep(.echo-markdown) {
+  font-size: 0.94rem;
+}
+
+.desk-note--dropcap .desk-note__prose :deep(.echo-markdown > div > p:first-child)::first-letter {
+  float: left;
+  margin: 0.04em 0.1em 0 0;
+  font-family: var(--font-family-display);
+  font-size: 2.7em;
+  font-weight: 600;
+  line-height: 0.82;
+  color: var(--note-ink);
+}
+
 @media (hover: hover) {
-  .echo-timeline:hover .echo-open-btn {
-    opacity: 1;
-    animation: echo-open-nudge-left 1200ms ease-out both;
+  .desk-note:hover {
+    z-index: 3;
+    will-change: transform;
+    transform: rotate(0deg) translateY(calc(var(--note-offset, 0px) - 6px)) scale(1.004);
+  }
+
+  .desk-note:hover .desk-note__sheet {
+    border-color: var(--note-line-strong);
+    box-shadow:
+      0 1px 0 color-mix(in srgb, var(--note-ink) 5%, transparent),
+      0 2px 5px color-mix(in srgb, var(--note-ink) 8%, transparent),
+      0 28px 42px -28px color-mix(in srgb, var(--note-ink) 55%, transparent);
+  }
+
+  .desk-note--tape:hover .desk-note__fastener {
+    transform: translateX(-50%) translateY(-1px) rotate(-1.8deg);
+  }
+
+  .desk-note--pin:hover .desk-note__fastener {
+    transform: translate(-50%, -1px);
+  }
+
+  .desk-note--staple:hover .desk-note__fastener {
+    transform: translateY(-1px) rotate(-28deg);
+  }
+
+  .desk-note__fastener {
+    transition: transform 480ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 }
 
-.echo-open-btn:focus-visible {
-  animation: echo-open-nudge-left 1200ms ease-out both;
+.desk-note__menu {
+  position: fixed;
+  z-index: 5000;
+  width: 9rem;
+  padding: 0.25rem;
+  transform-origin: top right;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+  box-shadow:
+    inset 0 0 0 1px var(--color-border-subtle),
+    var(--shadow-md);
 }
 
-@keyframes echo-open-nudge-left {
-  0% {
-    transform: translateX(0);
-  }
+.desk-note__menu-note {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem 0.375rem;
+  color: var(--color-text-muted);
+}
 
-  16% {
-    transform: translateX(-4px);
-  }
-
-  28% {
-    transform: translateX(1px);
-  }
-
-  42% {
-    transform: translateX(-3px);
-  }
-
-  54% {
-    transform: translateX(1px);
-  }
-
-  68% {
-    transform: translateX(-2px);
-  }
-
-  80% {
-    transform: translateX(0);
-  }
-
-  100% {
-    transform: translateX(0);
-  }
+.desk-note__menu-note span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .menu-row {
@@ -888,5 +808,46 @@ onBeforeUnmount(() => {
 
 .menu-row--danger:hover {
   color: var(--color-danger);
+}
+
+@keyframes note-settle {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    transform: rotate(calc(var(--note-tilt, 0deg) * 1.8))
+      translateY(calc(var(--note-offset, 0px) + 12px));
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: rotate(var(--note-tilt, 0deg)) translateY(var(--note-offset, 0));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-note {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (width <= 640px) {
+  .desk-note {
+    transform: rotate(calc(var(--note-tilt, 0deg) * 0.45))
+      translateY(calc(var(--note-offset, 0px) * 0.4));
+  }
+
+  .desk-note__sheet {
+    padding: 0.85rem 0.9rem 0.72rem;
+  }
+
+  .desk-note--wide .desk-note__sheet {
+    padding: 0.95rem 0.95rem 0.75rem;
+  }
+
+  .desk-note__head {
+    font-size: 0.6rem;
+  }
 }
 </style>

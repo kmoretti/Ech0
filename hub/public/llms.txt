@@ -1,14 +1,14 @@
 # Ech0 Hub
 
-Ech0 Hub 是克喵のEch0 / Ech0 定制版的公开实例聚合页面。它在浏览器中读取静态 `/hub.json`，异步请求每个实例的公开接口并合并说说，Hub 本身不存储说说内容。
+Ech0 Hub 是提笔摘星 / Ech0 定制版的公开实例聚合页面。它在浏览器中读取静态 `/hub.json`，异步请求每个实例的公开接口并合并说说，Hub 本身不存储说说内容。
 
 主要信息：
 
-- [当前仓库](https://github.com/kmoretti/Ech0)
-- [Hub 源码](https://github.com/kmoretti/Ech0/tree/main/hub)
-- [Hub 中文说明](https://raw.githubusercontent.com/kmoretti/Ech0/main/hub/README.md)
+- [当前仓库](https://github.com/LiuShen-Fork/Ech0)
+- [Hub 源码](https://github.com/LiuShen-Fork/Ech0/tree/main/hub)
+- [Hub 中文说明](https://raw.githubusercontent.com/LiuShen-Fork/Ech0/main/hub/README.md)
 - [实例列表](https://hub.ech0.app/hub.json)
-- [开源许可](https://raw.githubusercontent.com/kmoretti/Ech0/main/LICENSE)
+- [开源许可](https://raw.githubusercontent.com/LiuShen-Fork/Ech0/main/LICENSE)
 - [原项目](https://github.com/lin-snow/Ech0)
 
 聚合流程：

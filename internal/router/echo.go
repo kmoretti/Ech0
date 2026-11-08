@@ -5,29 +5,41 @@ package router
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/gin-gonic/gin"
+	"github.com/lin-snow/ech0/internal/authz"
 	"github.com/lin-snow/ech0/internal/handler"
 	"github.com/lin-snow/ech0/internal/handler/humares"
 	"github.com/lin-snow/ech0/internal/middleware"
-	authModel "github.com/lin-snow/ech0/internal/model/auth"
-	commonModel "github.com/lin-snow/ech0/internal/model/common"
 	authService "github.com/lin-snow/ech0/internal/service/auth"
 )
 
 func registerEcho(api huma.API, h *handler.Bundle, revoker authService.TokenRevoker) {
 	route(api, public(), huma.Operation{
-		OperationID: "echo-like",
+		OperationID: "reaction-catalog",
+		Method:      http.MethodGet,
+		Path:        "/reactions",
+		Summary:     "获取可用的表情反应",
+		Tags:        []string{"Reaction"},
+	}, h.EchoHandler.GetReactionCatalog)
+
+	route(api, optional(revoker), huma.Operation{
+		OperationID: "reaction-add",
 		Method:      http.MethodPut,
-		Path:        "/echo/like/{id}",
-		Summary:     "点赞 Echo",
-		Tags:        []string{"Echo"},
-		Middlewares: huma.Middlewares{humares.Bridge(middleware.RateLimitWithIdempotency(2, 5, time.Hour, "id", func(c *gin.Context) {
-			c.JSON(http.StatusOK, commonModel.OK[any](nil, commonModel.LIKE_ECHO_SUCCESS))
-		}))},
-	}, h.EchoHandler.LikeEcho)
+		Path:        "/echo/{id}/reactions/{emoji}",
+		Summary:     "为 Echo 添加表情反应（幂等）",
+		Tags:        []string{"Reaction"},
+		Middlewares: huma.Middlewares{humares.Bridge(middleware.RateLimit(10, 20))},
+	}, h.EchoHandler.AddReaction)
+
+	route(api, optional(revoker), huma.Operation{
+		OperationID: "reaction-remove",
+		Method:      http.MethodDelete,
+		Path:        "/echo/{id}/reactions/{emoji}",
+		Summary:     "取消 Echo 的表情反应（幂等）",
+		Tags:        []string{"Reaction"},
+		Middlewares: huma.Middlewares{humares.Bridge(middleware.RateLimit(10, 20))},
+	}, h.EchoHandler.RemoveReaction)
 
 	route(api, public(), huma.Operation{
 		OperationID: "tag-list",
@@ -38,10 +50,10 @@ func registerEcho(api huma.API, h *handler.Bundle, revoker authService.TokenRevo
 	}, h.EchoHandler.GetAllTags)
 
 	route(api, optional(revoker), huma.Operation{
-		OperationID: "echo-query",
+		OperationID: "echo-list",
 		Method:      http.MethodPost,
 		Path:        "/echo/query",
-		Summary:     "统一查询 Echo 列表",
+		Summary:     "分页/筛选 Echo 列表",
 		Tags:        []string{"Echo"},
 	}, h.EchoHandler.QueryEchos)
 
@@ -109,7 +121,7 @@ func registerEcho(api huma.API, h *handler.Bundle, revoker authService.TokenRevo
 		Tags:        []string{"Echo"},
 	}, h.EchoHandler.GetEchoById)
 
-	route(api, secured(revoker, authModel.ScopeEchoWrite), huma.Operation{
+	route(api, secured(revoker, authz.ScopeEchoWrite), huma.Operation{
 		OperationID: "echo-create",
 		Method:      http.MethodPost,
 		Path:        "/echo",
@@ -117,7 +129,7 @@ func registerEcho(api huma.API, h *handler.Bundle, revoker authService.TokenRevo
 		Tags:        []string{"Echo"},
 	}, h.EchoHandler.PostEcho)
 
-	route(api, secured(revoker, authModel.ScopeEchoWrite), huma.Operation{
+	route(api, secured(revoker, authz.ScopeEchoWrite), huma.Operation{
 		OperationID: "echo-update",
 		Method:      http.MethodPut,
 		Path:        "/echo",
@@ -125,7 +137,7 @@ func registerEcho(api huma.API, h *handler.Bundle, revoker authService.TokenRevo
 		Tags:        []string{"Echo"},
 	}, h.EchoHandler.UpdateEcho)
 
-	route(api, secured(revoker, authModel.ScopeEchoWrite), huma.Operation{
+	route(api, secured(revoker, authz.ScopeEchoDelete), huma.Operation{
 		OperationID: "echo-delete",
 		Method:      http.MethodDelete,
 		Path:        "/echo/{id}",
@@ -133,7 +145,7 @@ func registerEcho(api huma.API, h *handler.Bundle, revoker authService.TokenRevo
 		Tags:        []string{"Echo"},
 	}, h.EchoHandler.DeleteEcho)
 
-	route(api, secured(revoker, authModel.ScopeEchoWrite), huma.Operation{
+	route(api, secured(revoker, authz.ScopeEchoWrite), huma.Operation{
 		OperationID: "tag-create",
 		Method:      http.MethodPost,
 		Path:        "/tag",
@@ -141,7 +153,7 @@ func registerEcho(api huma.API, h *handler.Bundle, revoker authService.TokenRevo
 		Tags:        []string{"Echo"},
 	}, h.EchoHandler.CreateTag)
 
-	route(api, secured(revoker, authModel.ScopeEchoWrite), huma.Operation{
+	route(api, secured(revoker, authz.ScopeEchoDelete), huma.Operation{
 		OperationID: "tag-delete",
 		Method:      http.MethodDelete,
 		Path:        "/tag/{id}",

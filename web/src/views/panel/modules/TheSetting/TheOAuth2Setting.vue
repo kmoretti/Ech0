@@ -37,8 +37,8 @@
                 class="px-2 py-0.5 rounded-md"
                 :class="
                   oauthRuntimeStatus?.oauth_ready
-                    ? 'bg-green-500/15 text-green-500'
-                    : 'bg-yellow-500/15 text-yellow-500'
+                    ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'
+                    : 'bg-[var(--color-bg-muted)] text-[var(--color-text-muted)]'
                 "
               >
                 {{

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lin-snow/ech0/internal/authz"
 	"github.com/lin-snow/ech0/internal/database"
 	"github.com/lin-snow/ech0/internal/handler"
 	authHandler "github.com/lin-snow/ech0/internal/handler/auth"
@@ -31,7 +32,6 @@ import (
 	webHandler "github.com/lin-snow/ech0/internal/handler/web"
 	"github.com/lin-snow/ech0/internal/mcp"
 	"github.com/lin-snow/ech0/internal/middleware"
-	authModel "github.com/lin-snow/ech0/internal/model/auth"
 	userModel "github.com/lin-snow/ech0/internal/model/user"
 	copilotService "github.com/lin-snow/ech0/internal/service/copilot"
 	jwtUtil "github.com/lin-snow/ech0/internal/util/jwt"
@@ -53,6 +53,10 @@ func TestSetupRouter_RegistersKeyRoutes(t *testing.T) {
 		{method: http.MethodGet, path: "/api/docs"},
 		{method: http.MethodGet, path: "/api/openapi.json"},
 		{method: http.MethodPost, path: "/api/login"},
+		{method: http.MethodPost, path: "/api/auth/device/code"},
+		{method: http.MethodPost, path: "/api/auth/device/token"},
+		{method: http.MethodGet, path: "/api/auth/device/pending"},
+		{method: http.MethodPost, path: "/api/auth/device/approve"},
 		{method: http.MethodPost, path: "/api/echo"},
 		{method: http.MethodGet, path: "/api/init/status"},
 		{method: http.MethodGet, path: "/api/settings"},
@@ -62,6 +66,11 @@ func TestSetupRouter_RegistersKeyRoutes(t *testing.T) {
 		{method: http.MethodGet, path: "/api/connects/health"},
 		{method: http.MethodGet, path: "/api/system/logs"},
 		{method: http.MethodGet, path: "/api/system/logs/stream"},
+		{method: http.MethodGet, path: "/robots.txt"},
+		{method: http.MethodGet, path: "/llms.txt"},
+		{method: http.MethodGet, path: "/.well-known/ard.json"},
+		{method: http.MethodGet, path: "/.well-known/ai-catalog.json"},
+		{method: http.MethodGet, path: "/mcp/server-card"},
 		{method: http.MethodGet, path: "/ws/system/logs"},
 	}
 
@@ -200,7 +209,7 @@ func TestSetupRouter_AccessTokenWithoutRequiredScopeGetsForbidden(t *testing.T) 
 	api.Use(middleware.NoCache(), middleware.RequireAuth(nil))
 	api.PUT(
 		"/settings",
-		middleware.RequireScopes(authModel.ScopeAdminSettings),
+		middleware.RequireScopes(authz.ScopeAdminSite),
 		func(ctx *gin.Context) { ctx.Status(http.StatusOK) },
 	)
 
@@ -209,8 +218,8 @@ func TestSetupRouter_AccessTokenWithoutRequiredScopeGetsForbidden(t *testing.T) 
 		jwtUtil.CreateAccessClaimsWithExpiry(
 			user,
 			int64(time.Hour),
-			[]string{authModel.ScopeEchoRead},
-			authModel.AudiencePublic,
+			[]string{authz.ScopeEchoRead},
+			authz.AudiencePublic,
 			"jti-read-only",
 		),
 	)
@@ -237,7 +246,7 @@ func TestSetupRouter_AccessTokenWithScopePasses(t *testing.T) {
 	api.Use(middleware.NoCache(), middleware.RequireAuth(nil))
 	api.PUT(
 		"/settings",
-		middleware.RequireScopes(authModel.ScopeAdminSettings),
+		middleware.RequireScopes(authz.ScopeAdminSite),
 		func(ctx *gin.Context) { ctx.Status(http.StatusOK) },
 	)
 
@@ -246,8 +255,8 @@ func TestSetupRouter_AccessTokenWithScopePasses(t *testing.T) {
 		jwtUtil.CreateAccessClaimsWithExpiry(
 			user,
 			int64(time.Hour),
-			[]string{authModel.ScopeAdminSettings},
-			authModel.AudiencePublic,
+			[]string{authz.ScopeAdminSite},
+			authz.AudiencePublic,
 			"jti-admin",
 		),
 	)
@@ -262,6 +271,73 @@ func TestSetupRouter_AccessTokenWithScopePasses(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, rec.Code)
+	}
+}
+
+func TestSetupRouter_DeleteRoutesRequireDeleteScope(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	initTestDatabase(t)
+	engine := gin.New()
+	SetupRouter(engine, buildTestHandlers(), buildTestMWDeps())
+
+	user := userModel.User{ID: "u-delete-1", Username: "delete-scope"}
+	token, err := jwtUtil.GenerateToken(
+		jwtUtil.CreateAccessClaimsWithExpiry(
+			user,
+			int64(time.Hour),
+			[]string{authz.ScopeEchoWrite, authz.ScopeFileWrite, authz.ScopeConnectWrite},
+			authz.AudienceCLI,
+			"jti-write-only",
+		),
+	)
+	if err != nil {
+		t.Fatalf("generate token failed: %v", err)
+	}
+
+	paths := []string{
+		"/api/echo/0190f3f4-0000-7000-8000-000000000001",
+		"/api/tag/0190f3f4-0000-7000-8000-000000000002",
+		"/api/file/0190f3f4-0000-7000-8000-000000000003",
+		"/api/connects/0190f3f4-0000-7000-8000-000000000004",
+	}
+	for _, path := range paths {
+		req := httptest.NewRequest(http.MethodDelete, path, nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		rec := httptest.NewRecorder()
+		engine.ServeHTTP(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("%s status = %d, want %d for a write-only token", path, rec.Code, http.StatusForbidden)
+		}
+	}
+}
+
+func TestSetupRouter_AccessTokenCannotMintTokens(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	initTestDatabase(t)
+	engine := gin.New()
+	SetupRouter(engine, buildTestHandlers(), buildTestMWDeps())
+
+	user := userModel.User{ID: "u-token-1", Username: "token-scope"}
+	token, err := jwtUtil.GenerateToken(
+		jwtUtil.CreateAccessClaimsWithExpiry(
+			user,
+			int64(time.Hour),
+			authz.AllScopes(),
+			authz.AudienceCLI,
+			"jti-token-admin",
+		),
+	)
+	if err != nil {
+		t.Fatalf("generate token failed: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/access-tokens", strings.NewReader(`{}`))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	engine.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("access token minted another token: status = %d, want %d", rec.Code, http.StatusForbidden)
 	}
 }
 
@@ -302,8 +378,8 @@ func TestSetupRouter_IntegrationCommentRejectsWrongScope(t *testing.T) {
 		jwtUtil.CreateAccessClaimsWithExpiry(
 			user,
 			int64(time.Hour),
-			[]string{authModel.ScopeEchoRead},
-			authModel.AudienceIntegration,
+			[]string{authz.ScopeEchoRead},
+			authz.AudienceIntegration,
 			"jti-wrong-scope",
 		),
 	)
@@ -332,8 +408,8 @@ func TestSetupRouter_IntegrationCommentRejectsWrongAudience(t *testing.T) {
 		jwtUtil.CreateAccessClaimsWithExpiry(
 			user,
 			int64(time.Hour),
-			[]string{authModel.ScopeCommentWrite},
-			authModel.AudiencePublic,
+			[]string{authz.ScopeCommentWrite},
+			authz.AudiencePublic,
 			"jti-wrong-aud",
 		),
 	)
@@ -348,6 +424,37 @@ func TestSetupRouter_IntegrationCommentRejectsWrongAudience(t *testing.T) {
 
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("expected status %d, got %d", http.StatusForbidden, rec.Code)
+	}
+}
+
+func TestSetupRouter_IntegrationCommentAcceptsCLIAudience(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	initTestDatabase(t)
+	engine := gin.New()
+	SetupRouter(engine, buildTestHandlers(), buildTestMWDeps())
+
+	user := userModel.User{ID: "u-integ-3", Username: "integ-user-3"}
+	token, err := jwtUtil.GenerateToken(
+		jwtUtil.CreateAccessClaimsWithExpiry(
+			user,
+			int64(time.Hour),
+			[]string{authz.ScopeCommentWrite},
+			authz.AudienceCLI,
+			"jti-cli-aud",
+		),
+	)
+	if err != nil {
+		t.Fatalf("generate token failed: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/comments/integration", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+	engine.ServeHTTP(rec, req)
+
+	// The audience + scope gate passes; the empty body fails later in validation.
+	if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusForbidden {
+		t.Fatalf("expected CLI audience to pass the gate, got %d body=%s", rec.Code, rec.Body.String())
 	}
 }
 
@@ -367,21 +474,22 @@ func buildTestMWDeps() *middleware.Deps {
 
 func buildTestHandlers() *handler.Bundle {
 	return handler.NewBundle(
-		webHandler.NewWebHandler(visitor.NewTracker()),
+		webHandler.NewWebHandler(visitor.NewTracker(), nil, nil),
 		userHandler.NewUserHandler(nil),
 		authHandler.NewAuthHandler(nil, nil),
 		echoHandler.NewEchoHandler(nil),
 		fileHandler.NewFileHandler(nil),
 		commentHandler.NewCommentHandler(nil),
 		initHandler.NewInitHandler(nil),
-		commonHandler.NewCommonHandler(nil),
+		commonHandler.NewCommonHandler(nil, nil),
 		settingHandler.NewSettingHandler(nil),
 		connectHandler.NewConnectHandler(nil),
 		migratorHandler.NewMigrationHandler(nil),
 		dashboardHandler.NewDashboardHandler(nil),
 		copilotHandler.NewCopilotHandler(nil, nil),
 		embeddingHandler.NewEmbeddingHandler(nil),
-		mcp.NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil),
+		mcp.NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil),
+		nil,
 	)
 }
 
@@ -393,4 +501,43 @@ func initTestDatabase(t *testing.T) {
 		t.Fatalf("init test db failed: %v", err)
 	}
 	database.SetDB(db)
+}
+
+func TestSetupRouter_MCPAudienceMismatchReturnsChallenge(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	initTestDatabase(t)
+	engine := gin.New()
+	SetupRouter(engine, buildTestHandlers(), buildTestMWDeps())
+
+	user := userModel.User{ID: "u-mcp", Username: "mcp-user"}
+	token, err := jwtUtil.GenerateToken(
+		jwtUtil.CreateAccessClaimsWithExpiry(
+			user,
+			int64(time.Hour),
+			[]string{authz.ScopeMCPRead},
+			authz.AudienceCLI,
+			"jti-mcp-audience",
+		),
+	)
+	if err != nil {
+		t.Fatalf("generate token failed: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"initialize"}`))
+	req.Host = "ech0.example"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+	engine.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusUnauthorized, rec.Code, rec.Body.String())
+	}
+	challenge := rec.Header().Get("WWW-Authenticate")
+	if !strings.Contains(challenge, `error="invalid_token"`) {
+		t.Fatalf("challenge missing invalid_token: %q", challenge)
+	}
+	if !strings.Contains(challenge, `resource_metadata="https://ech0.example/.well-known/oauth-protected-resource/mcp"`) {
+		t.Fatalf("challenge missing metadata URL: %q", challenge)
+	}
 }

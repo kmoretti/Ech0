@@ -8,13 +8,14 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/lin-snow/ech0/internal/authz"
+	authModel "github.com/lin-snow/ech0/internal/model/auth"
 	commonModel "github.com/lin-snow/ech0/internal/model/common"
 	echoModel "github.com/lin-snow/ech0/internal/model/echo"
 	echoService "github.com/lin-snow/ech0/internal/service/echo"
 	"github.com/lin-snow/ech0/internal/test/helpers"
 	commonmock "github.com/lin-snow/ech0/internal/test/mocks/commonmock"
 	echomock "github.com/lin-snow/ech0/internal/test/mocks/echomock"
-	txmock "github.com/lin-snow/ech0/internal/test/mocks/txmock"
 	"github.com/lin-snow/ech0/pkg/busen"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -31,7 +32,7 @@ const (
 
 func TestGetEchoById_Visibility(t *testing.T) {
 	t.Run("anonymous cannot read private echo", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		private := helpers.NewEcho(helpers.AsPrivate)
 		repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(&private, nil).Once()
@@ -45,7 +46,7 @@ func TestGetEchoById_Visibility(t *testing.T) {
 	})
 
 	t.Run("anonymous can read public echo", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		public := helpers.NewEcho()
 		repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(&public, nil).Once()
@@ -59,7 +60,7 @@ func TestGetEchoById_Visibility(t *testing.T) {
 	})
 
 	t.Run("non-admin user cannot read private echo", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		private := helpers.NewEcho(helpers.AsPrivate)
 		repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(&private, nil).Once()
@@ -76,7 +77,7 @@ func TestGetEchoById_Visibility(t *testing.T) {
 	})
 
 	t.Run("admin can read private echo", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		private := helpers.NewEcho(helpers.AsPrivate)
 		repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(&private, nil).Once()
@@ -93,8 +94,53 @@ func TestGetEchoById_Visibility(t *testing.T) {
 		assert.True(t, got.Private)
 	})
 
+	t.Run("echo:read token cannot read private echo", func(t *testing.T) {
+		repo := newEchoRepoMock(t)
+		common := commonmock.NewMockService(t)
+		private := helpers.NewEcho(helpers.AsPrivate)
+		repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(&private, nil).Once()
+
+		ctx := helpers.CtxAsToken(
+			adminID,
+			authModel.TokenTypeAccess,
+			[]string{authz.ScopeEchoRead},
+			[]string{authz.AudienceCLI},
+			"jti-read",
+		)
+		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
+		got, err := svc.GetEchoById(ctx, echoID)
+
+		require.EqualError(t, err, commonModel.NO_PERMISSION_DENIED)
+		assert.Nil(t, got)
+	})
+
+	t.Run("echo:private token can read private echo", func(t *testing.T) {
+		repo := newEchoRepoMock(t)
+		common := commonmock.NewMockService(t)
+		private := helpers.NewEcho(helpers.AsPrivate)
+		repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(&private, nil).Once()
+		common.EXPECT().
+			CommonGetUserByUserId(mock.Anything, adminID).
+			Return(helpers.NewUser(helpers.AsAdmin), nil).
+			Once()
+
+		ctx := helpers.CtxAsToken(
+			adminID,
+			authModel.TokenTypeAccess,
+			[]string{authz.ScopeEchoRead, authz.ScopeEchoPrivate},
+			[]string{authz.AudienceCLI},
+			"jti-private",
+		)
+		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
+		got, err := svc.GetEchoById(ctx, echoID)
+
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		assert.True(t, got.Private)
+	})
+
 	t.Run("not found returns ECHO_NOT_FOUND", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(nil, nil).Once()
 
@@ -106,7 +152,7 @@ func TestGetEchoById_Visibility(t *testing.T) {
 	})
 
 	t.Run("repository error is propagated", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		repoErr := errors.New("db down")
 		repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(nil, repoErr).Once()
@@ -123,21 +169,44 @@ func runTx(_ context.Context, fn func(ctx context.Context) error) error {
 	return fn(context.Background())
 }
 
-func TestLikeEcho_Visibility(t *testing.T) {
-	t.Run("anonymous cannot like private echo", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+// newEchoRepoMock returns a repository mock whose reaction hydration default
+// is "no reactions". Read-path tests that do not care about reactions therefore
+// keep their original expectations.
+func newEchoRepoMock(t *testing.T) *echomock.MockRepository {
+	t.Helper()
+	repo := echomock.NewMockRepository(t)
+	repo.EXPECT().
+		ListReactions(mock.Anything, mock.Anything, mock.Anything).
+		Return(map[string][]echoModel.ReactionCount{}, nil).
+		Maybe()
+	return repo
+}
+
+func TestReactions_Visibility(t *testing.T) {
+	t.Run("invalid emoji is rejected before touching the echo", func(t *testing.T) {
+		repo := newEchoRepoMock(t)
+		common := commonmock.NewMockService(t)
+
+		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
+		_, err := svc.ReactToEcho(helpers.CtxAnonymous(), echoID, "angry")
+
+		require.EqualError(t, err, commonModel.INVALID_PARAMS)
+	})
+
+	t.Run("anonymous cannot react to private echo", func(t *testing.T) {
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		private := helpers.NewEcho(helpers.AsPrivate)
 		repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(&private, nil).Once()
 
 		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
-		err := svc.LikeEcho(helpers.CtxAnonymous(), echoID)
+		_, err := svc.ReactToEcho(helpers.CtxAnonymous(), echoID, "like")
 
 		require.EqualError(t, err, commonModel.NO_PERMISSION_DENIED)
 	})
 
-	t.Run("non-admin user cannot like private echo", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+	t.Run("non-admin user cannot react to private echo", func(t *testing.T) {
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		private := helpers.NewEcho(helpers.AsPrivate)
 		repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(&private, nil).Once()
@@ -147,54 +216,61 @@ func TestLikeEcho_Visibility(t *testing.T) {
 			Once()
 
 		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
-		err := svc.LikeEcho(helpers.CtxAsUser(userID), echoID)
+		_, err := svc.ReactToEcho(helpers.CtxAsUser(userID), echoID, "like")
 
 		require.EqualError(t, err, commonModel.NO_PERMISSION_DENIED)
 	})
 
-	t.Run("admin can like private echo", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+	t.Run("admin can react to private echo", func(t *testing.T) {
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
-		tx := txmock.NewMockTransactor(t)
 		private := helpers.NewEcho(helpers.AsPrivate)
 		repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(&private, nil).Once()
 		common.EXPECT().
 			CommonGetUserByUserId(mock.Anything, adminID).
 			Return(helpers.NewUser(helpers.AsAdmin), nil).
 			Once()
-		tx.EXPECT().Run(mock.Anything, mock.Anything).RunAndReturn(runTx).Once()
-		repo.EXPECT().LikeEcho(mock.Anything, echoID).Return(nil).Once()
-		repo.EXPECT().InvalidateEchoCaches(echoID).Once()
+		repo.EXPECT().AddReaction(mock.Anything, echoID, "like", "u:"+adminID).Return(nil).Once()
 
-		svc := echoService.NewEchoService(tx, common, nil, repo, nilBus)
-		err := svc.LikeEcho(helpers.CtxAsUser(adminID), echoID)
+		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
+		_, err := svc.ReactToEcho(helpers.CtxAsUser(adminID), echoID, "like")
 
 		require.NoError(t, err)
 	})
 
-	t.Run("anonymous can like public echo", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+	t.Run("anonymous can react to public echo", func(t *testing.T) {
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
-		tx := txmock.NewMockTransactor(t)
 		public := helpers.NewEcho()
 		repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(&public, nil).Once()
-		tx.EXPECT().Run(mock.Anything, mock.Anything).RunAndReturn(runTx).Once()
-		repo.EXPECT().LikeEcho(mock.Anything, echoID).Return(nil).Once()
-		repo.EXPECT().InvalidateEchoCaches(echoID).Once()
+		repo.EXPECT().AddReaction(mock.Anything, echoID, "party", "ip:unknown").Return(nil).Once()
 
-		svc := echoService.NewEchoService(tx, common, nil, repo, nilBus)
-		err := svc.LikeEcho(helpers.CtxAnonymous(), echoID)
+		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
+		_, err := svc.ReactToEcho(helpers.CtxAnonymous(), echoID, "party")
+
+		require.NoError(t, err)
+	})
+
+	t.Run("unreact removes the actor's reaction", func(t *testing.T) {
+		repo := newEchoRepoMock(t)
+		common := commonmock.NewMockService(t)
+		public := helpers.NewEcho()
+		repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(&public, nil).Once()
+		repo.EXPECT().RemoveReaction(mock.Anything, echoID, "like", "ip:unknown").Return(nil).Once()
+
+		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
+		_, err := svc.UnreactEcho(helpers.CtxAnonymous(), echoID, "like")
 
 		require.NoError(t, err)
 	})
 
 	t.Run("not found returns ECHO_NOT_FOUND", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(nil, nil).Once()
 
 		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
-		err := svc.LikeEcho(helpers.CtxAnonymous(), echoID)
+		_, err := svc.ReactToEcho(helpers.CtxAnonymous(), echoID, "like")
 
 		require.EqualError(t, err, commonModel.ECHO_NOT_FOUND)
 	})
@@ -218,7 +294,7 @@ func TestQueryEchos_PageSizeClamp(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			repo := echomock.NewMockRepository(t)
+			repo := newEchoRepoMock(t)
 			common := commonmock.NewMockService(t)
 
 			var captured commonModel.EchoQueryDto

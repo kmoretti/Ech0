@@ -1,99 +1,67 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
-  <div v-if="AgentSetting.enable" class="px-2">
-    <div class="widget bg-transparent! w-full max-w-[19rem] mx-auto rounded-md p-4">
-      <div class="recent-head mb-3">
-        <div class="recent-title-wrap">
-          <div class="recent-title">Recent</div>
-          <div class="recent-title-accent">AI</div>
-        </div>
-      </div>
+  <WidgetShell v-if="AgentSetting.enable || demoText" title="Recent AI" :fluid="fluid">
+    <template #icon>
+      <RecentIcon />
+    </template>
 
-      <div class="recent-body">
-        <div class="recent-card">
-          <div class="recent-content">
-            <TheMdPreview :content="recent" />
-          </div>
+    <div class="recent-body">
+      <div class="recent-card">
+        <div v-if="!loading" class="recent-content">
+          <TheMdPreview :content="recent" />
+        </div>
+        <div v-else>
+          <div class="recent-loading">{{ t('recentCard.generating') }}</div>
         </div>
       </div>
     </div>
-  </div>
+  </WidgetShell>
 </template>
 <script setup lang="ts">
 import { fetchGetRecent } from '@/service/api'
 import { onMounted, ref } from 'vue'
+import RecentIcon from '@/components/icons/recent.vue'
+import WidgetShell from './WidgetShell.vue'
 import { TheMdPreview } from '@/components/advanced/md'
 import { useSettingStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import {
-  HOME_CACHE_TTL,
-  HOME_RECENT_CACHE_KEY,
-  readHomeCache,
-  writeHomeCache,
-} from '@/utils/home-cache'
 
-type RecentCachePayload = {
-  recent: string
-}
+const props = defineProps<{
+  fluid?: boolean
+  demoText?: string
+}>()
 
 const settingStore = useSettingStore()
 const { AgentSetting } = storeToRefs(settingStore)
 const { t } = useI18n()
 
-const fallbackRecent = String(t('recentCard.mysteriousRecent'))
-const recent = ref<string>(fallbackRecent)
-
-const isUsableRecent = (value: unknown): value is string =>
-  typeof value === 'string' && value.trim().length > 0 && value !== fallbackRecent
+const recent = ref<string>(props.demoText || String(t('recentCard.mysteriousRecent')))
+const loading = ref<boolean>(!props.demoText)
 
 onMounted(() => {
-  if (!AgentSetting.value.enable) return
-
-  const cached = readHomeCache<RecentCachePayload>(HOME_RECENT_CACHE_KEY)
-  if (cached && isUsableRecent(cached.data.recent)) {
-    recent.value = cached.data.recent
+  if (props.demoText) return
+  if (AgentSetting.value.enable) {
+    fetchGetRecent()
+      .then((res) => {
+        // Keep the last visible text when the server has nothing new: an
+        // empty completion must never blank the card.
+        const text = String(res.data ?? '').trim()
+        if (res.code === 1 && text) {
+          recent.value = text
+        }
+      })
+      .catch((err) => {
+        console.error(err)
+      })
+      .finally(() => {
+        loading.value = false
+      })
   }
-
-  void fetchGetRecent()
-    .then((res) => {
-      if (res.code !== 1 || !isUsableRecent(res.data)) return
-      recent.value = res.data
-      writeHomeCache(HOME_RECENT_CACHE_KEY, { recent: res.data }, HOME_CACHE_TTL)
-    })
-    .catch((err) => {
-      console.error(err)
-    })
 })
 </script>
 <style scoped>
-.recent-head {
-  display: flex;
-  align-items: end;
-  justify-content: flex-end;
-}
-
-.recent-title-wrap {
-  line-height: 0.9;
-  text-align: right;
-}
-
-.recent-title {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 26px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.recent-title-accent {
-  font-family: var(--font-family-handwritten);
-  color: var(--color-accent);
-  font-size: 20px;
-  font-weight: 700;
-  margin-top: -2px;
-}
-
 .recent-body {
   width: 100%;
 }
@@ -104,7 +72,14 @@ onMounted(() => {
   border: 1px solid var(--color-border-subtle);
   background-color: var(--recent-card-bg);
   box-shadow: 0 8px 18px rgb(20 20 20 / 4%);
-  padding: 15px 13px 12px;
+  padding: 14px 12px 12px;
+  transform: rotate(-1.1deg);
+  transform-origin: top center;
+  transition: transform 220ms ease;
+}
+
+.recent-card:hover {
+  transform: rotate(-0.4deg);
 }
 
 .recent-card::before {
@@ -112,7 +87,7 @@ onMounted(() => {
   position: absolute;
   left: 50%;
   top: -7px;
-  transform: translateX(-50%);
+  transform: translateX(-50%) rotate(-1.5deg);
   width: 42px;
   height: 12px;
   border-radius: 2px;
@@ -129,6 +104,11 @@ onMounted(() => {
   line-height: 1.65;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+.recent-loading {
+  color: var(--color-text-secondary);
+  font-size: 13px;
 }
 
 :deep(.echo-markdown p) {

@@ -4,130 +4,70 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useFetch } from '@vueuse/core'
-import { theToast } from '@/utils/toast'
 import { timeValueToMs } from '@/utils/timeValue'
-import {
-  HOME_HUB_FEED_CACHE_KEY,
-  HOME_HUB_FEED_CACHE_TTL,
-  readHomeCache,
-  writeHomeCache,
-} from '@/utils/home-cache'
 import { useConnectStore } from './connect'
 import { i18n } from '@/locales'
 
-// 每个 Hub 的独立状态
+type HubEmptyReason = 'no-connects' | 'no-instances' | 'no-echos'
+
 interface HubState {
   url: string
-  buffer: App.Api.Hub.Echo[] // 缓冲池
-  currentPage: number // 独立分页
+  buffer: App.Api.Hub.Echo[]
+  currentPage: number
   hasMore: boolean
   isLoading: boolean
 }
 
-type HubCachePayload = {
-  echoList: App.Api.Hub.Echo[]
-  hubList: App.Api.Hub.HubList
-  hubinfoList: App.Api.Hub.HubInfoList
-  hubInfoEntries: [string, App.Api.Hub.HubItemInfo][]
-  hasMore: boolean
-}
-
 export const useHubStore = defineStore('hubStore', () => {
-  /**
-   * state
-   */
-
   const connectStore = useConnectStore()
 
-  // hub
   const hubList = ref<App.Api.Hub.HubList>([])
   const hubinfoList = ref<App.Api.Hub.HubInfoList>([])
   const hubInfoMap = ref<Map<string, App.Api.Hub.HubItemInfo>>(new Map())
-  const hubStates = ref<Map<string, HubState>>(new Map()) // 各 Hub 的独立状态
+  const hubStates = ref<Map<string, HubState>>(new Map())
 
-  // echo
-  const echoList = ref<App.Api.Hub.Echo[]>([]) // 存储Echo列表（展示列表）
-  const existingIds = ref<Set<string>>(new Set()) // 已存在的 Echo ID，用于去重
+  const echoList = ref<App.Api.Hub.Echo[]>([])
+  const existingIds = ref<Set<string>>(new Set())
 
-  const isPreparing = ref<boolean>(false) // 是否正在准备数据
-  const isLoading = ref<boolean>(false) // 是否正在加载数据
-  const hasTriedInitialLoad = ref<boolean>(false) // 是否已尝试过首次加载（用于空态展示）
-  const pageSize = ref<number>(10) // 每个 Hub 每次请求的数量
-  const batchSize = ref<number>(50) // 瀑布流每次归并 50 条，避免一次渲染全部远端数据
-  const hasMore = ref<boolean>(true) // 是否还有更多数据可加载
+  const isPreparing = ref<boolean>(true)
+  const isLoading = ref<boolean>(false)
+  const hasTriedInitialLoad = ref<boolean>(false)
+  const pageSize = ref<number>(10)
+  const batchSize = ref<number>(10)
+  const hasMore = ref<boolean>(true)
+  const emptyReason = ref<HubEmptyReason | null>(null)
+  let generation = 0
 
-  /**
-   * actions
-   */
-
-  const restoreHubFeedCache = () => {
-    const cached = readHomeCache<HubCachePayload>(HOME_HUB_FEED_CACHE_KEY, HOME_HUB_FEED_CACHE_TTL)
-    if (!cached?.fresh || !Array.isArray(cached.data.echoList)) return false
-
-    echoList.value = cached.data.echoList
-    hubList.value = cached.data.hubList ?? []
-    hubinfoList.value = cached.data.hubinfoList ?? []
-    hubInfoMap.value = new Map(cached.data.hubInfoEntries ?? [])
-    existingIds.value = new Set(echoList.value.map((echo) => `${echo.server_url}-${echo.id}`))
-    hasMore.value = cached.data.hasMore
-    hasTriedInitialLoad.value = true
-    isPreparing.value = false
-    isLoading.value = false
-    return true
-  }
-
-  const writeHubFeedCache = () => {
-    writeHomeCache<HubCachePayload>(
-      HOME_HUB_FEED_CACHE_KEY,
-      {
-        echoList: echoList.value,
-        hubList: hubList.value,
-        hubinfoList: hubinfoList.value,
-        hubInfoEntries: Array.from(hubInfoMap.value.entries()),
-        hasMore: hasMore.value,
-      },
-      HOME_HUB_FEED_CACHE_TTL,
-    )
-  }
-
-  const resetHubFeed = () => {
-    hubinfoList.value = []
-    hubInfoMap.value.clear()
-    hubStates.value.clear()
-    echoList.value = []
-    existingIds.value.clear()
-    hasMore.value = true
-    hasTriedInitialLoad.value = false
-    isPreparing.value = false
-    isLoading.value = false
-  }
-
-  const prepareHubFeed = async (options: { force?: boolean } = {}) => {
-    if (!options.force && restoreHubFeedCache()) return
-    resetHubFeed()
-    await getHubList()
-    await getHubInfoList()
-    await loadEchoListPage()
-  }
-
-  // 1. 获取hubList
   const getHubList = async () => {
+    generation += 1
+    const currentGeneration = generation
     isPreparing.value = true
     hasTriedInitialLoad.value = false
-    await connectStore.getConnect()
+    emptyReason.value = null
+    echoList.value = []
+    existingIds.value = new Set()
+    hubInfoMap.value = new Map()
+    hubinfoList.value = []
+    hubStates.value = new Map()
+    hasMore.value = true
 
-    hubList.value = connectStore.connects
+    await connectStore.getConnect({ force: true })
+    if (currentGeneration !== generation) return
+
+    hubList.value = [...connectStore.connects]
+    if (hubList.value.length === 0) {
+      emptyReason.value = 'no-connects'
+    }
   }
 
-  // 2. 根据hubList 获取每个item的info
   const getHubInfoList = async () => {
+    const currentGeneration = generation
     if (hubList.value.length === 0) {
-      theToast.info(String(i18n.global.t('hub.emptyList')))
+      emptyReason.value = 'no-connects'
       isPreparing.value = false
       return
     }
 
-    // 处理 hubList 中的每个Hub（末尾的 / 去除）
     hubList.value = hubList.value.map((item) => {
       return typeof item === 'string'
         ? item.endsWith('/')
@@ -141,7 +81,6 @@ export const useHubStore = defineStore('hubStore', () => {
           : item
     })
 
-    // 创建带超时的请求函数
     const fetchWithTimeout = async (
       url: string,
       timeout: number = 5000,
@@ -149,7 +88,6 @@ export const useHubStore = defineStore('hubStore', () => {
       return new Promise((resolve) => {
         let isResolved = false
 
-        // 设置超时
         const timeoutId = setTimeout(() => {
           if (!isResolved) {
             isResolved = true
@@ -158,7 +96,6 @@ export const useHubStore = defineStore('hubStore', () => {
           }
         }, timeout)
 
-        // 发起请求
         ;(async () => {
           try {
             const { error, data } = await useFetch<App.Api.Response<App.Api.Hub.HubItemInfo>>(
@@ -187,35 +124,31 @@ export const useHubStore = defineStore('hubStore', () => {
       })
     }
 
-    // 使用 Promise.allSettled 来并行获取每个Hub的info
     const promises = hubList.value.map(async (hub) => {
       const url = typeof hub === 'string' ? hub : hub.connect_url
-      return await fetchWithTimeout(url, 5000) // 5秒超时
+      return await fetchWithTimeout(url, 5000)
     })
 
     const results = await Promise.allSettled(promises)
+    if (currentGeneration !== generation) return
 
-    // 收集成功的结果，并从 hubList 中移除失败的实例
     const validHubs: typeof hubList.value = []
     const failedHubs: string[] = []
 
     results.forEach((result, index) => {
       const hub = hubList.value[index]
-      if (!hub) return // 防止 undefined
+      if (!hub) return
 
       const hubUrl = typeof hub === 'string' ? hub : hub.connect_url
 
       if (result.status === 'fulfilled' && result.value) {
-        // 成功获取信息
         hubinfoList.value.push(result.value)
         validHubs.push(hub)
 
-        // 将Hub信息存入Map
         if (typeof hubUrl === 'string') {
           hubInfoMap.value.set(hubUrl, result.value)
         }
       } else {
-        // 失败的实例，记录并排除
         if (typeof hubUrl === 'string') {
           failedHubs.push(hubUrl)
           console.warn(`[Hub] 实例不可用，已排除: ${hubUrl}`)
@@ -223,22 +156,14 @@ export const useHubStore = defineStore('hubStore', () => {
       }
     })
 
-    // 更新 hubList，只保留可用的实例
     hubList.value = validHubs
 
-    // 提示用户
-    // if (failedHubs.length > 0) {
-    //   theToast.warning(`${failedHubs.length} 个实例不可用，已自动排除`)
-    // }
-
-    // 处理结果
     if (hubList.value.length === 0) {
-      theToast.info(String(i18n.global.t('hub.noAvailableInstance')))
+      emptyReason.value = 'no-instances'
       isPreparing.value = false
       return
     }
 
-    // 初始化各 Hub 的独立状态
     hubStates.value.clear()
     for (const hub of hubList.value) {
       const url = typeof hub === 'string' ? hub : hub.connect_url
@@ -254,11 +179,9 @@ export const useHubStore = defineStore('hubStore', () => {
     isPreparing.value = false
     console.info(String(i18n.global.t('hub.connectedCount', { count: hubList.value.length })))
 
-    // 并行请求所有 Hub 的第一页，填充缓冲池
     await Promise.all(Array.from(hubStates.value.keys()).map((url) => fetchHubPage(url)))
   }
 
-  // 3. 请求某个 Hub 的下一页数据到其缓冲池
   const fetchHubPage = async (hubUrl: string): Promise<void> => {
     const state = hubStates.value.get(hubUrl)
     if (!state || state.isLoading || !state.hasMore) return
@@ -286,10 +209,9 @@ export const useHubStore = defineStore('hubStore', () => {
         server_name: hubInfoMap.value.get(hubUrl)?.server_name || 'Ech0',
         server_url: hubUrl,
         virtual_key: `${hubUrl}-${echo.id}`,
-        logo: hubInfoMap.value.get(hubUrl)?.logo || '/favicon.ico',
+        logo: hubInfoMap.value.get(hubUrl)?.logo || '/Ech0.png',
       }))
 
-      // 按时间降序排序后追加到缓冲池
       items.sort((a: App.Api.Hub.Echo, b: App.Api.Hub.Echo) => b.createdTs - a.createdTs)
       state.buffer.push(...items)
       state.currentPage++
@@ -302,17 +224,19 @@ export const useHubStore = defineStore('hubStore', () => {
     }
   }
 
-  // 4. 归并取数：从各 Hub 缓冲池中按时间顺序取出数据
   const loadEchoListPage = async () => {
     if (isLoading.value || isPreparing.value) return
+    const currentGeneration = generation
 
-    // 检查是否还有更多数据可加载
     const canLoadMore = Array.from(hubStates.value.values()).some(
       (s) => s.hasMore || s.buffer.length > 0,
     )
     if (!canLoadMore) {
       hasMore.value = false
       hasTriedInitialLoad.value = true
+      if (echoList.value.length === 0 && emptyReason.value === null) {
+        emptyReason.value = 'no-echos'
+      }
       return
     }
 
@@ -320,12 +244,11 @@ export const useHubStore = defineStore('hubStore', () => {
     try {
       const result: App.Api.Hub.Echo[] = []
       let attempts = 0
-      const maxAttempts = batchSize.value * 3 // 防止死循环
+      const maxAttempts = batchSize.value * 3
 
       while (result.length < batchSize.value && attempts < maxAttempts) {
         attempts++
 
-        // 1. 找出所有缓冲池中时间最新（createdTs 最大）的那条
         let maxTs = -1
         let maxHubUrl: string | null = null
 
@@ -340,7 +263,6 @@ export const useHubStore = defineStore('hubStore', () => {
           }
         }
 
-        // 2. 如果所有缓冲池都空了，尝试补充
         if (maxHubUrl === null) {
           const emptyHubsWithMore = Array.from(hubStates.value.values()).filter(
             (s) => s.hasMore && !s.isLoading && s.buffer.length === 0,
@@ -351,41 +273,39 @@ export const useHubStore = defineStore('hubStore', () => {
           }
 
           await Promise.all(emptyHubsWithMore.map((s) => fetchHubPage(s.url)))
+          if (currentGeneration !== generation) return
           continue
         }
 
-        // 3. 取出这条数据
         const state = hubStates.value.get(maxHubUrl)!
         const echo = state.buffer.shift()!
 
-        // 去重检查
         const key = `${echo.server_url}-${echo.id}`
         if (!existingIds.value.has(key)) {
           existingIds.value.add(key)
           result.push(echo)
         }
 
-        // 4. 如果这个 Hub 的缓冲池快空了，提前补充（预加载）
         if (state.buffer.length < 3 && state.hasMore && !state.isLoading) {
-          fetchHubPage(maxHubUrl) // 异步补充，不等待
+          fetchHubPage(maxHubUrl)
         }
       }
 
-      // 追加到展示列表（不重排序，已经是按时间顺序取出的）
+      if (currentGeneration !== generation) return
+
       echoList.value.push(...result)
 
-      // 更新 hasMore 状态
       hasMore.value = Array.from(hubStates.value.values()).some(
         (s) => s.hasMore || s.buffer.length > 0,
       )
-
-      if (!hasMore.value && echoList.value.length > 0) {
-        theToast.info(String(i18n.global.t('hub.noMoreData')))
-      }
-      writeHubFeedCache()
     } finally {
       isLoading.value = false
-      hasTriedInitialLoad.value = true
+      if (currentGeneration === generation) {
+        hasTriedInitialLoad.value = true
+        if (echoList.value.length === 0 && emptyReason.value === null) {
+          emptyReason.value = 'no-echos'
+        }
+      }
     }
   }
 
@@ -398,11 +318,10 @@ export const useHubStore = defineStore('hubStore', () => {
     isLoading,
     isPreparing,
     hasTriedInitialLoad,
+    emptyReason,
     pageSize,
     batchSize,
     hasMore,
-    prepareHubFeed,
-    resetHubFeed,
     getHubList,
     getHubInfoList,
     loadEchoListPage,

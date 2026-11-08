@@ -606,8 +606,8 @@ watch(
   padding: 0 0.38rem;
   font-size: 0.68rem;
   font-weight: 600;
-  color: var(--color-accent, #e07020);
-  background: color-mix(in srgb, var(--color-accent, #e07020) 14%, transparent);
+  color: var(--color-accent, #8a4132);
+  background: color-mix(in srgb, var(--color-accent, #8a4132) 14%, transparent);
   border-radius: 999px;
   line-height: 1;
   flex-shrink: 0;
@@ -730,16 +730,16 @@ watch(
 }
 
 .palette__pill--active {
-  color: var(--color-accent, #e07020);
-  background: color-mix(in srgb, var(--color-accent, #e07020) 12%, transparent);
-  border-color: color-mix(in srgb, var(--color-accent, #e07020) 35%, transparent);
+  color: var(--color-accent, #8a4132);
+  background: color-mix(in srgb, var(--color-accent, #8a4132) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent, #8a4132) 35%, transparent);
   font-weight: 500;
 }
 
 .palette__pill--active:hover {
-  color: var(--color-accent, #e07020);
-  background: color-mix(in srgb, var(--color-accent, #e07020) 18%, transparent);
-  border-color: color-mix(in srgb, var(--color-accent, #e07020) 50%, transparent);
+  color: var(--color-accent, #8a4132);
+  background: color-mix(in srgb, var(--color-accent, #8a4132) 18%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent, #8a4132) 50%, transparent);
 }
 
 .palette__pill--tag .palette__tag-hash {
@@ -815,9 +815,9 @@ watch(
 }
 
 .palette__date-control:focus-within {
-  border-color: var(--color-accent, #e07020);
+  border-color: var(--color-accent, #8a4132);
   background: var(--color-bg-surface);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent, #e07020) 14%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent, #8a4132) 14%, transparent);
 }
 
 .palette__date-icon {
@@ -829,7 +829,7 @@ watch(
 }
 
 .palette__date-control:focus-within .palette__date-icon {
-  color: var(--color-accent, #e07020);
+  color: var(--color-accent, #8a4132);
 }
 
 .palette__date-control--empty .palette__date-icon {
@@ -954,7 +954,7 @@ watch(
 
 .palette__btn--primary {
   color: #fff;
-  background: var(--color-accent, #e07020);
+  background: var(--color-accent, #8a4132);
   border-color: transparent;
   box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
   font-weight: 500;

@@ -67,6 +67,11 @@ const (
 	ErrCodeRefreshTokenInvalid     = "REFRESH_TOKEN_INVALID"
 	ErrCodeExchangeCodeInvalid     = "EXCHANGE_CODE_INVALID"
 	ErrCodeTokenGenerateFailed     = "TOKEN_GENERATE_FAILED"
+	ErrCodeDevicePending           = "DEVICE_AUTHORIZATION_PENDING"
+	ErrCodeDeviceSlowDown          = "DEVICE_SLOW_DOWN"
+	ErrCodeDeviceExpired           = "DEVICE_EXPIRED"
+	ErrCodeDeviceDenied            = "DEVICE_ACCESS_DENIED"
+	ErrCodeDeviceUnknown           = "DEVICE_CODE_UNKNOWN"
 )
 
 const (
@@ -83,14 +88,21 @@ const (
 	REFRESH_TOKEN_INVALID             = "刷新令牌无效或已过期"
 	EXCHANGE_CODE_INVALID             = "授权码无效或已过期"
 	TOKEN_GENERATE_FAILED             = "令牌生成失败"
+	DEVICE_CODE_PENDING               = "等待在浏览器中确认授权"
+	DEVICE_CODE_SLOW_DOWN             = "轮询过快，请降低频率"
+	DEVICE_CODE_EXPIRED               = "设备码已过期，请重新登录"
+	DEVICE_CODE_DENIED                = "设备授权已被拒绝"
+	DEVICE_CODE_UNKNOWN               = "设备码无效"
 	USER_REGISTER_NOT_ALLOW           = "当前系统禁止注册新用户"
 )
 
 const (
-	NO_PERMISSION_DENIED       = "没有权限,请联系系统管理员"
-	ECHO_CAN_NOT_BE_EMPTY      = "ECHO 内容不能为空"
-	ECHO_NOT_FOUND             = "找不到Echo"
-	ECHO_MIXED_FILE_CATEGORIES = "一条 Echo 只能包含同一类型的文件"
+	NO_PERMISSION_DENIED         = "没有权限,请联系系统管理员"
+	ECHO_CAN_NOT_BE_EMPTY        = "ECHO 内容不能为空"
+	ECHO_NOT_FOUND               = "找不到Echo"
+	ECHO_MIXED_FILE_CATEGORIES   = "一条 Echo 只能包含同一类型的文件"
+	INVALID_ECHO_CURSOR          = "无效的分页游标"
+	ECHO_CURSOR_SORT_UNSUPPORTED = "游标分页不支持按互动排序"
 )
 
 const (

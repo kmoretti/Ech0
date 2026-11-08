@@ -255,6 +255,15 @@
         </h2>
         <BaseSwitch v-model="SystemSetting.allow_register" :disabled="!editMode" />
       </div>
+      <div class="flex flex-row items-center justify-start text-[var(--color-text-secondary)]">
+        <h2
+          v-tooltip="t('systemSetting.agentDiscoveryHint')"
+          class="font-semibold min-w-28 md:min-w-32 shrink-0 break-words leading-5"
+        >
+          {{ t('systemSetting.agentDiscovery') }}:
+        </h2>
+        <BaseSwitch v-model="agentDiscoveryEnabled" :disabled="!editMode" />
+      </div>
     </div>
   </PanelCard>
 </template>
@@ -287,14 +296,21 @@ const { SystemSetting, S3Setting } = storeToRefs(settingStore)
 const editMode = ref<boolean>(false)
 const saving = ref<boolean>(false)
 const systemLogoSrc = computed(() => resolveAvatarUrl(SystemSetting.value?.server_logo))
+// The stored flag is an opt-out; the panel shows the positive reading.
+const agentDiscoveryEnabled = computed({
+  get: () => !SystemSetting.value?.disable_agent_discovery,
+  set: (enabled: boolean) => {
+    SystemSetting.value.disable_agent_discovery = !enabled
+  },
+})
 const hasCustomLogo = computed(() =>
   Boolean(
     SystemSetting.value?.server_logo_file_id ||
-    (SystemSetting.value?.server_logo &&
-      SystemSetting.value.server_logo !== '/favicon.ico' &&
-      SystemSetting.value.server_logo !== 'favicon.ico' &&
-      SystemSetting.value.server_logo !== '/Ech0.svg' &&
-      SystemSetting.value.server_logo !== 'Ech0.svg'),
+      (SystemSetting.value?.server_logo &&
+        SystemSetting.value.server_logo !== '/favicon.ico' &&
+        SystemSetting.value.server_logo !== 'favicon.ico' &&
+        SystemSetting.value.server_logo !== '/Ech0.svg' &&
+        SystemSetting.value.server_logo !== 'Ech0.svg'),
   ),
 )
 // 站点默认语言统一用 endonym 选项（与头部切换器、用户界面语言一致）。

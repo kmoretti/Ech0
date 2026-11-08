@@ -5,6 +5,8 @@ package handler_test
 
 import (
 	"errors"
+	"reflect"
+	"strings"
 	"testing"
 	_ "time/tzdata"
 
@@ -34,7 +36,7 @@ func TestEchoHandler_PostEcho(t *testing.T) {
 			PostEcho(mock.Anything, mock.MatchedBy(func(e *echoModel.Echo) bool {
 				return e != nil && e.Content == "hi" && e.Private
 			})).
-			Return(nil).Once()
+			Return(&echoModel.Echo{ID: "e1", Content: "hi", Private: true}, nil).Once()
 
 		h := handler.NewEchoHandler(svc)
 		out, err := h.PostEcho(helpers.CtxAsUser("u1"), &handler.EchoUpsertInput{
@@ -44,12 +46,13 @@ func TestEchoHandler_PostEcho(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, commonModel.DEFAULT_SUCCESS_CODE, out.Code)
 		assert.Equal(t, commonModel.POST_ECHO_SUCCESS, out.Message)
-		assert.Nil(t, out.Data)
+		require.NotNil(t, out.Data)
+		assert.Equal(t, "e1", out.Data.ID)
 	})
 
 	t.Run("service error is propagated", func(t *testing.T) {
 		svc := echomock.NewMockService(t)
-		svc.EXPECT().PostEcho(mock.Anything, mock.Anything).Return(errBoom).Once()
+		svc.EXPECT().PostEcho(mock.Anything, mock.Anything).Return(nil, errBoom).Once()
 
 		h := handler.NewEchoHandler(svc)
 		out, err := h.PostEcho(helpers.CtxAsUser("u1"), &handler.EchoUpsertInput{
@@ -57,7 +60,7 @@ func TestEchoHandler_PostEcho(t *testing.T) {
 		})
 
 		require.ErrorIs(t, err, errBoom)
-		assert.Equal(t, handler.EmptyOutput{}, out)
+		assert.Equal(t, handler.EchoOutput{}, out)
 	})
 }
 
@@ -68,7 +71,7 @@ func TestEchoHandler_UpdateEcho(t *testing.T) {
 			UpdateEcho(mock.Anything, mock.MatchedBy(func(e *echoModel.Echo) bool {
 				return e != nil && e.ID == "e1" && e.Content == "edited"
 			})).
-			Return(nil).Once()
+			Return(&echoModel.Echo{ID: "e1", Content: "edited"}, nil).Once()
 
 		h := handler.NewEchoHandler(svc)
 		out, err := h.UpdateEcho(helpers.CtxAsUser("u1"), &handler.EchoUpsertInput{
@@ -77,11 +80,13 @@ func TestEchoHandler_UpdateEcho(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.Equal(t, commonModel.UPDATE_ECHO_SUCCESS, out.Message)
+		require.NotNil(t, out.Data)
+		assert.Equal(t, "e1", out.Data.ID)
 	})
 
 	t.Run("service error is propagated", func(t *testing.T) {
 		svc := echomock.NewMockService(t)
-		svc.EXPECT().UpdateEcho(mock.Anything, mock.Anything).Return(errBoom).Once()
+		svc.EXPECT().UpdateEcho(mock.Anything, mock.Anything).Return(nil, errBoom).Once()
 
 		h := handler.NewEchoHandler(svc)
 		_, err := h.UpdateEcho(helpers.CtxAsUser("u1"), &handler.EchoUpsertInput{
@@ -115,27 +120,71 @@ func TestEchoHandler_DeleteEcho(t *testing.T) {
 	})
 }
 
-func TestEchoHandler_LikeEcho(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
+func TestEchoHandler_Reactions(t *testing.T) {
+	aggregate := []echoModel.ReactionCount{
+		{Key: "like", Emoji: "👍", Count: 2, Reacted: true},
+	}
+
+	t.Run("add returns the fresh aggregate", func(t *testing.T) {
 		svc := echomock.NewMockService(t)
-		svc.EXPECT().LikeEcho(mock.Anything, "e1").Return(nil).Once()
+		svc.EXPECT().ReactToEcho(mock.Anything, "e1", "like").Return(aggregate, nil).Once()
 
 		h := handler.NewEchoHandler(svc)
-		out, err := h.LikeEcho(helpers.CtxAnonymous(), &handler.LikeEchoInput{ID: "e1"})
+		out, err := h.AddReaction(helpers.CtxAnonymous(), &handler.ReactionInput{ID: "e1", Emoji: "like"})
 
 		require.NoError(t, err)
-		assert.Equal(t, commonModel.LIKE_ECHO_SUCCESS, out.Message)
+		assert.Equal(t, commonModel.REACT_ECHO_SUCCESS, out.Message)
+		require.Len(t, out.Data, 1)
+		assert.Equal(t, "like", out.Data[0].Key)
+		assert.True(t, out.Data[0].Reacted)
 	})
 
-	t.Run("service error is propagated", func(t *testing.T) {
+	t.Run("add propagates service errors", func(t *testing.T) {
 		svc := echomock.NewMockService(t)
-		svc.EXPECT().LikeEcho(mock.Anything, "e1").Return(errBoom).Once()
+		svc.EXPECT().ReactToEcho(mock.Anything, "e1", "like").Return(nil, errBoom).Once()
 
 		h := handler.NewEchoHandler(svc)
-		_, err := h.LikeEcho(helpers.CtxAnonymous(), &handler.LikeEchoInput{ID: "e1"})
+		_, err := h.AddReaction(helpers.CtxAnonymous(), &handler.ReactionInput{ID: "e1", Emoji: "like"})
 
 		require.ErrorIs(t, err, errBoom)
 	})
+
+	t.Run("remove returns the fresh aggregate", func(t *testing.T) {
+		svc := echomock.NewMockService(t)
+		svc.EXPECT().UnreactEcho(mock.Anything, "e1", "like").Return(nil, nil).Once()
+
+		h := handler.NewEchoHandler(svc)
+		out, err := h.RemoveReaction(helpers.CtxAnonymous(), &handler.ReactionInput{ID: "e1", Emoji: "like"})
+
+		require.NoError(t, err)
+		assert.Equal(t, commonModel.UNREACT_ECHO_SUCCESS, out.Message)
+		assert.Empty(t, out.Data)
+	})
+
+	t.Run("catalog returns the registry", func(t *testing.T) {
+		svc := echomock.NewMockService(t)
+		svc.EXPECT().GetReactionCatalog().Return(echoModel.ReactionEmojis).Once()
+
+		h := handler.NewEchoHandler(svc)
+		out, err := h.GetReactionCatalog(helpers.CtxAnonymous(), &handler.ReactionCatalogInput{})
+
+		require.NoError(t, err)
+		assert.Equal(t, commonModel.GET_REACTIONS_SUCCESS, out.Message)
+		assert.Equal(t, echoModel.ReactionEmojis, out.Data)
+	})
+}
+
+// TestReactionInputEnumMatchesCatalog keeps the Huma enum (which cannot be
+// built from a variable) from drifting away from the model registry.
+func TestReactionInputEnumMatchesCatalog(t *testing.T) {
+	field, ok := reflect.TypeOf(handler.ReactionInput{}).FieldByName("Emoji")
+	require.True(t, ok)
+
+	want := make([]string, 0, len(echoModel.ReactionEmojis))
+	for _, emoji := range echoModel.ReactionEmojis {
+		want = append(want, emoji.Key)
+	}
+	assert.Equal(t, strings.Join(want, ","), field.Tag.Get("enum"))
 }
 
 func TestEchoHandler_GetEchoById(t *testing.T) {

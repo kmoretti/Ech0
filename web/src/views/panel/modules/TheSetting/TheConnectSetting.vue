@@ -145,7 +145,7 @@ const { openConfirm } = useBaseDialog()
 
 const connectStore = useConnectStore()
 const { t } = useI18n()
-const { getConnect, getConnectInfo, invalidateConnectCaches } = connectStore
+const { getConnect, invalidateConnectsInfo } = connectStore
 const { connects } = storeToRefs(connectStore)
 const connectsEdit = ref<boolean>(false)
 const connectUrl = ref<string>('')
@@ -232,13 +232,8 @@ const refreshConnectivityStatus = async () => {
 }
 
 const refreshConnectData = async () => {
+  invalidateConnectsInfo()
   await getConnect({ force: true })
-  await refreshConnectivityStatus()
-}
-
-const refreshConnectDataAfterMutation = async () => {
-  invalidateConnectCaches()
-  await Promise.all([getConnect({ force: true }), getConnectInfo({ force: true })])
   await refreshConnectivityStatus()
 }
 
@@ -262,7 +257,7 @@ const handleAddConnect = async () => {
         connectUrl.value = ''
         connectUrlError.value = ''
         connectsEdit.value = false
-        void refreshConnectDataAfterMutation()
+        refreshConnectData()
       }
     })
     .finally(() => {
@@ -278,7 +273,7 @@ const handleDisconnect = async (connect_id: string) => {
       await fetchDeleteConnect(connect_id).then((res) => {
         if (res.code === 1) {
           theToast.success(res.msg)
-          void refreshConnectDataAfterMutation()
+          refreshConnectData()
         }
       })
     },
@@ -334,7 +329,7 @@ onMounted(() => {
 .status-checking {
   color: var(--color-text-muted);
   border-color: var(--color-border-subtle);
-  background: var(--connect-status-checking-bg);
+  background: var(--color-connect-checking-bg);
 }
 
 .version-pill-yellow,

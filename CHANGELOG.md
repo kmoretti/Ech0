@@ -9,6 +9,203 @@ For releases prior to v4.6.5, see the [GitHub releases page](https://github.com/
 
 ## [Unreleased]
 
+## [5.9.7] - 2026-11-07
+
+### Fixed
+
+- **The timeline no longer chases page after page.** Two independent feedback loops asked for the next cursor page as soon as the previous one resolved, so the loading indicator flickered through a burst. On a tall viewport the seven-row page never left the prefetch band, so page size now follows the viewport (fill plus prefetch band, capped at the server limit) and the restore depth is stored as a row count so it survives the new size. At the bottom of the feed Chrome's scroll anchoring kept the sentinel fixed while the appended page grew above it, moving the scroll offset down by the same amount; the feed now opts out with `overflow-anchor: none` (the virtualizer already compensates for measured rows itself), so one scroll asks for exactly one page. The automatic chain also stops when a page appends no rows and resumes on the next scroll, and the observer is rebuilt when the layout moves scrolling between the window and the inner column instead of comparing against a stale root.
+
+## [5.9.6] - 2026-11-07
+
+### Added
+
+- **The home timeline has a back-to-top control again.** A floating button appears once the feed is scrolled more than 300 px, follows whichever scroller the layout uses (the inner column on desktop, the window on mobile), parks itself in the gutter right of the column like the hub feed's button, and smooth-scrolls back to the top.
+
+### Fixed
+
+- **A refresh at the top of the timeline stays at the top.** The saved anchor was only skipped, never cleared, while the viewport sat above the list, so scrolling back to the top and reloading still jumped to the last read card. An anchor above the list is now dropped, except when the scroller is momentarily collapsed by a persistent-layout mode switch, which is the case that must keep it for the remount.
+
+- **Reloading an anchored feed on the mobile layout restores it.** The startup loader holds `<html>` at viewport height with `overflow: hidden` for the first frames, so the window virtualizer saw a zero max offset and clamped the restore command to the top; the restore now retries until the page can actually scroll.
+
+### Added
+
+- **The home timeline scrolls continuously.** `POST /api/echo/query` now accepts an optional `cursor`: omit it for the unchanged page-based mode, send `""` for the first keyset page, then echo the previous response's `nextCursor`. Page-mode responses keep the same shape and fields. Ordering now includes the Echo id in both modes, so posts sharing a `created_at` second can no longer shuffle between pages, repeat, or be skipped, and keyset continuation stays stable while new posts arrive; a full last page no longer advertises an empty next page; the static adapter behind capsule deployments applies the same direction-aware tiebreaker and resumes past a deleted cursor row. Cursor mode only supports `sort_by=created_at`, and an unreadable or overlong cursor is a `400` instead of a silent restart from the top. The web feed replaces the Older/Newer pager with a sentinel that loads more near the viewport, restores the loaded depth and scroll position on reload, patches edits/deletes in place instead of resetting to the top, and appends pages behind the shared loading indicator instead of a skeleton placeholder. The `ech0` CLI passes the same flag through (`ech0 echo list --cursor ""`), and its help, bundled skill and generated types document the empty first page.
+
+### Changed
+
+- **Timeline rows are virtualized.** Only the visible window (plus a small overscan) stays mounted, so a deep scroll no longer grows the DOM without bound. Cards outside the window unmount, which means audio/video playback stops when scrolled away and the old per-card enter/leave animations are gone. The scroll position is stored as an `{echoId, offset}` anchor in `sessionStorage` rather than a pixel value, because virtualized rows estimate heights until they are measured; a reload restores the first visible Echo to the same offset, and card Markdown paints its final line boxes on the first frame so late rendering cannot move the anchor.
+
+- **The timeline's chrome follows the rows.** The action menu is teleported to `body` and positioned from its trigger with fixed coordinates — each virtual row is its own stacking context and the scroller clips overflow, so an in-row popover was painted under the next card and Delete on a short Echo hit the wrong one. It flips above the trigger near the viewport bottom, closes on scroll, resize and route change, only one row's menu can be open, and the trigger suppresses mouse focus so clicking it cannot scroll a partly visible row into view. The desktop scroller hides its scrollbar, so nothing along the right edge can be grabbed or mis-tapped.
+
+- **The hub is read-only.** The explore feed no longer renders a reaction bar: the hub does not write to instances it does not own, so it never depends on their CORS allowlist knowing about `X-Ech0-Visitor`. Reacting happens on the post's own instance, which the card already links to.
+
+### Fixed
+
+- **The reaction pill opens and closes in one tap.** Opening used to move focus to the first emoji, so WebKit matched `:focus-visible` and painted an accent ring for every touch open, and the toggle waited for the click that trails a pointer gesture — a home-screen web app drops that click after `touchend`, so the guard stayed set and closing took two taps. It now toggles on `pointerdown`, swallows only the trailing click, and focuses the first emoji only when the keyboard opened the bar.
+
+- **Choosing Update on another Echo asks before discarding the edit.** It used to scroll the window to the top and return without loading the selected Echo, which read as a no-op. The confirm now keeps the feed position when cancelled, and the unused "please exit update mode first" string is gone.
+
+- **The PWA title and status bar follow the app theme, not the OS.** The shell split `theme-color` into a `prefers-color-scheme` pair, but the runtime sync rewrote only the first tag, so a dark-mode phone with the light app theme kept a grey `#333333` chrome. The saved theme is now resolved before the first paint, one `theme-color` tag stays in sync, and the choice is mirrored onto `color-scheme` so native scrollbars and form controls no longer follow the device.
+
+- **Wide ordered-list markers are no longer clipped.** Markers render in the list's padding area and the Echo Markdown container clips at its padding edge, so entries such as "100." lost their period; ordered lists now reserve room for the widest marker.
+
+- **The hub feed loads from every listed instance again.** Its cross-origin `POST /api/echo/query` carried `X-Ech0-Visitor` and an empty `sortBy`: instances whose CORS allowlist predates the header (everything below 5.9.5) rejected the preflight outright, and 5.9.x answered `422` for the empty sort field, so most of the directory rendered "nothing here yet". The request is now a plain JSON POST — no identity, no custom headers — with `sortBy` omitted when it means the default.
+
+### Internal
+
+- **The home feed is one virtualized list.** `web/src/views/home/modules/EchoTimelineList.vue` owns measurement, anchor persistence (at most one `sessionStorage` write per 150 ms) and the single-offset restore through TanStack Virtual; `useInfiniteScroll` drives pagination from a sentinel and rebuilds its observer when the layout breakpoint moves scrolling between the window and the inner scroller. Timeline helpers live in `utils/timeline.ts`, and the generated CLI API types were synced with the new `cursor`/`nextCursor` fields.
+
+## [5.9.5] - 2026-11-05
+
+### Added
+
+- **`ECH0_EGRESS_ALLOW_PRIVATE` for local development.** Set it to `true` to let the outbound SSRF guard reach `localhost`, private, CGNAT (including Tailscale `100.64.0.0/10`) and reserved addresses — enough to add the instance itself as a Connect peer or probe LAN/VPN peers. It defaults to `false`, is applied once at bootstrap, and keeps scheme/userinfo validation; the guard logs a startup warning while disabled. `just run` and `just dev` inject it for local work. Never enable it on an internet-reachable instance: it re-opens SSRF targets for every egress caller (Connect, webhooks, OAuth CIMD, site scraping).
+
+- **Instances can advertise themselves to agents without a credential.** `GET /llms.txt` lists the site, feed, API docs and MCP card; `GET /.well-known/ard.json` (plus the legacy `/.well-known/ai-catalog.json` alias) serves an ARD 1.0 catalog whose entries point at `GET /mcp/server-card`, an MCP SEP-2127 card carrying transport, protocol version and auth header. All four are public and content-free — no posts, comments or users, so private and invite-only instances can leave them on — and every URL is absolute, built from the request's forwarded origin the same way `/robots.txt` and `/sitemap.xml` already are. `robots.txt` gains an `Agentmap:` line, unknown `/.well-known/*` paths now answer `404` instead of the SPA shell, and a new **Preferences → System settings → Agent discovery** switch (`disable_agent_discovery`, stored inverted so settings blobs written before the field keep discovery on) makes the four endpoints answer `404` and drops the `Agentmap:` line without changing crawl permission.
+
+- **Crawlers and share cards get a server-rendered head.** Each HTML request now rewrites the embedded SPA shell instead of shipping a blank `<head>`: routes get title, description, canonical, OG and JSON-LD from a server-side table; `/echo/{id}` renders as an article with `og:type=article`, `article:published_time`, a `BlogPosting` graph, the post's first image (else the new 1200×630 `og-cover.jpg`) and a `<noscript>` body. Client-side routing syncs the same values after hydration and never overwrites the article meta the server already emitted. Unknown paths, unknown or private Echo ids and missing assets answer `404` (a private id is indistinguishable from a missing one), every noindex route also sends `X-Robots-Tag`, `robots.txt` disallows those paths, and `sitemap.xml` lists public Echoes with `<lastmod>`. Canonical and OG URLs use the request origin, never the `server_url` placeholder, and `internal/handler/web/seo.go`'s route table must be kept in sync with `web/src/router` (contract in `docs/dev/seo-sharing.md`).
+
+- **The documentation site is bilingual.** English is the default at `/docs` and `/privacy`, Chinese moves to `/zh/docs` and `/zh/privacy`, and each page carries a language switch that keeps the current slug plus per-locale title, description and OG locale. New English translations cover the whole guide set — installation, update, getting started, FAQ, community, overview, editor, embedding, federation, MCP, preferences, S3, SSO, webhook, data control, access tokens, agent, capsule and chat — and the legacy doc redirects now resolve inside the active locale.
+
+### Changed
+
+- **Likes become emoji reactions.** `PUT /api/echo/like/:id` and the `fav_count` counter are gone. Posts now carry `reactions: [{key, emoji, count, reacted}]`, backed by a per-actor table (`echo_id`, `emoji`, `actor`) with a unique index, so adding is idempotent, removing works, and one person cannot inflate a count by double-clicking. Seven keys ship — `like`, `heart`, `haha`, `wow`, `sad`, `cry`, `party` — and `GET /api/reactions` returns the catalog for web and hub clients. Reactions are written with `PUT`/`DELETE /api/echo/:id/reactions/:emoji`; both return the post's fresh aggregate and neither invalidates the shared echo cache, because reaction summaries are hydrated per request instead of being cached with the post.
+
+- **The actor is a logged-in user first, then a per-browser visitor id.** Browser clients send `X-Ech0-Visitor` (a random UUID kept in localStorage); without it the server falls back to the hashed client IP. This keeps anonymous reactions separate without cookies or accounts.
+
+- **Sorting and hot ranking use reaction totals.** `POST /api/echo/query` now accepts `sort_by=reactions` (it was `fav_count`), and the hot list scores by total reactions plus approved comments.
+
+- **MCP tool `like_post` is replaced by `react_to_post`** (`id`, `emoji`, optional `remove`). It returns `{id, reactions}` and stays `echo:write`.
+
+- **The reaction control is a pill bar, not a like button.** The trigger shows up to three of the most-used emoji plus the total on one line — at `360px` and below the word count and its separator drop out so the pill and the share action still fit — and opens a pill bar above it with a spring pop, staggered items and a tail. The bar is teleported to `body` with fixed coordinates, so the hub feed's multi-column masonry can no longer clip it, and it re-places on scroll, resize and `visualViewport` changes while clamping against the visible width (a desktop scrollbar is not counted). Pressing the trigger and dragging onto an emoji picks it, arrow keys walk the bar, adding launches five drifting emoji copies while removing stays quiet, the bar stays open with counts updating in place, and `prefers-reduced-motion` disables the burst. Web and hub share the same interaction.
+
+- **The copilot transcript reads as one flow instead of stacked status rows.** Trace labels animate to the measured width of the next label, so the clock slides aside at the same pace instead of jumping, and the current query sits beside the label. The retrieval pill carries a coverage ring that fills from the real returned/total range — or asymptotically from the source count until coverage arrives — a stack of up to three numbered source tiles plus a `+n` overflow that spreads on hover, and a drawn check once the run ends. `ask` prompts become the transcript's only card: a status glyph, a question that swaps in the direction of the round, a mark per option, auto-advance on single choice, a spinner while sending, and a settled summary card with an animated check and wrapping (never truncating) answer rows. Streamed markdown now keeps leading spaces inside list items.
+
+- **Device approval takes the code in eight cells.** `BaseOtpInput` gives every character its own slot with per-cell focus, full-code paste and autofill, gap-preserving backspace, a "Character n of 8" label per cell, and success/error states; approving draws the rings before the receipt panel replaces the form, and a failed lookup marks the code in error. The old text field, its placeholder string and the `ABCD-EFGH` hint are gone.
+
+### Removed
+
+- **Historical like counts are discarded.** A one-time migration drops `echos.fav_count`; every instance starts from zero reactions. The column is not exported, and capsules still parse `fav_count` for backward compatibility but ignore it on import. Reactions themselves are instance-local social state and are not part of the capsule interchange format, so static archives show no reaction bar. Reaction *totals* do survive snapshot export/import, since snapshots copy the database.
+
+### Fixed
+
+- **Onboarding cards stay hidden while the timeline is filtered.** Zero-result searches, tag/date/visibility filters and tag mode all narrowed `echoStore.total` without marking the view as filtered, so the setup checklist judged "publish" undone and the first-Echo share card could appear on an instance with hundreds of Echoes; both now gate on a single `hasActiveQuery` covering every narrowing input.
+
+### Internal
+
+- **The web shell tests no longer need a built frontend.** CI stubs `template/dist/index.html`, so asserting on the real shell made the suite depend on an artifact that is not checked in; the tests now cover marker replacement and fallback injection directly and assert only the injected 404 head on unknown routes.
+
+
+## [5.9.4] - 2026-11-05
+
+### Changed
+
+- **The horizontal image strip trades its drag scrollbar for a segmented slider.** A row of short pills — one per image — sits under the strip where the custom scrollbar used to be, highlights the segment matching the current scroll position, and disappears (together with the hover chevrons) when every image already fits. Segments jump to that image on click, scrub continuously on pointer drag and are reachable from the keyboard, with labels from the new `imageGallery.goToImage` key in all four locales. The dead `scrollHintText` prop and unused `imageGallery.scrollHint` key are removed.
+
+- **First-run setup and the boot splash match the paper style.** The owner-account form on `/init` is wrapped in `TheSketchFrame` with tightened spacing, its "First setup" kicker is dropped and the intro copy is reworded in every locale. The boot loader in `index.html` swaps the spinning smile for a serif "Ech0" wordmark with a letter-hop animation that is switched off under `prefers-reduced-motion`.
+
+### Fixed
+
+- **RSS media resolves outside the site origin, and browsers get a subscription landing page.** Local storage keeps `File.url` relative (`/api/files/…`), so external readers (Reeder, NetNewsWire) could not load attached media once the stored URL replaced the explicit `scheme://host` prefix; entry bodies are now rewritten through `absolutizeFeedHTML` (relative, absolute and `mailto:` URLs covered by tests) and emitted as `<content type="html">`, so readers render the full body instead of a summary. A browser hitting `GET /rss` now receives a landing page with the feed URL, entry count, last update and `rel=alternate` discovery instead of a duplicate of the entries.
+
+## [5.9.3] - 2026-11-04
+
+### Added
+
+- **First-run onboarding.** Claiming an instance now walks the owner through three setup steps — publish the first Echo, give the site its own name, set the site URL — as a paper-styled checklist derived from live data rather than stored progress, so a row ticks off as the underlying Echo count or setting changes and the list disappears only when all three are done (or the owner hides it). The first public Echo adds a one-time share card, and first-run setup now asks for the site title, applying it only while the title is still the shipped default. Both cards use `TheSketchFrame`, a reusable hand-drawn dashed frame that the Explore empty state reuses.
+
+### Changed
+
+- **Widget headers now share one type system.** The status widgets, the dashboard chart panels and the embeddable `/widget` page use a single-line 18px display title with an 18px colored icon and an optional right-aligned meta label; the serif + handwritten two-line lockup is gone, along with the unused `--font-family-handwritten` token and the duplicated header CSS in seven components. Daily Log loses its date chip and gains a colored calendar icon, and every header is 24px tall instead of 41–64px, leaving the content to carry the hierarchy.
+
+- **The Explore tab has a purposeful empty state.** A hand-drawn frame with dashed ghost list rows replaces the bare sentence, and the copy follows the visitor: guests are no longer told to add a Connect in settings — they see that no Ech0 has been connected yet, so other people's Echoes cannot be discovered — while a connected hub with nothing to show says so instead of repeating the setup hint.
+
+- **Connect lookups refresh in the background.** Cached peers render immediately and revalidate, editing a Connect drops the cached peer info, and the status tab starts the lookup before its widgets mount, so the Connect card no longer waits behind the AI summary.
+
+- **The system log is easier to scan.** The keyword field filters on Enter, the level select gets a proper chevron, and levels are color-coded (debug muted, warn accent, error danger).
+
+- **The `/rss` browser view no longer depends on client-side XSLT.** Microsoft Edge removes XSLT in v159 (Canary/Dev/Beta v157) and the origin-trial/policy escape hatches expire at v176, so the `<?xml-stylesheet?>` route would have degraded to a raw Atom dump. `GET /rss` now content-negotiates on `Accept`: browsers receive a server-rendered `text/html` page (same paper-themed light/dark layout, now with the feed URL injected server-side instead of by script), while feed readers keep receiving `application/atom+xml` with the same entries and no stylesheet processing instruction. `web/public/rss.xsl` is deleted.
+
+## [5.9.2] - 2026-11-04
+
+> **Upgrade notes.** This release changes how browser sessions and access tokens are authorized.
+>
+> * **Sign in again.** Administrator sessions issued before this release do not carry the role the admin APIs now check, so administrator actions return `403` until the session refreshes or you sign in again.
+> * **Recreate access tokens** used by scripts, `ech0` CLI profiles, integrations and MCP clients, then delete the old ones. A token keeps the scopes it was created with, so anything that moved to a new scope — deletes, admin settings, comment moderation, token management — stops working until you create a replacement. CLI users can just run `ech0 auth login` again.
+> * **Reconnect MCP clients** with a token whose scopes cover the tools they call (`mcp:read` is discovery only). OAuth-capable clients can authorize from the client instead, without registration if they publish a Client ID Metadata Document.
+
+### Added
+
+* **The CLI can inspect and moderate an instance.** `ech0 info` shows the site name, server version, Echo count, initialization and sign-in state and whether the command catalog is current, and works signed out. `ech0 comment panel list|status|delete` completes the review loop started by `ech0 comment create`, and `ech0 connect health` probes every peer. Default CLI logins now request the full command surface (`echo:private`, `echo:delete`, `comment:review`, `comment:delete`, `connect:read`, `connect:delete`, `admin:webhook`, …); `--scopes` still narrows a token. `PATCH` operations are sent as `PATCH` instead of falling back to `GET`.
+
+* **The account center shows your role.** Owner, administrator and member appear as distinct badges, so it is clear which account can approve MCP clients and manage the instance.
+
+* **Standard MCP authorization (OAuth 2.1 + CIMD).** `/mcp` now advertises RFC 9728 protected-resource metadata and implements RFC 8414 authorization-server metadata, `/oauth/authorize` consent, `/oauth/token` (PKCE S256 only) and a deprecated-but-compatible Dynamic Client Registration endpoint. Clients that publish a Client ID Metadata Document need no registration; non-loopback redirects must share the `client_id` origin, fetches stay on HTTPS and must return JSON. Ech0-branded consent screens list the requested scopes and only administrators can approve. Destructive MCP tools honour the client's `elicitation` capability through MRTR (`input_required` + nonce-bound, single-use `requestState`). `/.well-known` documents vary on the forwarded host/proto headers they derive the origin from.
+
+### Changed
+
+* **Access-token scopes now follow trust boundaries instead of resource buckets.** Writes no longer imply deletes: `echo:delete`, `file:delete` and `connect:delete` are separate grants. The former `comment:moderate` is split into `comment:review`, `comment:delete` and `comment:settings`. `echo:private` is an additive grant for private posts; `echo:read` alone returns public content only. The former `admin:settings` is split into `admin:site`, `admin:storage`, `admin:auth`, `admin:webhook`, `admin:agent`, `admin:data` and `admin:ops`; `admin:user` keeps its existing meaning, and `admin:token` is gone because token CRUD is now session-only. `mcp:read` replaces the old `admin:token` requirement for `GET /api/mcp/manifest`. This is an intentional breaking change: old tokens keep their stored scopes but lose any capability that moved to a new scope, so reissue tokens with the narrower grants.
+
+### Security
+
+* **Account-security operations are browser-session only.** Passkey enrollment/deletion, OAuth identity binding, access-token CRUD, device approval, OAuth consent and live log streams reject every access token regardless of its scopes. An access token that mints another token may no longer grant scopes beyond its own set.
+
+* **Administrator-only APIs now require an administrator session.** Endpoints that need an `admin:*` scope reject ordinary browser sessions with `403` instead of trusting any signed-in account. Access tokens keep using their admin scopes, so token-based automation is unaffected.
+
+## [5.9.1] - 2026-11-02
+
+### Added
+
+* **The `ech0` CLI covers comments and Connect.** `ech0 comment create|list` and `ech0 connect list|info|add|delete` build from the operation catalog like the Echo and file commands. The comment/Connect surface mirrors the MCP tools — no comment moderation and no health probe — so default logins request `comment:write` and `connect:write` without `comment:moderate` or `connect:read`. `ech0 comment create` posts to the trusted integration endpoint (`POST /api/comments/integration`) instead of the guest endpoint, so it needs no anti-bot form token or captcha and works from scripts; access tokens with `audience=cli` are now accepted by that route alongside `integration` and `mcp-remote`. `ech0 connect delete` keeps the `--yes` or interactive `[y/N]` guard.
+
+* **The `ech0` CLI gains tag and webhook modules.** `ech0 tag list|delete` closes the loop on `echo list --tag-ids` (tag ids were previously only reachable through the raw API) and cleans a tag up across posts; tags are still auto-created by `echo create/update --tag`, so there is no separate `tag create`. `ech0 webhook list|create|update|delete|test` mirrors the MCP webhook tools. Webhooks currently require `admin:settings` (there is no finer webhook scope), so the default CLI login includes it; the CLI v1 target is the instance owner/admin. `WebhookDto.name`/`url` are now marked required with field docs, so the operation catalog drives the CLI's required checks and help.
+
+* **`ech0 echo` reads answer questions instead of showing bare flags.** `echo hot|today|random|onthisday` join `echo list|get`, and every CLI-visible request field now carries a concise English `doc` tag, so `ech0 echo list --help` spells out paging defaults and limits, sort fields, Unix-second bounds, tag any-of matching and the visibility filter. The catalog also labels body-filtered `POST` queries as `read`, and boolean flags are tri-state (`--private` / `--no-private`; omitting both sends no filter).
+
+### Fixed
+
+* **CLI flags no longer corrupt typed input silently.** Numeric flags (`--page`, `--page-size`, `--date-from`, …) reject non-numeric values with exit code 2 instead of sending `null`, enum-constrained values such as `--sort-by fav_count` are checked before the request, and repeated array flags (`--tag-ids a --tag-ids b`) accumulate instead of keeping only the last value.
+
+### Internal
+
+* **`just cli release` cuts a CLI release.** The recipe typechecks, tests, checks for generated-type drift, bumps `apps/cli/package.json`, commits `chore(cli-release): vX.Y.Z`, creates the `cli-vX.Y.Z` tag and pushes the branch and tag, so the tag cannot drift from the package version. `ECH0_CLI_DRY=1` stops after the checks; `just cli bump X.Y.Z` keeps the manual bump-only workflow.
+
+## [5.9.0] - 2026-10-30
+
+### Added
+
+* **A first-party `ech0` command-line client.** `apps/cli` (Bun + TypeScript) signs in to one instance and covers Echo CRUD (`ech0 echo create|list|get|update|delete`) plus the file surface (`ech0 file upload|external|list|get|tree|download`). Sign in with a pasted access token, username/password, or `--device` browser approval; named profiles keep several instances apart, and credentials live in the system keychain with a file fallback (`ECH0_NO_KEYCHAIN=1`). Human output by default, `--json` / `--yaml` for scripts, exit codes `0`/`1`/`2` (plus `130` on Ctrl+C) and a hint on every error. The CLI has its own version line, starting at `0.1.0`, and ships as `ech0-cli-<os>-<arch>.tar.gz` + `SHA256SUMS` on GitHub Releases and as `@useech0/cli` with per-platform binaries on npm (darwin/linux × arm64/x64; Windows is unsupported). Reference: [`docs/dev/cli-design.md`](docs/dev/cli-design.md).
+
+* **Agent skill installer.** `ech0 install skills <dir>` writes the bundled skill (command surface, auth, Echo and operation references) into a skills root such as `~/.claude/skills`; `--from <folder>` installs a local copy instead. The same skill lives at [`skills/ech0`](skills/ech0).
+
+* **Device authorization for sign-in without a browser session.** `POST /api/auth/device/code` returns a `ABCD-EFGH` code (ambiguous characters omitted) valid for 10 minutes; the CLI polls `/api/auth/device/token` every 5 seconds and gets a one-month token with `audience=cli` once approved. `GET /api/auth/device/pending` and `POST /api/auth/device/approve` back the new `/device` page, which looks the code up while you type (debounced, 4-4 grouping), shows the client name, localized scopes, a countdown and the signed-in account with switch-account — and only lets admins approve, matching the rule for minting a token in the panel. The code survives the login redirect, so signing in from the link lands back on the approval.
+
+* **`GET /api/_catalog`: an operation catalog the CLI builds its commands from.** Public, canonical JSON describing every callable operation (method, path, scopes, effect, JSON Schema input, transport for SSE/WebSocket/multipart/binary) merged from the Huma document and the hand-written raw-gin routes. Each `/api` response carries `X-Ech0-Catalog: <fingerprint>`; a request that sends a different fingerprint is rejected with `412` and `error_code: catalog_stale` before the handler runs, so stale clients detect drift instead of failing obscurely. The CLI caches the document per host and refreshes once on `412`/`404`. A router test asserts every catalog op has a route and every `/api` route is described.
+
+* **Echo writes return the stored record.** `POST /echo` and `PUT /echo` now answer with `Result[Echo]` (id, tags, files, timestamps) instead of `null`, so clients learn the new id without a follow-up list/get. Callers that ignored the body are unaffected.
+
+* **Downloads keep the original file name.** Stored files on local, S3 and object storage now send `Content-Disposition: inline; filename=…` (RFC 5987 `filename*` for non-ASCII names, `download` when blank), so a browser "save as" and `ech0 file download` without `--output` use the name the file was uploaded with. Renderable types still preview inline.
+
+### Changed
+
+* **The page query operation is now `echo-list`.** `echo-query` is renamed (`POST /echo/query` is unchanged); only consumers that address operations by `operationId` — the CLI, and anything reading the OpenAPI spec — are affected. The deprecated `/echo/page` endpoints stay as they are.
+
+* **Echo request fields are documented in the spec.** Huma `doc` tags on the echo, tag and extension DTOs now spell out layout values, attachment semantics (`file_id` from the upload endpoint), tag reuse and the server-filled fields to ignore. The same text becomes the generated CLI flag help.
+
+### Fixed
+
+* **Access tokens ignored the chosen expiry.** The create path passed a `time.Duration` (nanoseconds) where seconds were expected, and the resulting `time.Duration(expiry) * time.Second` overflowed: an "8 hours" token came back with `exp` in 2058 and a "one month" token expired in 1995, so freshly minted tokens were already dead. Presets now map to seconds (8h → 28800, 1 month → 2592000, never → no expiry) with an 8-hour fallback for unknown values. Device authorization uses the same code path.
+
+* **The panel welcome buttons keep their size.** Their styling was scoped to a root element that `BaseButton` does not render, so it never applied: the home button collapsed to icon + padding and shrank once a longer locale widened the welcome text. `:deep` selectors and a non-shrinking action column fix both.
+
+### Internal
+
+* **CLI releases are independent.** Pushing a `cli-vX.Y.Z` tag runs [`release-cli.yml`](.github/workflows/release-cli.yml), which checks the tag against `apps/cli/package.json`, cross-compiles the four targets, creates the GitHub Release, and publishes the npm packages with OIDC provenance. Server releases no longer build or publish the CLI; `just cli dist X.Y.Z` reproduces the artifacts locally.
+
+* **CLI types are generated from the committed OpenAPI spec** (`@hey-api/openapi-ts`, TypeScript pinned to 5.9 inside the package), so a server spec change is a compile error in the client.
+
+* **Docs.** New [`docs/dev/cli-design.md`](docs/dev/cli-design.md) (catalog contract, transports, auth, command generation); `docs/design` and `docs/imgs` are consolidated under `docs/assets`.
+
 ## [5.8.3] - 2026-10-25
 
 ### Added
@@ -842,7 +1039,13 @@ This is primarily a security release: six advisories disclosed since v4.7.2 are 
 
   Practical risk in this repo was negligible (the vulnerable code only runs at PWA build time on developer-controlled input), but the alerts are now resolved at the supply-chain level.
 
-[Unreleased]: https://github.com/lin-snow/Ech0/compare/v5.8.3...HEAD
+[Unreleased]: https://github.com/lin-snow/Ech0/compare/v5.9.5...HEAD
+[5.9.5]: https://github.com/lin-snow/Ech0/compare/v5.9.4...v5.9.5
+[5.9.4]: https://github.com/lin-snow/Ech0/compare/v5.9.3...v5.9.4
+[5.9.3]: https://github.com/lin-snow/Ech0/compare/v5.9.2...v5.9.3
+[5.9.2]: https://github.com/lin-snow/Ech0/compare/v5.9.1...v5.9.2
+[5.9.1]: https://github.com/lin-snow/Ech0/compare/v5.9.0...v5.9.1
+[5.9.0]: https://github.com/lin-snow/Ech0/compare/v5.8.3...v5.9.0
 [5.8.3]: https://github.com/lin-snow/Ech0/compare/v5.8.2...v5.8.3
 [5.5.0]: https://github.com/lin-snow/Ech0/compare/v5.4.7...v5.5.0
 [5.4.7]: https://github.com/lin-snow/Ech0/compare/v5.4.6...v5.4.7

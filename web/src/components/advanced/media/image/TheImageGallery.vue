@@ -43,7 +43,6 @@
       v-if="layoutValue === ImageLayout.HORIZONTAL"
       :images="images"
       :resolved-srcs="resolvedSrcs"
-      :scroll-hint-text="t('imageGallery.scrollHint')"
       :get-alt="getAlt"
       :get-image-key="getImageKey"
       :is-loaded="isImageLoaded"
@@ -85,8 +84,9 @@ const props = withDefaults(
     baseUrl?: string
     layout?: ImageLayout | string | undefined
     priority?: boolean
+    compact?: boolean
   }>(),
-  { priority: false },
+  { priority: false, compact: false },
 )
 
 const { t } = useI18n()
@@ -133,7 +133,12 @@ const getAspectRatioStyle = (
   image: App.Api.Ech0.FileObject,
   loaded: boolean,
 ): Record<string, string> | undefined => {
-  if (image.width && image.height) return { aspectRatio: `${image.width} / ${image.height}` }
+  if (image.width && image.height) {
+    // In a note preview a portrait image is cropped to a square instead of
+    // stretching the paper to its full height.
+    if (props.compact && image.height > image.width) return { aspectRatio: '1 / 1' }
+    return { aspectRatio: `${image.width} / ${image.height}` }
+  }
   if (loaded) return undefined
   return { aspectRatio: FALLBACK_ASPECT_RATIO }
 }
@@ -143,6 +148,7 @@ const getHorizontalAspectStyle = (
   loaded: boolean,
 ): Record<string, string> | undefined => {
   if (image.width && image.height) {
+    if (props.compact && image.height > image.width) return { aspectRatio: '1 / 1', width: 'auto' }
     return { aspectRatio: `${image.width} / ${image.height}`, width: 'auto' }
   }
   if (loaded) return undefined

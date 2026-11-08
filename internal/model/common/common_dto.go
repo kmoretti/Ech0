@@ -10,16 +10,21 @@ type PageQueryDto struct {
 }
 
 type EchoQueryDto struct {
-	Page      int      `json:"page"`
-	PageSize  int      `json:"pageSize"`
-	Search    string   `json:"search"`
-	TagIDs    []string `json:"tagIds"`
-	SortBy    string   `json:"sortBy"`
-	SortOrder string   `json:"sortOrder"`
-	DateFrom  int64    `json:"dateFrom"`
-	DateTo    int64    `json:"dateTo"`
-	Private   *bool    `json:"private,omitempty"`
-	UserID    string   `json:"-"`
+	Page      int      `json:"page"      doc:"Page number, 1-based (default 1); ignored when cursor is set"`
+	PageSize  int      `json:"pageSize"  doc:"Items per page, 1-100 (default 10); also the cursor page size"`
+	Search    string   `json:"search"    doc:"Substring match on Echo content"`
+	TagIDs    []string `json:"tagIds"    doc:"Tag IDs to match; an Echo qualifies if it carries any listed tag"`
+	SortBy    string   `json:"sortBy"    doc:"Sort field (default created_at); cursor pagination requires created_at" enum:"created_at,reactions"`
+	SortOrder string   `json:"sortOrder" doc:"Sort direction (default desc)"                enum:"asc,desc"`
+	DateFrom  int64    `json:"dateFrom"  doc:"Only Echoes created at or after this Unix time (seconds)"`
+	DateTo    int64    `json:"dateTo"    doc:"Only Echoes created at or before this Unix time (seconds)"`
+	Private   *bool    `json:"private,omitempty" doc:"Visibility filter: true for private only, false for public only; omit for both"`
+	// Cursor switches the query to keyset pagination. Omit it for the legacy
+	// page-based mode; send an empty string on the first cursor request, then
+	// echo back the previous response's nextCursor. In cursor mode page is
+	// ignored and sortBy must be created_at.
+	Cursor *string `json:"cursor,omitempty" doc:"Keyset pagination cursor; omit for page-based pagination, send an empty string for the first cursor page. Cursor mode ignores page and requires sortBy=created_at"`
+	UserID string  `json:"-"`
 }
 
 type FileDto struct {
@@ -55,12 +60,12 @@ type GetPresignURLDto struct {
 }
 
 type CreateExternalFileDto struct {
-	URL         string `json:"url" binding:"required"`
-	ContentType string `json:"content_type"`
-	Category    string `json:"category"`
-	Width       int    `json:"width"`
-	Height      int    `json:"height"`
-	Name        string `json:"name"`
+	URL         string `json:"url" binding:"required" doc:"Public HTTP(S) URL to register; no bytes are uploaded"`
+	ContentType string `json:"content_type"          doc:"MIME type; inferred from the URL when omitted"`
+	Category    string `json:"category"              doc:"File category: image, video, audio, pdf, markdown, or file"`
+	Width       int    `json:"width"                 doc:"Pixel width, for images"`
+	Height      int    `json:"height"                doc:"Pixel height, for images"`
+	Name        string `json:"name"                  doc:"Display name; defaults to the URL's last segment"`
 }
 
 type UpdateFileMetaDto struct {

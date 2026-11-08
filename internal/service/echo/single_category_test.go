@@ -13,7 +13,6 @@ import (
 	echoService "github.com/lin-snow/ech0/internal/service/echo"
 	"github.com/lin-snow/ech0/internal/test/helpers"
 	commonmock "github.com/lin-snow/ech0/internal/test/mocks/commonmock"
-	echomock "github.com/lin-snow/ech0/internal/test/mocks/echomock"
 	filemock "github.com/lin-snow/ech0/internal/test/mocks/filemock"
 	txmock "github.com/lin-snow/ech0/internal/test/mocks/txmock"
 	"github.com/lin-snow/ech0/pkg/busen"
@@ -64,7 +63,7 @@ func TestValidateSingleFileCategory_Reject(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			repo := echomock.NewMockRepository(t)
+			repo := newEchoRepoMock(t)
 			common := commonmock.NewMockService(t)
 			file := filemock.NewMockService(t)
 			common.EXPECT().
@@ -81,7 +80,7 @@ func TestValidateSingleFileCategory_Reject(t *testing.T) {
 			for i, f := range tc.files {
 				ids[i] = f.ID
 			}
-			err := svc.PostEcho(helpers.CtxAsUser(adminID), echoWithFileIDs(ids...))
+			_, err := svc.PostEcho(helpers.CtxAsUser(adminID), echoWithFileIDs(ids...))
 
 			require.EqualError(t, err, commonModel.ECHO_MIXED_FILE_CATEGORIES)
 		})
@@ -89,7 +88,7 @@ func TestValidateSingleFileCategory_Reject(t *testing.T) {
 }
 
 func TestValidateSingleFileCategory_MultipleImagesAllowed(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 	file := filemock.NewMockService(t)
 	tx := txmock.NewMockTransactor(t)
@@ -119,13 +118,14 @@ func TestValidateSingleFileCategory_MultipleImagesAllowed(t *testing.T) {
 	file.EXPECT().ConfirmTempFiles(mock.Anything, mock.Anything).Return(nil).Once()
 
 	svc := echoService.NewEchoService(tx, common, file, repo, func() *busen.Bus { return bus })
-	require.NoError(t, svc.PostEcho(helpers.CtxAsUser(adminID), echoWithFileIDs("f1", "f2")))
+	_, err := svc.PostEcho(helpers.CtxAsUser(adminID), echoWithFileIDs("f1", "f2"))
+	require.NoError(t, err)
 
 	assert.Len(t, created.EchoFiles, 2)
 }
 
 func TestUpdateEcho_MixedFileCategoriesRejected(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 	file := filemock.NewMockService(t)
 
@@ -139,7 +139,7 @@ func TestUpdateEcho_MixedFileCategoriesRejected(t *testing.T) {
 		Once()
 
 	svc := echoService.NewEchoService(nil, common, file, repo, nilBus)
-	err := svc.UpdateEcho(helpers.CtxAsUser(adminID), echoWithFileIDs("f1", "f2"))
+	_, err := svc.UpdateEcho(helpers.CtxAsUser(adminID), echoWithFileIDs("f1", "f2"))
 
 	require.EqualError(t, err, commonModel.ECHO_MIXED_FILE_CATEGORIES)
 }

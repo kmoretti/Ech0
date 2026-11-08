@@ -88,6 +88,12 @@
   list-style-type: square;
 }
 
+.echo-markdown ol {
+  /* Markers render in the padding area; `.echo-markdown` clips overflow at its
+     padding edge, so `ol` needs room for the widest marker (e.g. "100. "). */
+  padding-inline-start: 2.25em;
+}
+
 .echo-markdown ol li {
   list-style-type: decimal;
 }
@@ -103,7 +109,7 @@
   overflow-wrap: anywhere;
 }
 
-.echo-markdown li :is(strong, em, a, code, span) {
+.echo-markdown li :is(strong, em, a, code, span):not(.am-tok) {
   white-space: normal;
   overflow-wrap: anywhere;
 }
@@ -317,13 +323,8 @@
     font-size: 0.92rem;
   }
 
-  .echo-markdown ul,
-  .echo-markdown ol {
+  .echo-markdown ul {
     padding-inline-start: 1.15rem;
-  }
-
-  .echo-markdown ol {
-    padding-inline-start: 1.35rem;
   }
 
   .echo-markdown table {

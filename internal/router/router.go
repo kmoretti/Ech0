@@ -11,6 +11,7 @@ import (
 	"github.com/lin-snow/ech0/internal/handler"
 	"github.com/lin-snow/ech0/internal/mcp"
 	"github.com/lin-snow/ech0/internal/middleware"
+	openapiCatalog "github.com/lin-snow/ech0/internal/openapi/catalog"
 	authService "github.com/lin-snow/ech0/internal/service/auth"
 )
 
@@ -27,6 +28,8 @@ func SetupRouter(r *gin.Engine, h *handler.Bundle, mwDeps *middleware.Deps) {
 	setupTemplateRoutes(r, h)
 	setupStaticFiles(r)
 	setupMiddleware(r)
+	catalogState := newCatalogState()
+	r.Use(catalogState.middleware())
 	groups := setupRouterGroup(r, mwDeps)
 	api := setupHumaAPI(r)
 
@@ -35,11 +38,15 @@ func SetupRouter(r *gin.Engine, h *handler.Bundle, mwDeps *middleware.Deps) {
 	setupAuthRoutes(groups, h)
 	setupCommentRoutes(groups, h)
 	setupFileRoutes(groups, h)
-	setupDashboardRoutes(groups, h)
+	setupDashboardRoutes(groups, h, revoker)
 	setupCopilotRoutes(groups, h)
 	registerOperations(api, h, revoker)
 	setupMigrationRoutes(groups, h)
 	setupMCPRoutes(groups, h)
+	setupOAuthServerRoutes(r, groups, h)
+
+	catalogState.build(api)
+	r.GET("/api"+openapiCatalog.RoutePath, catalogState.handle)
 }
 
 func setupStaticFiles(r *gin.Engine) {
@@ -68,7 +75,13 @@ func setupRouterGroup(r *gin.Engine, mwDeps *middleware.Deps) *AppRouterGroup {
 	optionalAuth.Use(middleware.NoCache(), middleware.OptionalAuth(revoker))
 	ws := r.Group("/ws")
 	mcpGroup := r.Group(mcp.MCPEndpointPath)
-	mcpGroup.Use(middleware.NoCache(), middleware.RequireAuth(revoker))
+	mcpGroup.Use(
+		middleware.NoCache(),
+		middleware.RequireAuthWithChallenge(
+			revoker,
+			middleware.ResourceMetadataChallenge("/.well-known/oauth-protected-resource/mcp"),
+		),
+	)
 	return &AppRouterGroup{
 		ResourceGroup:           resource,
 		PublicRouterGroup:       public,

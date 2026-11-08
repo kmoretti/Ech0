@@ -7,6 +7,7 @@
     :layout="layout"
     :baseUrl="baseUrl"
     :priority="priority"
+    :compact="compact"
   />
   <TheAudioPlayer v-else-if="audioFiles.length > 0" :files="audioFiles" :baseUrl="baseUrl" />
   <TheVideoPlayer v-else-if="videoFiles.length > 0" :files="videoFiles" :baseUrl="baseUrl" />
@@ -26,8 +27,9 @@ const props = withDefaults(
     layout?: string
     baseUrl?: string
     priority?: boolean
+    compact?: boolean
   }>(),
-  { priority: false },
+  { priority: false, compact: false },
 )
 
 const imageFiles = computed(() =>

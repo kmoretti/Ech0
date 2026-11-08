@@ -24,6 +24,7 @@ import (
 	embeddingModel "github.com/lin-snow/ech0/internal/model/embedding"
 	fileModel "github.com/lin-snow/ech0/internal/model/file"
 	jobModel "github.com/lin-snow/ech0/internal/model/job"
+	oauthserverModel "github.com/lin-snow/ech0/internal/model/oauthserver"
 	settingModel "github.com/lin-snow/ech0/internal/model/setting"
 	userModel "github.com/lin-snow/ech0/internal/model/user"
 	visitorModel "github.com/lin-snow/ech0/internal/model/visitor"
@@ -150,6 +151,7 @@ func InitDatabase() {
 			dbMigration.NewUserLocalAuthBackfillMigrator(),
 			dbMigration.NewUsersPasswordDropMigrator(),
 			dbMigration.NewEchoExtensionOrphansMigrator(),
+			dbMigration.NewEchosFavCountDropMigrator(),
 		),
 	)
 }
@@ -162,6 +164,7 @@ func MigrateDB() error {
 		&userModel.WebAuthnCredential{},
 		&echoModel.Echo{},
 		&echoModel.EchoExtension{},
+		&echoModel.Reaction{},
 		&embeddingModel.EchoEmbedding{},
 		&fileModel.File{},
 		&fileModel.EchoFile{},
@@ -175,6 +178,7 @@ func MigrateDB() error {
 		&jobModel.Job{},
 		&settingModel.AccessTokenSetting{},
 		&authModel.Passkey{},
+		&oauthserverModel.Client{},
 		&visitorModel.DailyStat{},
 	}
 

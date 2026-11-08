@@ -15,7 +15,6 @@ import (
 	echoService "github.com/lin-snow/ech0/internal/service/echo"
 	"github.com/lin-snow/ech0/internal/test/helpers"
 	commonmock "github.com/lin-snow/ech0/internal/test/mocks/commonmock"
-	echomock "github.com/lin-snow/ech0/internal/test/mocks/echomock"
 	filemock "github.com/lin-snow/ech0/internal/test/mocks/filemock"
 	txmock "github.com/lin-snow/ech0/internal/test/mocks/txmock"
 	"github.com/lin-snow/ech0/pkg/busen"
@@ -26,7 +25,7 @@ import (
 
 func TestDeleteEchoById_Guards(t *testing.T) {
 	t.Run("non-admin is denied", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		common.EXPECT().
 			CommonGetUserByUserId(mock.Anything, userID).
@@ -38,7 +37,7 @@ func TestDeleteEchoById_Guards(t *testing.T) {
 	})
 
 	t.Run("user lookup error propagates", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		boom := errors.New("lookup failed")
 		common.EXPECT().
@@ -52,7 +51,7 @@ func TestDeleteEchoById_Guards(t *testing.T) {
 }
 
 func TestDeleteEchoById_NotFound(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 	tx := txmock.NewMockTransactor(t)
 	common.EXPECT().
@@ -67,7 +66,7 @@ func TestDeleteEchoById_NotFound(t *testing.T) {
 }
 
 func TestDeleteEchoById_GetEchoError(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 	tx := txmock.NewMockTransactor(t)
 	boom := errors.New("fetch failed")
@@ -83,7 +82,7 @@ func TestDeleteEchoById_GetEchoError(t *testing.T) {
 }
 
 func TestDeleteEchoById_Success(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 	file := filemock.NewMockService(t)
 	tx := txmock.NewMockTransactor(t)
@@ -128,7 +127,7 @@ func TestDeleteEchoById_Success(t *testing.T) {
 }
 
 func TestDeleteEchoById_DeleteFileRecordError(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 	file := filemock.NewMockService(t)
 	tx := txmock.NewMockTransactor(t)
@@ -152,7 +151,7 @@ func TestDeleteEchoById_DeleteFileRecordError(t *testing.T) {
 
 func TestUpdateEcho_Guards(t *testing.T) {
 	t.Run("non-admin is denied", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		common.EXPECT().
 			CommonGetUserByUserId(mock.Anything, userID).
@@ -160,14 +159,12 @@ func TestUpdateEcho_Guards(t *testing.T) {
 			Once()
 
 		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
-		require.EqualError(t,
-			svc.UpdateEcho(helpers.CtxAsUser(userID), &echoModel.Echo{ID: echoID, Content: "hi"}),
-			commonModel.NO_PERMISSION_DENIED,
-		)
+		_, err := svc.UpdateEcho(helpers.CtxAsUser(userID), &echoModel.Echo{ID: echoID, Content: "hi"})
+		require.EqualError(t, err, commonModel.NO_PERMISSION_DENIED)
 	})
 
 	t.Run("invalid extension rejected before transaction", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		common.EXPECT().
 			CommonGetUserByUserId(mock.Anything, adminID).
@@ -175,7 +172,7 @@ func TestUpdateEcho_Guards(t *testing.T) {
 			Once()
 
 		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
-		err := svc.UpdateEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{
+		_, err := svc.UpdateEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{
 			ID:        echoID,
 			Content:   "hi",
 			Extension: &echoModel.EchoExtension{Type: echoModel.Extension_MUSIC},
@@ -185,7 +182,7 @@ func TestUpdateEcho_Guards(t *testing.T) {
 	})
 
 	t.Run("empty echo rejected", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		common.EXPECT().
 			CommonGetUserByUserId(mock.Anything, adminID).
@@ -193,15 +190,13 @@ func TestUpdateEcho_Guards(t *testing.T) {
 			Once()
 
 		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
-		require.EqualError(t,
-			svc.UpdateEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{ID: echoID, Content: "   "}),
-			commonModel.ECHO_CAN_NOT_BE_EMPTY,
-		)
+		_, err := svc.UpdateEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{ID: echoID, Content: "   "})
+		require.EqualError(t, err, commonModel.ECHO_CAN_NOT_BE_EMPTY)
 	})
 }
 
 func TestUpdateEcho_Success(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 	file := filemock.NewMockService(t)
 	tx := txmock.NewMockTransactor(t)
@@ -225,6 +220,8 @@ func TestUpdateEcho_Success(t *testing.T) {
 		Return(nil).
 		Once()
 	repo.EXPECT().InvalidateEchoCaches(echoID).Once()
+	saved := helpers.NewEcho(func(e *echoModel.Echo) { e.ID = echoID })
+	repo.EXPECT().GetEchosById(mock.Anything, echoID).Return(&saved, nil).Once()
 	file.EXPECT().ConfirmTempFiles(mock.Anything, []string{"file-1"}).Return(nil).Once()
 
 	var got event.EchoUpdated
@@ -244,7 +241,8 @@ func TestUpdateEcho_Success(t *testing.T) {
 		EchoFiles: []fileModel.EchoFile{{FileID: "file-1"}},
 	}
 	svc := echoService.NewEchoService(tx, common, file, repo, func() *busen.Bus { return bus })
-	require.NoError(t, svc.UpdateEcho(helpers.CtxAsUser(adminID), in))
+	_, err = svc.UpdateEcho(helpers.CtxAsUser(adminID), in)
+	require.NoError(t, err)
 
 	assert.Equal(t, echoModel.LayoutWaterfall, updated.Layout)
 	require.Len(t, updated.EchoFiles, 1)
@@ -254,7 +252,7 @@ func TestUpdateEcho_Success(t *testing.T) {
 }
 
 func TestUpdateEcho_TransactionError(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 	tx := txmock.NewMockTransactor(t)
 	boom := errors.New("update failed")
@@ -268,8 +266,6 @@ func TestUpdateEcho_TransactionError(t *testing.T) {
 	repo.EXPECT().UpdateEcho(mock.Anything, mock.Anything).Return(boom).Once()
 
 	svc := echoService.NewEchoService(tx, common, nil, repo, nilBus)
-	require.ErrorIs(t,
-		svc.UpdateEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{ID: echoID, Content: "x", Layout: echoModel.LayoutGrid}),
-		boom,
-	)
+	_, err := svc.UpdateEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{ID: echoID, Content: "x", Layout: echoModel.LayoutGrid})
+	require.ErrorIs(t, err, boom)
 }

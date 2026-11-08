@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	authModel "github.com/lin-snow/ech0/internal/model/auth"
+	"github.com/lin-snow/ech0/internal/authz"
 	commonModel "github.com/lin-snow/ech0/internal/model/common"
 	echoModel "github.com/lin-snow/ech0/internal/model/echo"
 )
@@ -27,17 +27,17 @@ func (a *Adapter) registerEchoTools(reg *Registry) {
 				"tag_ids":    map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "Filter by one or more tag UUIDs (AND logic)"},
 				"page":       map[string]any{"type": "integer", "description": "Page number, 1-based", "default": 1},
 				"page_size":  map[string]any{"type": "integer", "description": "Results per page (1–100)", "default": 20},
-				"sort_by":    map[string]any{"type": "string", "enum": []string{"created_at", "fav_count"}, "description": "Field to sort by", "default": "created_at"},
+				"sort_by":    map[string]any{"type": "string", "enum": []string{"created_at", "reactions"}, "description": "Field to sort by", "default": "created_at"},
 				"sort_order": map[string]any{"type": "string", "enum": []string{"desc", "asc"}, "description": "Sort direction", "default": "desc"},
 			},
 		},
 		Annotations: readOnlyHints(),
-	}, a.searchPosts, authModel.ScopeEchoRead)
+	}, a.searchPosts, authz.ScopeEchoRead)
 
 	reg.RegisterTool(ToolDefinition{
 		Name:        "get_post",
 		Title:       "Get Post",
-		Description: "Retrieve a single post by UUID. Returns the full post object including content, tags, like count, and timestamps.",
+		Description: "Retrieve a single post by UUID. Returns the full post object including content, tags, reaction summary, and timestamps.",
 		InputSchema: map[string]any{
 			"type":     "object",
 			"required": []string{"id"},
@@ -46,7 +46,7 @@ func (a *Adapter) registerEchoTools(reg *Registry) {
 			},
 		},
 		Annotations: readOnlyHints(),
-	}, a.getPost, authModel.ScopeEchoRead)
+	}, a.getPost, authz.ScopeEchoRead)
 
 	reg.RegisterTool(ToolDefinition{
 		Name:        "list_tags",
@@ -57,7 +57,7 @@ func (a *Adapter) registerEchoTools(reg *Registry) {
 			"properties": map[string]any{},
 		},
 		Annotations: readOnlyHints(),
-	}, a.listTags, authModel.ScopeEchoRead)
+	}, a.listTags, authz.ScopeEchoRead)
 
 	echoFileSchema := map[string]any{
 		"type":     "object",
@@ -104,7 +104,7 @@ func (a *Adapter) registerEchoTools(reg *Registry) {
 			},
 		},
 		Annotations: createHints(),
-	}, a.createPost, authModel.ScopeEchoWrite)
+	}, a.createPost, authz.ScopeEchoWrite)
 
 	reg.RegisterTool(ToolDefinition{
 		Name:  "update_post",
@@ -125,7 +125,7 @@ func (a *Adapter) registerEchoTools(reg *Registry) {
 			},
 		},
 		Annotations: destructiveHints(),
-	}, a.updatePost, authModel.ScopeEchoWrite)
+	}, a.updatePost, authz.ScopeEchoWrite)
 
 	reg.RegisterTool(ToolDefinition{
 		Name:        "delete_post",
@@ -139,7 +139,7 @@ func (a *Adapter) registerEchoTools(reg *Registry) {
 			},
 		},
 		Annotations: destructiveHints(),
-	}, a.deletePost, authModel.ScopeEchoWrite)
+	}, a.deletePost, authz.ScopeEchoDelete)
 
 	reg.RegisterTool(ToolDefinition{
 		Name:        "get_today_posts",
@@ -152,21 +152,24 @@ func (a *Adapter) registerEchoTools(reg *Registry) {
 			},
 		},
 		Annotations: readOnlyHints(),
-	}, a.getTodayPosts, authModel.ScopeEchoRead)
+	}, a.getTodayPosts, authz.ScopeEchoRead)
 
 	reg.RegisterTool(ToolDefinition{
-		Name:        "like_post",
-		Title:       "Like Post",
-		Description: "Increment the like (favourite) count of a post by one. Returns {id, message}.",
+		Name:  "react_to_post",
+		Title: "React to Post",
+		Description: "Add or remove an emoji reaction on a post. Reactions are idempotent: adding an existing reaction or removing a missing one is a no-op. " +
+			"Returns {id, reactions} where reactions is the post's fresh aggregate.",
 		InputSchema: map[string]any{
 			"type":     "object",
-			"required": []string{"id"},
+			"required": []string{"id", "emoji"},
 			"properties": map[string]any{
-				"id": map[string]any{"type": "string", "format": "uuid", "description": "Post UUID"},
+				"id":     map[string]any{"type": "string", "format": "uuid", "description": "Post UUID"},
+				"emoji":  map[string]any{"type": "string", "enum": []string{"like", "heart", "haha", "wow", "sad", "cry", "party"}, "description": "Reaction key"},
+				"remove": map[string]any{"type": "boolean", "description": "Remove the reaction instead of adding it", "default": false},
 			},
 		},
 		Annotations: createHints(),
-	}, a.likePost, authModel.ScopeEchoWrite)
+	}, a.reactToPost, authz.ScopeEchoWrite)
 
 	reg.RegisterTool(ToolDefinition{
 		Name:        "delete_tag",
@@ -180,12 +183,12 @@ func (a *Adapter) registerEchoTools(reg *Registry) {
 			},
 		},
 		Annotations: destructiveHints(),
-	}, a.deleteTag, authModel.ScopeEchoWrite)
+	}, a.deleteTag, authz.ScopeEchoDelete)
 
 	reg.RegisterTool(ToolDefinition{
 		Name:        "get_hot_posts",
 		Title:       "Get Hot Posts",
-		Description: "Return the most popular posts, ranked by a weighted score of likes and comment count. Returns an array of post objects.",
+		Description: "Return the most popular posts, ranked by a weighted score of reactions and comment count. Returns an array of post objects.",
 		InputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
@@ -193,7 +196,7 @@ func (a *Adapter) registerEchoTools(reg *Registry) {
 			},
 		},
 		Annotations: readOnlyHints(),
-	}, a.getHotPosts, authModel.ScopeEchoRead)
+	}, a.getHotPosts, authz.ScopeEchoRead)
 
 	reg.RegisterTool(ToolDefinition{
 		Name:        "get_random_post",
@@ -204,7 +207,7 @@ func (a *Adapter) registerEchoTools(reg *Registry) {
 			"properties": map[string]any{},
 		},
 		Annotations: readOnlyHints(),
-	}, a.getRandomPost, authModel.ScopeEchoRead)
+	}, a.getRandomPost, authz.ScopeEchoRead)
 
 	reg.RegisterTool(ToolDefinition{
 		Name:        "get_on_this_day_posts",
@@ -217,7 +220,7 @@ func (a *Adapter) registerEchoTools(reg *Registry) {
 			},
 		},
 		Annotations: readOnlyHints(),
-	}, a.getOnThisDayPosts, authModel.ScopeEchoRead)
+	}, a.getOnThisDayPosts, authz.ScopeEchoRead)
 }
 
 func (a *Adapter) registerEchoResources(reg *Registry) {
@@ -228,7 +231,7 @@ func (a *Adapter) registerEchoResources(reg *Registry) {
 		Description: "JSON array of all tags. Each object has id, name, and the number of posts using this tag.",
 		MimeType:    "application/json",
 		Cache:       privateCache(liveTTLMs),
-	}, a.resourceTags, authModel.ScopeEchoRead)
+	}, a.resourceTags, authz.ScopeEchoRead)
 
 	reg.RegisterResource(ResourceDefinition{
 		URI:         "ech0://posts/recent",
@@ -237,16 +240,16 @@ func (a *Adapter) registerEchoResources(reg *Registry) {
 		Description: "The 20 most recently created posts (newest first). Append ?limit=N (1–100) to the URI to change the count.",
 		MimeType:    "application/json",
 		Cache:       privateCache(liveTTLMs),
-	}, a.resourceRecentPosts, authModel.ScopeEchoRead)
+	}, a.resourceRecentPosts, authz.ScopeEchoRead)
 
 	reg.RegisterResourceTemplate(ResourceTemplateDefinition{
 		URITemplate: "ech0://posts/{id}",
 		Name:        "post",
 		Title:       "Post by ID",
-		Description: "Full post object (content, tags, timestamps, like count) for a given UUID. Replace {id} with the post UUID.",
+		Description: "Full post object (content, tags, timestamps, reaction summary) for a given UUID. Replace {id} with the post UUID.",
 		MimeType:    "application/json",
 		Cache:       privateCache(liveTTLMs),
-	}, a.resourcePostByID, authModel.ScopeEchoRead)
+	}, a.resourcePostByID, authz.ScopeEchoRead)
 }
 
 func (a *Adapter) searchPosts(ctx context.Context, args map[string]any) (*ToolCallResult, error) {
@@ -318,7 +321,7 @@ func (a *Adapter) createPost(ctx context.Context, args map[string]any) (*ToolCal
 		EchoFiles: echoFiles,
 		Extension: extension,
 	}
-	if err := a.echoSvc.PostEcho(ctx, echo); err != nil {
+	if _, err := a.echoSvc.PostEcho(ctx, echo); err != nil {
 		return nil, err
 	}
 	return jsonResult(map[string]string{"id": echo.ID, "message": "post created successfully"})
@@ -346,7 +349,7 @@ func (a *Adapter) updatePost(ctx context.Context, args map[string]any) (*ToolCal
 	echo.EchoFiles = buildEchoFiles(args)
 	echo.Extension = buildExtension(args)
 
-	if err := a.echoSvc.UpdateEcho(ctx, echo); err != nil {
+	if _, err := a.echoSvc.UpdateEcho(ctx, echo); err != nil {
 		return nil, err
 	}
 	return jsonResult(map[string]string{"id": id, "message": "post updated successfully"})
@@ -372,15 +375,29 @@ func (a *Adapter) getTodayPosts(ctx context.Context, args map[string]any) (*Tool
 	return jsonResult(posts)
 }
 
-func (a *Adapter) likePost(ctx context.Context, args map[string]any) (*ToolCallResult, error) {
+func (a *Adapter) reactToPost(ctx context.Context, args map[string]any) (*ToolCallResult, error) {
 	id := stringArg(args, "id")
 	if id == "" {
 		return textError("id is required"), nil
 	}
-	if err := a.echoSvc.LikeEcho(ctx, id); err != nil {
+	emoji := stringArg(args, "emoji")
+	if emoji == "" {
+		return textError("emoji is required"), nil
+	}
+
+	var (
+		reactions []echoModel.ReactionCount
+		err       error
+	)
+	if boolArg(args, "remove") {
+		reactions, err = a.echoSvc.UnreactEcho(ctx, id, emoji)
+	} else {
+		reactions, err = a.echoSvc.ReactToEcho(ctx, id, emoji)
+	}
+	if err != nil {
 		return nil, err
 	}
-	return jsonResult(map[string]string{"id": id, "message": "post liked successfully"})
+	return jsonResult(map[string]any{"id": id, "reactions": reactions})
 }
 
 func (a *Adapter) deleteTag(ctx context.Context, args map[string]any) (*ToolCallResult, error) {

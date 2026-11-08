@@ -12,8 +12,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lin-snow/ech0/internal/authz"
 	"github.com/lin-snow/ech0/internal/event"
 	eventbus "github.com/lin-snow/ech0/internal/event/bus"
+	authModel "github.com/lin-snow/ech0/internal/model/auth"
 	commonModel "github.com/lin-snow/ech0/internal/model/common"
 	model "github.com/lin-snow/ech0/internal/model/echo"
 	"github.com/lin-snow/ech0/internal/storage"
@@ -48,17 +50,19 @@ func NewEchoService(
 	}
 }
 
-func (echoService *EchoService) PostEcho(ctx context.Context, newEcho *model.Echo) error {
+// PostEcho creates an Echo and returns the stored record, so callers (HTTP, MCP,
+// Copilot) can hand the new id back instead of making another round trip.
+func (echoService *EchoService) PostEcho(ctx context.Context, newEcho *model.Echo) (*model.Echo, error) {
 	userid := viewer.MustFromContext(ctx).UserID()
 	newEcho.UserID = userid
 
 	user, err := echoService.commonService.CommonGetUserByUserId(ctx, userid)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !user.IsAdmin {
-		return errors.New(commonModel.NO_PERMISSION_DENIED)
+		return nil, errors.New(commonModel.NO_PERMISSION_DENIED)
 	}
 
 	layout := strings.TrimSpace(newEcho.Layout)
@@ -73,18 +77,18 @@ func (echoService *EchoService) PostEcho(ctx context.Context, newEcho *model.Ech
 
 	normalizedExt, err := normalizeEchoExtension(newEcho.Extension)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	newEcho.Extension = normalizedExt
 
 	newEcho.Username = user.Username
 
 	if isEchoEmpty(newEcho) {
-		return errors.New(commonModel.ECHO_CAN_NOT_BE_EMPTY)
+		return nil, errors.New(commonModel.ECHO_CAN_NOT_BE_EMPTY)
 	}
 
 	if err := echoService.validateSingleFileCategory(ctx, newEcho); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := echoService.transactor.Run(ctx, func(txCtx context.Context) error {
@@ -93,23 +97,27 @@ func (echoService *EchoService) PostEcho(ctx context.Context, newEcho *model.Ech
 		}
 		return echoService.echoRepository.CreateEcho(txCtx, newEcho)
 	}); err != nil {
-		return err
+		return nil, err
 	}
 
 	echoService.echoRepository.InvalidateEchoCaches()
 
 	savedEcho, fetchErr := echoService.echoRepository.GetEchosById(ctx, newEcho.ID)
 	if fetchErr != nil {
-		return fetchErr
+		return nil, fetchErr
 	}
 	if savedEcho != nil {
 		eventbus.Notify(context.Background(), echoService.bus, event.EchoCreated{Echo: *savedEcho, User: user})
+	} else {
+		// The row exists (the insert succeeded); only the read-back failed to
+		// find it. Return what we wrote so the caller still gets the id.
+		savedEcho = newEcho
 	}
 	if err := echoService.fileService.ConfirmTempFiles(ctx, collectEchoFileIDs(newEcho)); err != nil {
 		logUtil.GetLogger().Warn("confirm temp files after post echo failed", logUtil.Err(err))
 	}
 
-	return nil
+	return echoService.hydrateEchoReactions(ctx, savedEcho)
 }
 
 func (echoService *EchoService) GetEchosByPage(
@@ -185,68 +193,75 @@ func (echoService *EchoService) DeleteEchoById(ctx context.Context, id string) e
 	return nil
 }
 
-func (echoService *EchoService) GetTodayEchos(ctx context.Context, timezone string) ([]model.Echo, error) {
-	userid := viewer.MustFromContext(ctx).UserID()
-	showPrivate := false
-	if userid != "" {
-		user, err := echoService.commonService.CommonGetUserByUserId(ctx, userid)
-		if err != nil {
-			return nil, err
-		}
-		showPrivate = user.IsAdmin
+// canReadPrivate reports whether the caller may see private echoes. The
+// interactive session keeps its admin behaviour; access tokens additionally
+// need echo:private, so echo:read alone cannot exfiltrate private content.
+func (echoService *EchoService) canReadPrivate(ctx context.Context) (bool, error) {
+	v := viewer.MustFromContext(ctx)
+	if v.UserID() == "" {
+		return false, nil
 	}
+	// An access token without echo:private never needs the user lookup: the
+	// answer is public-only regardless of the account's admin flag.
+	if v.TokenType() != authModel.TokenTypeSession && !authz.Has(v.Scopes(), authz.ScopeEchoPrivate) {
+		return false, nil
+	}
+	user, err := echoService.commonService.CommonGetUserByUserId(ctx, v.UserID())
+	if err != nil {
+		return false, err
+	}
+	return user.IsAdmin, nil
+}
 
-	todayEchos := echoService.echoRepository.GetTodayEchos(showPrivate, timezone)
-	return todayEchos, nil
+func (echoService *EchoService) GetTodayEchos(ctx context.Context, timezone string) ([]model.Echo, error) {
+	showPrivate, err := echoService.canReadPrivate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return echoService.hydrateReactions(ctx, echoService.echoRepository.GetTodayEchos(showPrivate, timezone))
 }
 
 func (echoService *EchoService) GetHotEchos(ctx context.Context, limit int) ([]model.Echo, error) {
-	userid := viewer.MustFromContext(ctx).UserID()
-	showPrivate := false
-	if userid != "" {
-		user, err := echoService.commonService.CommonGetUserByUserId(ctx, userid)
-		if err != nil {
-			return nil, err
-		}
-		showPrivate = user.IsAdmin
+	showPrivate, err := echoService.canReadPrivate(ctx)
+	if err != nil {
+		return nil, err
 	}
-	return echoService.echoRepository.GetHotEchos(limit, showPrivate)
+	echos, err := echoService.echoRepository.GetHotEchos(limit, showPrivate)
+	if err != nil {
+		return nil, err
+	}
+	return echoService.hydrateReactions(ctx, echos)
 }
 
 func (echoService *EchoService) GetRandomEcho(ctx context.Context) (*model.Echo, error) {
-	userid := viewer.MustFromContext(ctx).UserID()
-	showPrivate := false
-	if userid != "" {
-		user, err := echoService.commonService.CommonGetUserByUserId(ctx, userid)
-		if err != nil {
-			return nil, err
-		}
-		showPrivate = user.IsAdmin
+	showPrivate, err := echoService.canReadPrivate(ctx)
+	if err != nil {
+		return nil, err
 	}
-	return echoService.echoRepository.GetRandomEcho(showPrivate)
+	echo, err := echoService.echoRepository.GetRandomEcho(showPrivate)
+	if err != nil {
+		return nil, err
+	}
+	return echoService.hydrateEchoReactions(ctx, echo)
 }
 
 func (echoService *EchoService) GetOnThisDayEchos(ctx context.Context, timezone string) ([]model.Echo, error) {
-	userid := viewer.MustFromContext(ctx).UserID()
-	showPrivate := false
-	if userid != "" {
-		user, err := echoService.commonService.CommonGetUserByUserId(ctx, userid)
-		if err != nil {
-			return nil, err
-		}
-		showPrivate = user.IsAdmin
+	showPrivate, err := echoService.canReadPrivate(ctx)
+	if err != nil {
+		return nil, err
 	}
-	return echoService.echoRepository.GetOnThisDayEchos(showPrivate, timezone), nil
+	return echoService.hydrateReactions(ctx, echoService.echoRepository.GetOnThisDayEchos(showPrivate, timezone))
 }
 
-func (echoService *EchoService) UpdateEcho(ctx context.Context, echo *model.Echo) error {
+// UpdateEcho persists the edit and returns the stored record, mirroring PostEcho.
+func (echoService *EchoService) UpdateEcho(ctx context.Context, echo *model.Echo) (*model.Echo, error) {
 	userid := viewer.MustFromContext(ctx).UserID()
 	user, err := echoService.commonService.CommonGetUserByUserId(ctx, userid)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !user.IsAdmin {
-		return errors.New(commonModel.NO_PERMISSION_DENIED)
+		return nil, errors.New(commonModel.NO_PERMISSION_DENIED)
 	}
 
 	layout := strings.TrimSpace(echo.Layout)
@@ -261,7 +276,7 @@ func (echoService *EchoService) UpdateEcho(ctx context.Context, echo *model.Echo
 
 	normalizedExt, err := normalizeEchoExtension(echo.Extension)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	echo.Extension = normalizedExt
 
@@ -270,11 +285,11 @@ func (echoService *EchoService) UpdateEcho(ctx context.Context, echo *model.Echo
 	}
 
 	if isEchoEmpty(echo) {
-		return errors.New(commonModel.ECHO_CAN_NOT_BE_EMPTY)
+		return nil, errors.New(commonModel.ECHO_CAN_NOT_BE_EMPTY)
 	}
 
 	if err := echoService.validateSingleFileCategory(ctx, echo); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := echoService.transactor.Run(ctx, func(txCtx context.Context) error {
@@ -283,52 +298,27 @@ func (echoService *EchoService) UpdateEcho(ctx context.Context, echo *model.Echo
 		}
 		return echoService.echoRepository.UpdateEcho(txCtx, echo)
 	}); err != nil {
-		return err
+		return nil, err
 	}
 
 	echoService.echoRepository.InvalidateEchoCaches(echo.ID)
 
-	eventbus.Notify(context.Background(), echoService.bus, event.EchoUpdated{Echo: *echo, User: user})
+	saved, fetchErr := echoService.echoRepository.GetEchosById(ctx, echo.ID)
+	if fetchErr != nil {
+		return nil, fetchErr
+	}
+	if saved == nil {
+		saved = echo
+	}
+	eventbus.Notify(context.Background(), echoService.bus, event.EchoUpdated{Echo: *saved, User: user})
 	if err := echoService.fileService.ConfirmTempFiles(ctx, collectEchoFileIDs(echo)); err != nil {
 		logUtil.GetLogger().Warn("confirm temp files after update echo failed", logUtil.Err(err))
 	}
 
-	return nil
-}
-
-func (echoService *EchoService) LikeEcho(ctx context.Context, id string) error {
-	echo, err := echoService.echoRepository.GetEchosById(ctx, id)
-	if err != nil {
-		return err
-	}
-	if echo == nil {
-		return errors.New(commonModel.ECHO_NOT_FOUND)
-	}
-	if echo.Private {
-		userID := viewer.MustFromContext(ctx).UserID()
-		if userID == "" {
-			return errors.New(commonModel.NO_PERMISSION_DENIED)
-		}
-		user, err := echoService.commonService.CommonGetUserByUserId(ctx, userID)
-		if err != nil {
-			return err
-		}
-		if !user.IsAdmin {
-			return errors.New(commonModel.NO_PERMISSION_DENIED)
-		}
-	}
-
-	if err := echoService.transactor.Run(ctx, func(txCtx context.Context) error {
-		return echoService.echoRepository.LikeEcho(txCtx, id)
-	}); err != nil {
-		return err
-	}
-	echoService.echoRepository.InvalidateEchoCaches(id)
-	return nil
+	return echoService.hydrateEchoReactions(ctx, saved)
 }
 
 func (echoService *EchoService) GetEchoById(ctx context.Context, id string) (*model.Echo, error) {
-	userId := viewer.MustFromContext(ctx).UserID()
 	echo, err := echoService.echoRepository.GetEchosById(ctx, id)
 	if err != nil {
 		return nil, err
@@ -336,22 +326,16 @@ func (echoService *EchoService) GetEchoById(ctx context.Context, id string) (*mo
 	if echo == nil {
 		return nil, errors.New(commonModel.ECHO_NOT_FOUND)
 	}
-
-	if userId == "" {
-		if echo.Private {
-			return nil, errors.New(commonModel.NO_PERMISSION_DENIED)
-		}
-	} else {
-		user, err := echoService.commonService.CommonGetUserByUserId(ctx, userId)
+	if echo.Private {
+		allowed, err := echoService.canReadPrivate(ctx)
 		if err != nil {
 			return nil, err
 		}
-		if echo.Private && !user.IsAdmin {
+		if !allowed {
 			return nil, errors.New(commonModel.NO_PERMISSION_DENIED)
 		}
 	}
-
-	return echo, nil
+	return echoService.hydrateEchoReactions(ctx, echo)
 }
 
 func (echoService *EchoService) GetAllTags() ([]model.Tag, error) {
@@ -488,15 +472,22 @@ func (echoService *EchoService) QueryEchos(
 	if queryDto.SortOrder == "" {
 		queryDto.SortOrder = "desc"
 	}
+	if err := normalizeEchoCursor(&queryDto); err != nil {
+		return commonModel.PageQueryResult[[]model.Echo]{}, err
+	}
 
-	userId := viewer.MustFromContext(ctx).UserID()
-	showPrivate := false
-	if userId != "" {
-		user, err := echoService.commonService.CommonGetUserByUserId(ctx, userId)
-		if err != nil {
-			return commonModel.PageQueryResult[[]model.Echo]{}, err
-		}
-		showPrivate = user.IsAdmin
+	showPrivate, err := echoService.canReadPrivate(ctx)
+	if err != nil {
+		return commonModel.PageQueryResult[[]model.Echo]{}, err
+	}
+
+	cursorMode := queryDto.Cursor != nil
+	pageSize := queryDto.PageSize
+	if cursorMode {
+		// Fetch one extra row so the presence of a next page is known without
+		// making the client issue a guaranteed-empty request when the last page
+		// is exactly full.
+		queryDto.PageSize = pageSize + 1
 	}
 
 	echos, total, err := echoService.echoRepository.QueryEchos(queryDto, showPrivate)
@@ -504,10 +495,72 @@ func (echoService *EchoService) QueryEchos(
 		return commonModel.PageQueryResult[[]model.Echo]{}, err
 	}
 
-	return commonModel.PageQueryResult[[]model.Echo]{
+	hasMore := false
+	if cursorMode && len(echos) > pageSize {
+		echos = echos[:pageSize]
+		hasMore = true
+	}
+
+	echos, err = echoService.hydrateReactions(ctx, echos)
+	if err != nil {
+		return commonModel.PageQueryResult[[]model.Echo]{}, err
+	}
+
+	result := commonModel.PageQueryResult[[]model.Echo]{
 		Items: echos,
 		Total: total,
-	}, nil
+	}
+	if hasMore {
+		last := echos[len(echos)-1]
+		if last.ID != "" {
+			next := model.EncodeCursor(model.Cursor{CreatedAt: last.CreatedAt, ID: last.ID})
+			result.NextCursor = &next
+		}
+	}
+	return result, nil
+}
+
+const maxEchoCursorLength = 512
+
+// normalizeEchoCursor validates the optional keyset cursor and puts the query
+// in cursor mode. A cursor position is never trusted as a filter: only the
+// (created_at, id) boundary is read, while visibility and every caller filter
+// are re-applied by the repository.
+func normalizeEchoCursor(queryDto *commonModel.EchoQueryDto) error {
+	if queryDto.Cursor == nil {
+		return nil
+	}
+
+	if queryDto.SortBy != "created_at" {
+		return commonModel.NewBizErrorWithMessageKey(
+			commonModel.ErrCodeInvalidQuery,
+			commonModel.ECHO_CURSOR_SORT_UNSUPPORTED,
+			commonModel.MsgKeyEchoCursorSortUnsupported,
+			nil,
+		)
+	}
+
+	cursor := strings.TrimSpace(*queryDto.Cursor)
+	if len(cursor) > maxEchoCursorLength {
+		return invalidEchoCursorError()
+	}
+	if cursor != "" {
+		if _, err := model.DecodeCursor(cursor); err != nil {
+			return invalidEchoCursorError()
+		}
+	}
+	queryDto.Cursor = &cursor
+	queryDto.Page = 1
+	return nil
+}
+
+func invalidEchoCursorError() error {
+	return commonModel.NewBizErrorWithMessageKey(
+		commonModel.ErrCodeInvalidQuery,
+		commonModel.INVALID_ECHO_CURSOR,
+		commonModel.MsgKeyEchoInvalidCursor,
+		nil,
+	)
 }
 
 func isSafeTagName(name string) bool {

@@ -34,6 +34,21 @@ const router = createRouter({
       name: 'publish',
       redirect: { name: 'home', query: { tab: 'publish' } },
     },
+    // Dev-only design preview with built-in sample letters.
+    ...(import.meta.env.DEV
+      ? [
+          {
+            path: '/preview',
+            name: 'preview',
+            component: () => import('../views/preview/DesignPreview.vue'),
+            meta: {
+              title: 'Design Preview',
+              description: 'Local design preview for the star-letter timeline.',
+              noindex: true,
+            },
+          },
+        ]
+      : []),
     {
       path: '/panel',
       name: 'panel',
@@ -105,6 +120,28 @@ const router = createRouter({
       meta: {
         title: 'Sign In',
         description: 'Sign in to your Ech0 workspace.',
+        noindex: true,
+      },
+    },
+    {
+      path: '/device',
+      name: 'device',
+      component: () => import('../views/device/DeviceView.vue'),
+      meta: {
+        title: 'Device Authorization',
+        description: 'Approve a CLI sign-in request for this Ech0 instance.',
+        requiresAuth: true,
+        noindex: true,
+      },
+    },
+    {
+      path: '/oauth/authorize',
+      name: 'oauth-authorize',
+      component: () => import('../views/oauth/AuthorizeView.vue'),
+      meta: {
+        title: 'MCP Authorization',
+        description: 'Approve an MCP client request for this Ech0 instance.',
+        requiresAuth: true,
         noindex: true,
       },
     },
@@ -187,6 +224,9 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  // The design preview renders fixture data and must not depend on server init.
+  if (to.name === 'preview') return true
+
   const initStore = useInitStore()
   const userStore = useUserStore()
 
@@ -215,7 +255,8 @@ router.beforeEach(async (to) => {
     (to.meta.optionalAuth && !userStore.isLogin && needRedirect === true)
   ) {
     localStg.removeItem('needLoginRedirect')
-    return { name: 'auth' }
+    // Keep the full target so protected deep links (e.g. /device?code=...) survive login.
+    return { name: 'auth', query: { redirect: to.fullPath } }
   }
 
   return true

@@ -10,10 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lin-snow/ech0/internal/agent"
+	accessService "github.com/lin-snow/ech0/internal/access"
+	"github.com/lin-snow/ech0/internal/authz"
 	authModel "github.com/lin-snow/ech0/internal/model/auth"
 	commonModel "github.com/lin-snow/ech0/internal/model/common"
 	settingModel "github.com/lin-snow/ech0/internal/model/setting"
+	userModel "github.com/lin-snow/ech0/internal/model/user"
 	webhookModel "github.com/lin-snow/ech0/internal/model/webhook"
 	settingService "github.com/lin-snow/ech0/internal/service/setting"
 	"github.com/lin-snow/ech0/internal/test/helpers"
@@ -34,12 +36,13 @@ type deps struct {
 	settingRepo *settingmock.MockSettingRepository
 	webhookRepo *settingmock.MockWebhookRepository
 	revoker     *settingmock.MockTokenRevoker
+	access      *accessService.Service
 	bus         *busen.Bus
 }
 
 func newDeps(t *testing.T) *deps {
 	t.Helper()
-	return &deps{
+	d := &deps{
 		tx:          txmock.NewMockTransactor(t),
 		common:      commonmock.NewMockService(t),
 		kv:          kvmock.NewMockStore(t),
@@ -48,6 +51,18 @@ func newDeps(t *testing.T) *deps {
 		revoker:     settingmock.NewMockTokenRevoker(t),
 		bus:         busen.New(),
 	}
+	d.access = accessService.NewService(d.tx, d.settingRepo, commonUserReader{d.common})
+	return d
+}
+
+// commonUserReader keeps the existing CommonService mock as the user lookup
+// seam instead of introducing a second mock.
+type commonUserReader struct {
+	common *commonmock.MockService
+}
+
+func (r commonUserReader) GetUserByID(ctx context.Context, id string) (userModel.User, error) {
+	return r.common.CommonGetUserByUserId(ctx, id)
 }
 
 func (d *deps) build() *settingService.SettingService {
@@ -61,6 +76,7 @@ func (d *deps) build() *settingService.SettingService {
 		d.webhookRepo,
 		nil,
 		d.revoker,
+		d.access,
 		func() *busen.Bus { return d.bus },
 	)
 }
@@ -339,10 +355,10 @@ func TestCreateAccessToken_Success(t *testing.T) {
 				tok.Name == "cli-token" &&
 				tok.UserID == admin.ID &&
 				tok.TokenType == authModel.TokenTypeAccess &&
-				tok.Audience == authModel.AudienceCLI &&
+				tok.Audience == authz.AudienceCLI &&
 				tok.JTI != "" &&
 				tok.Expiry != nil &&
-				strings.Contains(tok.Scopes, authModel.ScopeEchoRead)
+				strings.Contains(tok.Scopes, authz.ScopeEchoRead)
 		})).
 		Return(nil).
 		Once()
@@ -350,8 +366,8 @@ func TestCreateAccessToken_Success(t *testing.T) {
 	token, err := d.build().CreateAccessToken(helpers.CtxAsUser(testUserID), &settingModel.AccessTokenSettingDto{
 		Name:     "cli-token",
 		Expiry:   settingModel.EIGHT_HOUR_EXPIRY,
-		Scopes:   []string{authModel.ScopeEchoRead, authModel.ScopeEchoRead},
-		Audience: authModel.AudienceCLI,
+		Scopes:   []string{authz.ScopeEchoRead, authz.ScopeEchoRead},
+		Audience: authz.AudienceCLI,
 	})
 	require.NoError(t, err)
 	assert.NotEmpty(t, token)
@@ -385,7 +401,7 @@ func TestUpdateSnapshotScheduleSetting(t *testing.T) {
 	})
 }
 
-func TestUpdateAgentSettings_NormalizesProtocolAndInvalidatesRecent(t *testing.T) {
+func TestUpdateAgentSettings_NormalizesProtocol(t *testing.T) {
 	d := newDeps(t)
 	d.expectAdmin()
 	d.kv.EXPECT().
@@ -394,8 +410,6 @@ func TestUpdateAgentSettings_NormalizesProtocolAndInvalidatesRecent(t *testing.T
 		})).
 		Return(nil).
 		Once()
-	d.kv.EXPECT().Delete(mock.Anything, string(agent.GEN_RECENT)).Return(nil).Once()
-	d.kv.EXPECT().Delete(mock.Anything, string(agent.GEN_RECENT_DIRTY)).Return(nil).Once()
 
 	err := d.build().UpdateAgentSettings(helpers.CtxAsUser(testUserID), &settingModel.AgentSettingDto{
 		Protocol: "gemini", Model: "m", ApiKey: "k", BaseURL: "https://api.example.com/",

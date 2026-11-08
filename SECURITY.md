@@ -1,6 +1,6 @@
 # 安全策略
 
-感谢你帮助改进克喵のEch0 / Ech0 的安全性。
+感谢你帮助改进提笔摘星 / Ech0 的安全性。
 
 ## 支持范围
 
@@ -12,7 +12,7 @@
 
 优先使用 GitHub 的私密漏洞报告：
 
-- https://github.com/kmoretti/Ech0/security/advisories/new
+- https://github.com/LiuShen-Fork/Ech0/security/advisories/new
 
 报告内容建议包括：
 

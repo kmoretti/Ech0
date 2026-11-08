@@ -8,6 +8,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/lin-snow/ech0/internal/authz"
+	authModel "github.com/lin-snow/ech0/internal/model/auth"
 	commonModel "github.com/lin-snow/ech0/internal/model/common"
 	echoModel "github.com/lin-snow/ech0/internal/model/echo"
 	echoService "github.com/lin-snow/ech0/internal/service/echo"
@@ -111,7 +113,7 @@ func TestReadEchos_ShowPrivateResolution(t *testing.T) {
 		t.Run(m.name, func(t *testing.T) {
 			for _, vc := range viewerCases {
 				t.Run(vc.name, func(t *testing.T) {
-					repo := echomock.NewMockRepository(t)
+					repo := newEchoRepoMock(t)
 					common := commonmock.NewMockService(t)
 					vc.setupCommon(common)
 					m.expectRepo(repo, vc.showPrivate)
@@ -128,7 +130,7 @@ func TestReadEchos_UserLookupError(t *testing.T) {
 	boom := errors.New("user lookup failed")
 	for _, m := range readMethods() {
 		t.Run(m.name, func(t *testing.T) {
-			repo := echomock.NewMockRepository(t)
+			repo := newEchoRepoMock(t)
 			common := commonmock.NewMockService(t)
 			common.EXPECT().
 				CommonGetUserByUserId(mock.Anything, adminID).
@@ -145,7 +147,7 @@ func TestReadEchos_RepoErrorPropagates(t *testing.T) {
 	boom := errors.New("db down")
 
 	t.Run("GetHotEchos", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		repo.EXPECT().GetHotEchos(3, false).Return(nil, boom).Once()
 
@@ -155,7 +157,7 @@ func TestReadEchos_RepoErrorPropagates(t *testing.T) {
 	})
 
 	t.Run("GetRandomEcho", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		repo.EXPECT().GetRandomEcho(false).Return(nil, boom).Once()
 
@@ -167,7 +169,7 @@ func TestReadEchos_RepoErrorPropagates(t *testing.T) {
 
 func TestQueryEchos_ViewerResolution(t *testing.T) {
 	t.Run("admin queries with showPrivate true", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		common.EXPECT().
 			CommonGetUserByUserId(mock.Anything, adminID).
@@ -184,8 +186,52 @@ func TestQueryEchos_ViewerResolution(t *testing.T) {
 		assert.Equal(t, int64(1), got.Total)
 	})
 
+	t.Run("echo:read token queries public-only", func(t *testing.T) {
+		repo := newEchoRepoMock(t)
+		common := commonmock.NewMockService(t)
+		repo.EXPECT().
+			QueryEchos(mock.Anything, false).
+			Return([]echoModel.Echo{helpers.NewEcho()}, int64(1), nil).
+			Once()
+
+		ctx := helpers.CtxAsToken(
+			adminID,
+			authModel.TokenTypeAccess,
+			[]string{authz.ScopeEchoRead},
+			[]string{authz.AudienceCLI},
+			"jti-read-query",
+		)
+		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
+		_, err := svc.QueryEchos(ctx, commonModel.EchoQueryDto{Page: 1, PageSize: 10})
+		require.NoError(t, err)
+	})
+
+	t.Run("echo:private token queries private-visible", func(t *testing.T) {
+		repo := newEchoRepoMock(t)
+		common := commonmock.NewMockService(t)
+		common.EXPECT().
+			CommonGetUserByUserId(mock.Anything, adminID).
+			Return(helpers.NewUser(helpers.AsAdmin), nil).
+			Once()
+		repo.EXPECT().
+			QueryEchos(mock.Anything, true).
+			Return([]echoModel.Echo{helpers.NewEcho()}, int64(1), nil).
+			Once()
+
+		ctx := helpers.CtxAsToken(
+			adminID,
+			authModel.TokenTypeAccess,
+			[]string{authz.ScopeEchoRead, authz.ScopeEchoPrivate},
+			[]string{authz.AudienceCLI},
+			"jti-private-query",
+		)
+		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
+		_, err := svc.QueryEchos(ctx, commonModel.EchoQueryDto{Page: 1, PageSize: 10})
+		require.NoError(t, err)
+	})
+
 	t.Run("user lookup error propagates", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		boom := errors.New("lookup failed")
 		common.EXPECT().
@@ -199,7 +245,7 @@ func TestQueryEchos_ViewerResolution(t *testing.T) {
 	})
 
 	t.Run("repository error propagates", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		boom := errors.New("query failed")
 		repo.EXPECT().QueryEchos(mock.Anything, false).Return(nil, int64(0), boom).Once()
@@ -211,7 +257,7 @@ func TestQueryEchos_ViewerResolution(t *testing.T) {
 }
 
 func TestGetEchosByPage_DelegatesToQuery(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 
 	var captured commonModel.EchoQueryDto
@@ -235,7 +281,7 @@ func TestGetEchosByPage_DelegatesToQuery(t *testing.T) {
 }
 
 func TestGetEchosByTagId_DelegatesToQuery(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 
 	var captured commonModel.EchoQueryDto
@@ -255,7 +301,7 @@ func TestGetEchosByTagId_DelegatesToQuery(t *testing.T) {
 
 func TestGetAllTags(t *testing.T) {
 	t.Run("returns repository tags", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		repo.EXPECT().GetAllTags().Return([]echoModel.Tag{{ID: "t1", Name: "go"}}, nil).Once()
 
 		svc := echoService.NewEchoService(nil, nil, nil, repo, nilBus)
@@ -266,7 +312,7 @@ func TestGetAllTags(t *testing.T) {
 	})
 
 	t.Run("propagates repository error", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		boom := errors.New("tags failed")
 		repo.EXPECT().GetAllTags().Return(nil, boom).Once()
 
@@ -274,4 +320,116 @@ func TestGetAllTags(t *testing.T) {
 		_, err := svc.GetAllTags()
 		require.ErrorIs(t, err, boom)
 	})
+}
+
+func TestQueryEchos_CursorMode(t *testing.T) {
+	repo := newEchoRepoMock(t)
+	common := commonmock.NewMockService(t)
+	cursor := "  " + echoModel.EncodeCursor(echoModel.Cursor{CreatedAt: 300, ID: "e3"}) + "  "
+
+	var captured commonModel.EchoQueryDto
+	repo.EXPECT().
+		QueryEchos(mock.Anything, false).
+		Run(func(dto commonModel.EchoQueryDto, _ bool) { captured = dto }).
+		Return([]echoModel.Echo{
+			helpers.NewEcho(func(e *echoModel.Echo) { e.ID = "e2"; e.CreatedAt = 200 }),
+			helpers.NewEcho(func(e *echoModel.Echo) { e.ID = "e1"; e.CreatedAt = 100 }),
+			helpers.NewEcho(func(e *echoModel.Echo) { e.ID = "e0"; e.CreatedAt = 50 }),
+		}, int64(4), nil).
+		Once()
+
+	svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
+	got, err := svc.QueryEchos(helpers.CtxAnonymous(), commonModel.EchoQueryDto{
+		Page: 3, PageSize: 2, Cursor: &cursor,
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, captured.Page, "cursor mode always starts at offset 0")
+	assert.Equal(t, 3, captured.PageSize, "cursor mode probes one extra row")
+	require.NotNil(t, captured.Cursor)
+	assert.Equal(t, echoModel.EncodeCursor(echoModel.Cursor{CreatedAt: 300, ID: "e3"}), *captured.Cursor)
+	assert.Equal(t, int64(4), got.Total)
+	require.Len(t, got.Items, 2, "the probe row is not returned")
+	require.NotNil(t, got.NextCursor)
+	next, err := echoModel.DecodeCursor(*got.NextCursor)
+	require.NoError(t, err)
+	assert.Equal(t, echoModel.Cursor{CreatedAt: 100, ID: "e1"}, next)
+}
+
+func TestQueryEchos_CursorExactFullLastPageHasNoNextCursor(t *testing.T) {
+	repo := newEchoRepoMock(t)
+	common := commonmock.NewMockService(t)
+	empty := ""
+
+	// The probe returns exactly pageSize rows, so there is no next page; the
+	// client must not be sent into a guaranteed-empty request.
+	repo.EXPECT().
+		QueryEchos(mock.Anything, false).
+		Return([]echoModel.Echo{
+			helpers.NewEcho(func(e *echoModel.Echo) { e.ID = "e2"; e.CreatedAt = 200 }),
+			helpers.NewEcho(func(e *echoModel.Echo) { e.ID = "e1"; e.CreatedAt = 100 }),
+		}, int64(2), nil).
+		Once()
+
+	svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
+	got, err := svc.QueryEchos(helpers.CtxAnonymous(), commonModel.EchoQueryDto{
+		PageSize: 2, Cursor: &empty,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, got.NextCursor)
+}
+
+func TestQueryEchos_PageModeHasNoNextCursor(t *testing.T) {
+	repo := newEchoRepoMock(t)
+	common := commonmock.NewMockService(t)
+
+	var captured commonModel.EchoQueryDto
+	repo.EXPECT().
+		QueryEchos(mock.Anything, false).
+		Run(func(dto commonModel.EchoQueryDto, _ bool) { captured = dto }).
+		Return([]echoModel.Echo{
+			helpers.NewEcho(func(e *echoModel.Echo) { e.ID = "e2"; e.CreatedAt = 200 }),
+			helpers.NewEcho(func(e *echoModel.Echo) { e.ID = "e1"; e.CreatedAt = 100 }),
+		}, int64(2), nil).
+		Once()
+
+	svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
+	got, err := svc.QueryEchos(helpers.CtxAnonymous(), commonModel.EchoQueryDto{
+		Page: 1, PageSize: 2,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 2, captured.PageSize, "page mode keeps the exact page size")
+	assert.Len(t, got.Items, 2)
+	assert.Nil(t, got.NextCursor)
+}
+
+func TestQueryEchos_RejectsInvalidCursor(t *testing.T) {
+	repo := newEchoRepoMock(t)
+	svc := echoService.NewEchoService(nil, commonmock.NewMockService(t), nil, repo, nilBus)
+
+	invalid := "not-a-cursor"
+	_, err := svc.QueryEchos(helpers.CtxAnonymous(), commonModel.EchoQueryDto{
+		PageSize: 10, Cursor: &invalid,
+	})
+	require.Error(t, err)
+
+	var biz *commonModel.BizError
+	require.ErrorAs(t, err, &biz)
+	assert.Equal(t, commonModel.ErrCodeInvalidQuery, biz.Code)
+	assert.Equal(t, commonModel.MsgKeyEchoInvalidCursor, biz.MessageKey)
+}
+
+func TestQueryEchos_RejectsCursorWithReactionSort(t *testing.T) {
+	repo := newEchoRepoMock(t)
+	svc := echoService.NewEchoService(nil, commonmock.NewMockService(t), nil, repo, nilBus)
+
+	empty := ""
+	_, err := svc.QueryEchos(helpers.CtxAnonymous(), commonModel.EchoQueryDto{
+		PageSize: 10, Cursor: &empty, SortBy: "reactions",
+	})
+	require.Error(t, err)
+
+	var biz *commonModel.BizError
+	require.ErrorAs(t, err, &biz)
+	assert.Equal(t, commonModel.MsgKeyEchoCursorSortUnsupported, biz.MessageKey)
 }

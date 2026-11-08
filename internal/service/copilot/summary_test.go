@@ -48,6 +48,91 @@ func TestGetRecent_ReturnsCachedValueWhileDirtyAndRefreshesInBackground(t *testi
 	}, time.Second, 10*time.Millisecond)
 }
 
+func TestGetRecent_EmptyRefreshKeepsCachedValueAndDirtyMarker(t *testing.T) {
+	kv := kvstore.NewMemory()
+	require.NoError(t, kv.Set(helpers.CtxAnonymous(), string(agent.GEN_RECENT), "old summary"))
+	require.NoError(t, kv.Set(helpers.CtxAnonymous(), string(agent.GEN_RECENT_DIRTY), "1"))
+
+	refreshed := make(chan struct{})
+	s := &CopilotService{
+		durableKV: kv,
+		recentBuilder: func(ctx context.Context) (string, error) {
+			close(refreshed)
+			return "   \n", nil
+		},
+	}
+
+	got, err := s.GetRecent(helpers.CtxAnonymous())
+	require.NoError(t, err)
+	require.Equal(t, "old summary", got)
+
+	require.Eventually(t, func() bool {
+		select {
+		case <-refreshed:
+		default:
+			return false
+		}
+		value, err := kv.Get(helpers.CtxAnonymous(), string(agent.GEN_RECENT))
+		if err != nil || value != "old summary" {
+			return false
+		}
+		dirty, err := kv.Get(helpers.CtxAnonymous(), string(agent.GEN_RECENT_DIRTY))
+		return err == nil && dirty == "1"
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestGetRecent_ReadsLegacyJSONCache(t *testing.T) {
+	kv := kvstore.NewMemory()
+	require.NoError(t, kv.Set(
+		helpers.CtxAnonymous(),
+		string(agent.GEN_RECENT),
+		`{"fingerprint":"abc123","text":"legacy summary"}`,
+	))
+
+	s := &CopilotService{durableKV: kv}
+
+	got, err := s.GetRecent(helpers.CtxAnonymous())
+	require.NoError(t, err)
+	require.Equal(t, "legacy summary", got)
+}
+
+func TestGetRecent_IgnoresBlankCacheAndRegenerates(t *testing.T) {
+	kv := kvstore.NewMemory()
+	require.NoError(t, kv.Set(helpers.CtxAnonymous(), string(agent.GEN_RECENT), "   "))
+
+	s := &CopilotService{
+		durableKV: kv,
+		recentBuilder: func(ctx context.Context) (string, error) {
+			return "fresh summary", nil
+		},
+	}
+
+	got, err := s.GetRecent(helpers.CtxAnonymous())
+	require.NoError(t, err)
+	require.Equal(t, "fresh summary", got)
+
+	stored, err := kv.Get(helpers.CtxAnonymous(), string(agent.GEN_RECENT))
+	require.NoError(t, err)
+	require.Equal(t, "fresh summary", stored)
+}
+
+func TestGetRecent_EmptyFirstGenerationReturnsError(t *testing.T) {
+	kv := kvstore.NewMemory()
+	s := &CopilotService{
+		durableKV: kv,
+		recentBuilder: func(ctx context.Context) (string, error) {
+			return "  ", nil
+		},
+	}
+
+	got, err := s.GetRecent(helpers.CtxAnonymous())
+	require.ErrorIs(t, err, errRecentSummaryEmpty)
+	require.Empty(t, got)
+
+	_, err = kv.Get(helpers.CtxAnonymous(), string(agent.GEN_RECENT))
+	require.ErrorIs(t, err, kvstore.ErrNotFound)
+}
+
 func TestGetRecent_RefreshFailureKeepsCachedValueAndDirtyMarker(t *testing.T) {
 	kv := kvstore.NewMemory()
 	require.NoError(t, kv.Set(helpers.CtxAnonymous(), string(agent.GEN_RECENT), "old summary"))

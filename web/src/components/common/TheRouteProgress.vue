@@ -117,8 +117,8 @@ onBeforeUnmount(() => {
 .route-progress__bar {
   height: 100%;
   width: 0;
-  background: var(--color-accent, #e07020);
-  box-shadow: 0 0 6px var(--color-accent, #e07020);
+  background: var(--color-accent, #8a4132);
+  box-shadow: 0 0 6px var(--color-accent, #8a4132);
   transition:
     width 0.2s ease,
     opacity 0.2s ease;

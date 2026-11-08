@@ -7,7 +7,7 @@
 1. **`docs/` 只放 `.md`**。截图、视频、PDF、可构建工程一律进 `docs/assets/`。唯一例外是 `docs/imgs/` 下的 4 个对外契约文件（见下）。
 2. **新增/删除文档必须同步本页**。本页是唯一入口：读者从这里进入，孤儿文档等于不存在。
 3. **冻结路径（外部 URL 契约，禁止改名或移动）**：
-   - `docs/usage/*.md`、`docs/dev/capsule/spec.md` — 已被发布站 `site/docs/**` 用绝对 GitHub blob 链接引用；
+   - `docs/usage/*.md`、`docs/dev/capsule/spec.md` — 已被发布站 `site/docs/{en,zh}/**` 用绝对 GitHub blob 链接引用；
    - `docs/imgs/{logo.svg,screenshot.png,pay.jpeg,qq.png}` — 被 `charts/ech0/Chart.yaml` 的 `icon`、`.github/FUNDING.yml`、4 个 README 引用（Helm 仓库与 ArtifactHub 会长期缓存）。
 4. **命名**：`dev/` 下只有设计记录/待定稿用 `*-design.md` 后缀；流程与规约用平铺名词（`testing.md`、`logging.md`）。
 
@@ -18,7 +18,8 @@
 | 文档 | 说明 |
 |------|------|
 | [usage/configuration.md](usage/configuration.md) | 环境变量与 `.env`：加载顺序、全部变量与默认值、env 与后台设置的边界 |
-| [usage/mcp-usage.md](usage/mcp-usage.md) | MCP 接入：Bearer Token / scope / audience、Host 配置、工具与资源清单 |
+| [usage/mcp-usage.md](usage/mcp-usage.md) | MCP 接入：OAuth 2.1 授权 / Bearer Token、scope / audience、Host 配置、工具与资源清单 |
+| [usage/agent-discovery.md](usage/agent-discovery.md) | 智能体发现：`/llms.txt`、ARD / AI catalog、MCP server card 的内容边界与开关 |
 | [usage/webhook-usage.md](usage/webhook-usage.md) | Webhook：事件、签名、管理接口与故障处理 |
 | [usage/storage-migration.md](usage/storage-migration.md) | 存储迁移：更换 S3 服务商、本地 ⇄ 对象存储双向互迁 |
 | [usage/capsule.md](usage/capsule.md) | 胶囊（Capsule）：导出/导入/校验、编译静态站，以及与快照的分工 |
@@ -51,13 +52,16 @@
 | [dev/logging.md](dev/logging.md) | 日志库用法与字段 / `module` 约定 |
 | [dev/table-design-standard.md](dev/table-design-standard.md) | Panel 表格组件的布局与交互规范 |
 | [dev/huma-raw-gin-endpoints.md](dev/huma-raw-gin-endpoints.md) | 仍走裸 gin 的端点清单及原因（其余 JSON 端点已全量 Huma 化） |
+| [dev/seo-sharing.md](dev/seo-sharing.md) | 分享卡片与可抓取性：服务端 head 注入、路由表同步、canonical / OG / JSON-LD、robots / sitemap |
 
 ### 设计记录（为什么这样）
 
 | 文档 | 说明 |
 |------|------|
 | [dev/auth-design.md](dev/auth-design.md) | 认证体系：双 Token、OAuth / Passkey、吊销策略 |
+| [dev/mcp-authorization-design.md](dev/mcp-authorization-design.md) | MCP 授权服务器：PRM / AS 元数据、CIMD + DCR、授权码 + PKCE、scope 与撤销 |
 | [dev/access-token-scope-design.md](dev/access-token-scope-design.md) | Access Token 的 `typ` / scope / audience 设计背景（实现以代码为准） |
+| [dev/cli-design.md](dev/cli-design.md) | CLI（`apps/cli`）：Bun/TS 技术栈、catalog 驱动的命令发现、Huma→TS/zod 生成链、三种登录与 device flow、输出契约 |
 | [dev/config-and-settings-architecture.md](dev/config-and-settings-architecture.md) | config / setting / kvstore / transaction 四层依赖、"读直连写走域" |
 | [dev/timezone-design.md](dev/timezone-design.md) | 时间与时区：UTC epoch 存储、本地展示、跨时区一致性 |
 | [dev/job-runner-design.md](dev/job-runner-design.md) | 长时有状态作业子系统（Job Runner） |

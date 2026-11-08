@@ -10,12 +10,23 @@ import router from '@/router'
 import { useAuthStore } from './auth'
 import { useEchoStore } from './echo'
 import { i18n, setI18nLocale } from '@/locales'
+import { HOME_TIMELINE_ANCHOR_KEY, HOME_TIMELINE_COUNT_KEY } from '@/utils/timeline'
 
 export const useUserStore = defineStore('userStore', () => {
   const authStore = useAuthStore()
   const user = ref<App.Api.User.User | null>(null)
   const isLogin = computed(() => !!user.value)
   const initialized = ref<boolean>(false)
+
+  /** Returns to the deep link captured by the auth guard, else the home page. */
+  function navigateAfterLogin() {
+    const target = router.currentRoute.value.query.redirect
+    if (typeof target === 'string' && target.startsWith('/') && !target.startsWith('//')) {
+      router.push(target)
+      return
+    }
+    router.push({ name: 'home' })
+  }
 
   async function login(userInfo: App.Api.Auth.LoginParams) {
     const res = await fetchLogin(userInfo)
@@ -30,7 +41,7 @@ export const useUserStore = defineStore('userStore', () => {
       echoStore.invalidateEchosCache()
       echoStore.clearEchos()
 
-      router.push({ name: 'home' })
+      navigateAfterLogin()
     }
   }
 
@@ -46,7 +57,7 @@ export const useUserStore = defineStore('userStore', () => {
       echoStore.invalidateEchosCache()
       echoStore.clearEchos()
 
-      router.push({ name: 'home' })
+      navigateAfterLogin()
     }
   }
 
@@ -71,6 +82,11 @@ export const useUserStore = defineStore('userStore', () => {
     await authStore.logout()
 
     user.value = null
+
+    // The timeline is about to reload as anonymous; a restored anchor/count
+    // belongs to the previous session and must not seed that feed.
+    sessionStorage.removeItem(HOME_TIMELINE_ANCHOR_KEY)
+    sessionStorage.removeItem(HOME_TIMELINE_COUNT_KEY)
 
     const echoStore = useEchoStore()
     echoStore.invalidateEchosCache()

@@ -23,7 +23,7 @@
           </h2>
 
           <div class="flex-none">
-            <Verified class="text-sky-500 w-4 h-4 sm:w-5 sm:h-5" />
+            <Verified class="text-[var(--color-accent)] w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         </div>
       </div>
@@ -36,7 +36,7 @@
         class="flex-none opacity-70 hover:opacity-100 transition-opacity"
       >
         <img
-          :src="ECHO_FAVICON_URL"
+          src="/Ech0.png"
           alt="Ech0"
           loading="lazy"
           decoding="async"
@@ -48,7 +48,7 @@
     <div class="hub-echo-body py-1.5" :class="{ 'hub-echo-body--clamped': isLongContent }">
       <template v-if="isContentLeadingEcho(props.echo)">
         <div class="mb-2.5">
-          <TheMdPreview :content="preview.content" />
+          <TheMdPreview :content="previewContent" />
         </div>
 
         <TheMediaPlayer :echo="props.echo" :baseUrl="echo.server_url" :layout="props.echo.layout" />
@@ -58,7 +58,7 @@
         <TheMediaPlayer :echo="props.echo" :baseUrl="echo.server_url" :layout="props.echo.layout" />
 
         <div class="mt-2.5">
-          <TheMdPreview :content="preview.content" />
+          <TheMdPreview :content="previewContent" />
         </div>
       </template>
 
@@ -73,13 +73,8 @@
       target="_blank"
       rel="noopener noreferrer"
       class="hub-echo-more"
-      :class="{ 'hub-echo-more--image-placeholder': preview.hasTruncatedMarkdownImage }"
     >
-      <template v-if="preview.hasTruncatedMarkdownImage">
-        <ImageIcon aria-hidden="true" class="w-4 h-4" />
-        {{ t('hubEcho.imagePreviewTruncated') }}
-      </template>
-      <template v-else>{{ t('echoCard.openDetail') }}</template>
+      {{ t('echoCard.openDetail') }}
     </a>
 
     <div class="mt-1 flex items-center justify-between gap-2">
@@ -87,36 +82,18 @@
         {{ formatDate(props.echo.createdTs) }}
       </div>
 
-      <div class="flex flex-none items-center gap-1" v-tooltip="t('hubEcho.like')">
-        <button
-          @click="handleLikeEcho()"
-          :class="[
-            'transform transition-transform duration-150',
-            isLikeAnimating ? 'scale-160' : 'scale-100',
-          ]"
-        >
-          <GrayLike class="w-4 h-4" />
-        </button>
-
-        <span class="text-xs text-[var(--color-text-muted)]">
-          {{ fav_count > 99 ? '99+' : fav_count }}
-        </span>
-      </div>
+      <TheEchoReactions :echo="props.echo" :base-url="props.echo.server_url" />
     </div>
   </article>
 </template>
 
 <script setup lang="ts">
 import Verified from '@/components/icons/verified.vue'
-import GrayLike from '@/components/icons/graylike.vue'
-import ImageIcon from '@/components/icons/image.vue'
+import TheEchoReactions from '@/components/advanced/echo/cards/TheEchoReactions.vue'
 import { TheMdPreview } from '@/components/advanced/md'
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 import { isContentLeadingEcho } from '@/utils/echo'
 import { formatDate } from '@/utils/other'
-import { useFetch } from '@vueuse/core'
-import { theToast } from '@/utils/toast'
-import { localStg } from '@/utils/storage'
 import { useI18n } from 'vue-i18n'
 
 const TheMediaPlayer = defineAsyncComponent(
@@ -132,75 +109,11 @@ const props = defineProps<{
   echo: Echo
 }>()
 const { t } = useI18n()
-const CONTENT_PREVIEW_LIMIT = 200
-const ECHO_FAVICON_URL = '/favicon.ico'
-const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\([^)]*\)/g
-
-const isLongContent = computed(
-  () => Array.from(props.echo.content || '').length > CONTENT_PREVIEW_LIMIT,
-)
-const preview = computed(() => {
-  const content = props.echo.content || ''
-  const characters = Array.from(content)
-  if (characters.length <= CONTENT_PREVIEW_LIMIT) {
-    return { content, hasTruncatedMarkdownImage: false }
-  }
-
-  const truncatedImage = Array.from(content.matchAll(MARKDOWN_IMAGE_PATTERN)).find((match) => {
-    const start = Array.from(content.slice(0, match.index)).length
-    const end = start + Array.from(match[0]).length
-    return start < CONTENT_PREVIEW_LIMIT && end > CONTENT_PREVIEW_LIMIT
-  })
-  const previewEnd = truncatedImage
-    ? Array.from(content.slice(0, truncatedImage.index)).length
-    : CONTENT_PREVIEW_LIMIT
-
-  return {
-    content: `${characters.slice(0, previewEnd).join('')}...`,
-    hasTruncatedMarkdownImage: Boolean(truncatedImage),
-  }
+const isLongContent = computed(() => Array.from(props.echo.content || '').length > 200)
+const previewContent = computed(() => {
+  if (!isLongContent.value) return props.echo.content
+  return `${Array.from(props.echo.content || '').slice(0, 200).join('')}...`
 })
-
-const fav_count = ref<number>(props.echo.fav_count)
-const server_url = computed(() => props.echo.server_url)
-const echo_id = computed(() => props.echo.id)
-const isLikeAnimating = ref(false)
-const LIKE_LIST_KEY = computed(() => `${server_url.value}_liked_echo_ids`)
-
-watch(
-  () => props.echo.fav_count,
-  (next) => {
-    fav_count.value = next
-  },
-)
-
-const handleLikeEcho = async () => {
-  isLikeAnimating.value = true
-  setTimeout(() => {
-    isLikeAnimating.value = false
-  }, 250)
-
-  const likedEchoIds: string[] = localStg.getItem(LIKE_LIST_KEY.value) || []
-  if (likedEchoIds.includes(echo_id.value)) {
-    theToast.info(String(t('hubEcho.alreadyLiked')))
-    return
-  }
-
-  const { error, data } = await useFetch<App.Api.Response<null>>(
-    `${server_url.value}/api/echo/like/${echo_id.value}`,
-  )
-    .put()
-    .json()
-
-  if (error.value || data.value?.code !== 1) {
-    theToast.error(String(t('hubEcho.likeFailed')))
-  } else {
-    fav_count.value += 1
-    likedEchoIds.push(echo_id.value)
-    localStg.setItem(LIKE_LIST_KEY.value, likedEchoIds)
-    theToast.success(String(t('hubEcho.likeSuccess')))
-  }
-}
 </script>
 
 <style scoped lang="css">
@@ -208,7 +121,6 @@ const handleLikeEcho = async () => {
   content: '';
   position: absolute;
 
-  /* 与头像水平居中对齐：card padding-top (p-3 = 0.75rem) + header mt-1 (0.25rem) + (avatar 1.5rem - bar 1rem) / 2 */
   top: 1.25rem;
   left: 0;
   width: 2px;
@@ -220,7 +132,6 @@ const handleLikeEcho = async () => {
 
 @media (width >= 640px) {
   .hub-echo-card::before {
-    /* sm: padding-top 0.875rem + mt-1 0.25rem + (avatar 1.75rem - bar 1.125rem) / 2 */
     top: 1.4375rem;
     height: 1.125rem;
   }
@@ -264,15 +175,6 @@ const handleLikeEcho = async () => {
   font-size: 0.75rem;
   font-weight: 600;
   border-top: 1px solid var(--color-border-subtle);
-}
-
-.hub-echo-more--image-placeholder {
-  gap: 0.4rem;
-  margin-top: 0.5rem;
-  border: 1px dashed var(--color-border-subtle);
-  border-radius: 6px;
-  color: var(--color-text-secondary);
-  font-weight: 500;
 }
 
 /* Gallery 各 layout 内部硬编码了 w-[88%] mx-auto + mb-4，

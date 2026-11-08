@@ -1,4 +1,17 @@
-﻿{
+{
+  "reaction": {
+    "add": "Reaktion hinzufügen",
+    "close": "Reaktionen schließen",
+    "unavailable": "Dies ist ein statisches Archiv; Reaktionen sind nicht verfügbar.",
+    "failed": "Reaktion fehlgeschlagen, bitte erneut versuchen.",
+    "like": "Gefällt mir",
+    "heart": "Herz",
+    "haha": "Haha",
+    "wow": "Wow",
+    "sad": "Traurig",
+    "cry": "Weinen",
+    "party": "Feiern"
+  },
   "common": {
     "requestFailed": "Anfrage fehlgeschlagen",
     "save": "Speichern",
@@ -156,7 +169,6 @@
     "bold": "Fett",
     "italic": "Kursiv",
     "heading": "Überschrift",
-    "quote": "Zitat",
     "unorderedList": "Aufzählung",
     "codeBlock": "Codeblock",
     "addedLabel": "Hinzugefügt:",
@@ -252,9 +264,6 @@
     "downloadFailed": "Download fehlgeschlagen",
     "downloadFailedResponse": "Download fehlgeschlagen: unerwartete Serverantwort"
   },
-  "staticSite": {
-    "likeUnavailable": "Dies ist ein statisches Archiv; Liken ist nicht möglich."
-  },
   "auth": {
     "loginSuccess": "Anmeldung erfolgreich – willkommen zurück! 🎉",
     "signupSuccess": "Registrierung erfolgreich, bitte anmelden."
@@ -275,6 +284,7 @@
     "passkeyLoginFailed": "Passkey-Anmeldung fehlgeschlagen"
   },
   "init": {
+    "introKicker": "Erste Einrichtung",
     "ownerEmailPlaceholder": "Owner-E-Mail",
     "ownerUsernamePlaceholder": "Owner-Benutzername",
     "ownerPasswordPlaceholder": "Owner-Passwort",
@@ -282,14 +292,36 @@
     "initialize": "Initialisieren",
     "initDone": "Initialisierung abgeschlossen",
     "alreadyInitializedRedirect": "System bereits initialisiert, Weiterleitung zur Anmeldung",
-    "initFailed": "Initialisierung fehlgeschlagen"
+    "initFailed": "Initialisierung fehlgeschlagen",
+    "introHeading": "Mit Ech0 loslegen",
+    "introDescription": "Erstelle das Owner-Konto, schließe die Grundeinrichtung der Seite ab und eröffne deinen persönlichen Aufzeichnungsraum.",
+    "siteTitlePlaceholder": "Seitenname (optional)",
+    "autoLoginFailed": "Owner erstellt. Bitte anmelden."
+  },
+  "onboarding": {
+    "title": "Mach deine Instanz fertig",
+    "publishTitle": "Schreibe deinen ersten Echo",
+    "publishDesc": "Halte einen Gedanken fest — hier beginnt deine Timeline.",
+    "siteTitleTitle": "Gib deiner Seite einen Namen",
+    "siteTitleDesc": "Gib deiner Seite einen Namen; er erscheint im Browsertitel und auf Freigabekarten.",
+    "siteURLTitle": "Lege deine Seitenadresse fest",
+    "siteURLDesc": "Trag deine öffentliche Adresse ein, damit RSS, Freigabelinks und Snapshots erreichbar sind.",
+    "done": "Erledigt",
+    "hide": "Ausblenden",
+    "firstEchoTitle": "Dein erster Echo ist veröffentlicht",
+    "firstEchoDesc": "Deine Timeline hat einen neuen Anfang. Klick auf das Datum, um den Echo zu öffnen.",
+    "dismiss": "Später",
+    "actionPublish": "Jetzt veröffentlichen",
+    "actionSiteTitle": "Namen geben",
+    "actionSiteURL": "Adresse anlegen"
   },
   "hub": {
     "emptyList": "Hub-Liste ist leer. Füge zuerst Connect-Einträge in den Einstellungen hinzu.",
+    "emptyListGuest": "Noch keine Ech0-Instanz verbunden – hier gibt es gerade nichts zu entdecken.",
     "noAvailableInstance": "Derzeit keine erreichbaren Hub-Instanzen verfügbar.",
     "connectedCount": "Mit {count} Instanz(en) verbunden, Echos werden geladen…",
     "loading": "Wird geladen…",
-    "emptyConnectHint": "Noch keine Daten. Füge zuerst einen Connect hinzu.",
+    "noEchoes": "Gerade gibt es nichts zu entdecken.",
     "noMoreData": "Keine weiteren Daten"
   },
   "systemLog": {
@@ -319,17 +351,14 @@
     "alreadyLatest": "Bereits auf dem neuesten Stand",
     "checkUpdateFailed": "Update-Prüfung fehlgeschlagen",
     "clickToCheckUpdate": "Klicken, um auf Updates zu prüfen",
-    "activityTitle": "Activity",
-    "activityAccent": "Log",
-    "visitorTitle": "Besucher",
-    "visitorAccent": "Statistik",
+    "activityTitle": "Activity Log",
+    "visitorTitle": "Besucherstatistik",
     "visitorPv": "Seitenaufrufe",
     "visitorUv": "Eindeutige Besucher",
     "visitorEmpty": "Noch keine Besucherdaten"
   },
   "tagPileWidget": {
-    "title": "Tech",
-    "accent": "Stacks",
+    "title": "Tech Stacks",
     "empty": "Keine Trending-Tags"
   },
   "panelPage": {
@@ -404,6 +433,23 @@
     "rangeSeparator": "bis",
     "activeCountSuffix": "{count} Filter aktiv"
   },
+  "wall": {
+    "deskCorner": "Schreibtischecke",
+    "loadMore": "Mehr laden",
+    "hasNotes": "Tage mit Notizen",
+    "all": "Alle",
+    "notesCount": "{count} Notizen",
+    "empty": "Noch keine Notizen an der Wand",
+    "emptyDay": "An diesem Tag gibt es keine Notizen",
+    "openNote": "Notiz öffnen",
+    "viewDetail": "Details ansehen",
+    "close": "Schließen",
+    "previousMonth": "Voriger Monat",
+    "nextMonth": "Nächster Monat",
+    "connected": "Verbindungen",
+    "noConnects": "Noch keine verbundenen Seiten",
+    "aiSummary": "KI-Zusammenfassung"
+  },
   "homeSidebar": {
     "home": "Feed",
     "panel": "Einstellungen",
@@ -418,7 +464,11 @@
     "noMore": "Keine weiteren Daten",
     "noMoreFiltered": "Keine weiteren Daten",
     "loading": "Wird geladen…",
-    "older": "Älter"
+    "loadingMore": "Weitere werden geladen…",
+    "loadMoreFailed": "Weitere Daten konnten nicht geladen werden",
+    "loadFailed": "Die Zeitleiste konnte nicht geladen werden",
+    "retry": "Erneut versuchen",
+    "allLoaded": "Das war alles"
   },
   "dateTime": {
     "justNow": "Gerade eben",
@@ -442,9 +492,6 @@
   },
   "echoDetail": {
     "share": "Teilen",
-    "like": "Gefällt mir",
-    "alreadyLiked": "Du hast bereits reagiert – danke!",
-    "likeSuccess": "Gefällt mir!",
     "copied": "Link in die Zwischenablage kopiert!",
     "shareSuffix": "Geteilt über Ech0",
     "sharePanelTitle": "Dieses Ech0 teilen",
@@ -506,10 +553,10 @@
     "deleteConfirmDesc": "Diese Aktion kann nicht rückgängig gemacht werden.",
     "deleteSuccess": "Gelöscht",
     "exitUpdateModeFirst": "Bitte zuerst den Bearbeitungsmodus verlassen",
+    "editAnotherEchoTitle": "Anderen Echo bearbeiten?",
+    "editAnotherEchoDesc": "Du bearbeitest bereits einen Echo. Aktuelle Änderungen verwerfen und diesen Echo bearbeiten?",
     "openDetail": "Detail öffnen",
-    "imagePreviewTruncated": "Bildvorschau ausgelassen.",
-    "commentsLabel": "Kommentare",
-    "commentCount": "{count} Kommentare"
+    "commentsLabel": "Kommentare"
   },
   "userSetting": {
     "title": "Benutzerverwaltung",
@@ -525,6 +572,10 @@
     "avatarUploading": "Avatar wird hochgeladen…",
     "avatarUploadSuccess": "Avatar hochgeladen!",
     "uploadFailed": "Upload fehlgeschlagen, bitte später erneut versuchen",
+    "role": "Rolle",
+    "roleOwner": "Inhaber",
+    "roleAdmin": "Admin",
+    "roleMember": "Mitglied",
     "resetAvatar": "Avatar zurücksetzen",
     "resetAvatarConfirmTitle": "Avatar zurücksetzen?",
     "resetAvatarConfirmDesc": "Die aktuelle benutzerdefinierte Avatar-Datei wird gelöscht und kann nicht wiederhergestellt werden.",
@@ -563,6 +614,8 @@
     "customJs": "Eigenes JS",
     "customJsPlaceholder": "Eigenes Script eingeben",
     "allowRegister": "Registrierung erlauben",
+    "agentDiscovery": "Agent-Erkennung",
+    "agentDiscoveryHint": "Veröffentlicht /llms.txt, den AI-Katalog und die MCP-Server-Card, damit KI-Agenten die Feeds, die API und den MCP-Endpunkt dieser Instanz finden",
     "defaultLocale": "Standardsprache",
     "logoUploading": "Server-Logo wird hochgeladen…",
     "logoUploadSuccess": "Server-Logo hochgeladen!",
@@ -794,20 +847,33 @@
     "scopeGroupConnect": "Verbindungen",
     "scopeGroupProfile": "Profil",
     "scopeGroupAdmin": "Verwaltung",
+    "scopeGroupMcp": "MCP",
     "scopeEchoRead": "Echos lesen",
     "scopeEchoWrite": "Echos erstellen/bearbeiten",
+    "scopeEchoDelete": "Echos löschen",
+    "scopeEchoPrivate": "Private Echos lesen",
     "scopeCommentRead": "Kommentare lesen",
     "scopeCommentWrite": "Kommentare schreiben",
-    "scopeCommentModerate": "Kommentare moderieren",
+    "scopeCommentReview": "Kommentare prüfen",
+    "scopeCommentDelete": "Kommentare löschen",
+    "scopeCommentSettings": "Kommentareinstellungen verwalten",
     "scopeFileRead": "Dateien lesen",
-    "scopeFileWrite": "Dateien hochladen/verwalten",
+    "scopeFileWrite": "Dateien hochladen/bearbeiten",
+    "scopeFileDelete": "Dateien löschen",
     "scopeConnectRead": "Peer-Verbindungen anzeigen",
-    "scopeConnectWrite": "Peer-Verbindungen verwalten",
+    "scopeConnectWrite": "Peer-Verbindungen hinzufügen/bearbeiten",
+    "scopeConnectDelete": "Peer-Verbindungen löschen",
     "scopeProfileRead": "Profil lesen",
     "scopeProfileWrite": "Profil bearbeiten",
-    "scopeAdminSettings": "Systemeinstellungen verwalten",
+    "scopeAdminSite": "Website-Einstellungen verwalten",
+    "scopeAdminStorage": "Speichereinstellungen verwalten",
+    "scopeAdminAuth": "Authentifizierungseinstellungen verwalten",
+    "scopeAdminWebhook": "Webhooks verwalten",
+    "scopeAdminAgent": "Agent und Embeddings verwalten",
+    "scopeAdminData": "Migration und Snapshots verwalten",
+    "scopeAdminOps": "Logs und Laufzeitstatus verwalten",
     "scopeAdminUser": "Benutzer verwalten",
-    "scopeAdminToken": "Token verwalten",
+    "scopeMcpRead": "MCP-Manifest lesen",
     "copyToken": "Token kopieren",
     "detail": "Details",
     "viewDetail": "Token-Details anzeigen",
@@ -1004,8 +1070,7 @@
     "collapse": "Einklappen",
     "copy": "Kopieren",
     "copied": "Kopiert",
-    "taskCheckboxLabel": "Aufgaben-Kontrollkästchen",
-    "imageLoadFailed": "Bild konnte nicht geladen werden. Klicken, um das Original zu öffnen."
+    "taskCheckboxLabel": "Aufgaben-Kontrollkästchen"
   },
   "baseSelect": {
     "empty": "Keine Optionen",
@@ -1029,18 +1094,13 @@
     "pageNotFound": "Seite nicht gefunden"
   },
   "hubEcho": {
-    "jumpToEcho": "Dieses Echo öffnen",
-    "like": "Gefällt mir",
-    "alreadyLiked": "Du hast bereits reagiert",
-    "likeFailed": "Gefällt-mir fehlgeschlagen",
-    "likeSuccess": "Gefällt mir!",
-    "imagePreviewTruncated": "Bildvorschau ausgelassen. In der Detailansicht ansehen."
+    "jumpToEcho": "Dieses Echo öffnen"
   },
   "imageGallery": {
     "previewImage": "Bild {index} anzeigen",
     "prevImage": "Vorheriges Bild",
     "nextImage": "Nächstes Bild",
-    "scrollHint": "← Wischen, um mehr zu sehen →"
+    "goToImage": "Zu Bild {index} springen"
   },
   "audioPlayer": {
     "unsupported": "Ihr Browser unterstützt keine Audiowiedergabe",
@@ -1079,7 +1139,8 @@
     "tweetView": "Original-Beitrag auf X ansehen"
   },
   "recentCard": {
-    "mysteriousRecent": "Der Autor war in letzter Zeit eher zurückhaltend…"
+    "mysteriousRecent": "Der Autor war in letzter Zeit eher zurückhaltend…",
+    "generating": "Wird erstellt…"
   },
   "websocket": {
     "invalidMessage": "Ungültige WebSocket-Nachricht empfangen"
@@ -1088,25 +1149,38 @@
     "title": "Ech0 Copilot"
   },
   "mcpSetting": {
-    "description": "Verbinde Ech0 mit einem MCP-fähigen KI-Client, damit die KI deine Inhalte direkt abrufen und verwalten kann.",
+    "description": "Verbinde Ech0 mit einem MCP-fähigen KI-Client. OAuth 2.1 Discovery wird unterstützt; Access-Tokens bleiben verfügbar.",
     "createToken": "Access-Token erstellen",
     "endpointTitle": "MCP Endpoint",
-    "endpointHint": "Trage diese Adresse in deinem MCP-Client ein und authentifiziere dich mit einem Bearer-Token.",
+    "endpointHint": "Trage diese Adresse in deinem MCP-Client ein. OAuth-fähige Clients öffnen die Zustimmungsseite automatisch; andere Clients nutzen ein Bearer-Token.",
     "copyEndpoint": "Adresse kopieren",
     "copySuccess": "Adresse kopiert",
     "copyFailed": "Kopieren fehlgeschlagen",
     "loadFailed": "MCP-Angaben konnten nicht geladen werden",
     "transport": "Transport",
     "audience": "Token Audience",
-    "protocolVersions": "Protocol Version",
+    "protocolVersions": "Protokollversionen",
+    "authorizationTitle": "Autorisierung",
+    "authorizationHint": "OAuth-2.1-fähige Clients erkennen den Autorisierungsserver automatisch und öffnen eine Zustimmungsseite im Browser. Nur Administratoren können zustimmen.",
+    "oauth": "OAuth",
+    "oauthValue": "2.1 · PKCE (S256)",
+    "discovery": "Discovery",
+    "discoveryValue": "RFC 9728 · RFC 8414",
+    "clientRegistration": "Client-Registrierung",
+    "clientRegistrationValue": "CIMD bevorzugt · DCR als Fallback",
+    "tokenPolicy": "Token-Richtlinie",
+    "tokenPolicyValue": "Nur Access-Token · kein Refresh-Token",
+    "oauthServer": "Autorisierungsserver",
+    "refreshHint": "Ech0 stellt keine Refresh-Tokens aus. Wenn dein Client standardmäßig den refresh_token-Grant anfragt, deaktiviere ihn vor dem Verbinden.",
     "capabilitiesTitle": "Capabilities",
-    "dangerLegend": "Rot markierte Operationen sind destruktiv; lass sie im Client bestätigen. Klicke auf einen Namen für Scope und vollständige Beschreibung.",
+    "dangerLegend": "Rot markierte Operationen sind destruktiv. Clients mit elicitation-Unterstützung erhalten eine Bestätigung; andere verlassen sich auf die destruktive Annotation des Hosts. Klicke auf einen Namen für Scope und vollständige Beschreibung.",
     "groupEcho": "Inhalte",
     "groupProfile": "Profil",
     "groupComment": "Kommentare",
     "groupFile": "Dateien",
     "groupConnect": "Connect",
     "groupAdmin": "Site-Verwaltung",
+    "groupMCP": "MCP",
     "groupResources": "Ressourcen",
     "detailClose": "Schließen",
     "detailScopes": "Erforderlicher Scope",
@@ -1206,5 +1280,54 @@
     "exportPhasePending": "Vorber.",
     "exportPhasePacking": "Packen",
     "exportPhaseCompleted": "Fertig"
+  },
+  "scopeAccordion": {
+    "scopes": "Berechtigungen",
+    "summary": "{count} Berechtigungen · {groups} Kategorien",
+    "otherScopes": "Weitere Berechtigungen"
+  },
+  "oauthConsent": {
+    "title": "Anwendung autorisieren",
+    "subtitle": "Eine Anwendung möchte auf deine Ech0-Instanz zugreifen.",
+    "client": "Client",
+    "resource": "Ressource",
+    "approve": "Erlauben",
+    "deny": "Ablehnen",
+    "approving": "Wird verarbeitet…",
+    "loading": "Autorisierungsanfrage wird gelesen…",
+    "adminRequired": "Nur Administratoren können Anwendungen autorisieren.",
+    "invalidRequest": "Die Autorisierungsanfrage ist unvollständig oder ungültig.",
+    "loadFailed": "Die Autorisierungsanfrage konnte nicht gelesen werden. Kehre zum Client zurück und versuche es erneut.",
+    "failed": "Autorisierung fehlgeschlagen. Kehre zum Client zurück und versuche es erneut.",
+    "securityHint": "Erlaube nur Clients, denen du vertraust. Die Freigabe stellt ein Zugriffstoken aus, das du jederzeit unter Einstellungen → Zugriffstokens widerrufen kannst."
+  },
+  "devicePage": {
+    "codeLabel": "Gerätecode",
+    "codeSlotLabel": "Zeichen {index} von {total}",
+    "codeHelp": "Gib den 8-stelligen Code aus deinem Terminal ein.",
+    "approve": "Bestätigen",
+    "approving": "Wird bestätigt…",
+    "client": "Client:",
+    "expiresIn": "Läuft ab in",
+    "expired": "Dieser Code ist abgelaufen. Starte im Terminal eine neue Anfrage.",
+    "approved": "Bestätigt. Kehre zum Terminal zurück.",
+    "lookupFailed": "Der Gerätecode ist ungültig oder abgelaufen.",
+    "approveFailed": "Autorisierung fehlgeschlagen, bitte erneut versuchen.",
+    "backHome": "Zurück zur Startseite",
+    "signedInAs": "Angemeldet als",
+    "switchAccount": "Konto wechseln",
+    "adminRequired": "Nur Administratoren können Geräteanmeldungen genehmigen.",
+    "securityHint": "Genehmige nur Codes, die du selbst im Terminal gestartet hast."
+  },
+  "starJournal": {
+    "eyebrow": "Sternennotiz von heute",
+    "seal": "Sternbrief",
+    "words": "{count} Wörter",
+    "epigraph1": "Langsam ist sanft, und sanft ist schnell.",
+    "epigraph2": "Falte deine Gedanken zu Sternen, und die Tage werden zu Gedichten.",
+    "epigraph3": "Der Wind erinnert sich noch an den Duft einer Blume.",
+    "epigraph4": "Neuer Tee, alte Freunde und gute Zeit.",
+    "epigraph5": "In allem ist ein Riss – so kommt das Licht herein.",
+    "epigraph6": "Der Abend kommt, und die Hügel sind schon Herbst."
   }
 }

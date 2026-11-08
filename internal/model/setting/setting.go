@@ -15,19 +15,22 @@ const (
 )
 
 type SystemSetting struct {
-	SiteTitle        string `json:"site_title"`          // 站点标题
-	ServerLogo       string `json:"server_logo"`         // 服务器Logo
-	ServerLogoFileID string `json:"server_logo_file_id"` // Server logo file ID
-	ServerName       string `json:"server_name"`         // 服务器名�?
-	ServerURL        string `json:"server_url"`          // 服务器地址
-	AllowRegister    bool   `json:"allow_register"`      // 是否允许注册'
-	DefaultLocale    string `json:"default_locale"`      // 站点默认语言（如 zh-CN / en-US�?
-	ICPNumber        string `json:"ICP_number"`          // 备案�?
-	FooterContent    string `json:"footer_content"`      // 自定义页脚内�?
-	FooterLink       string `json:"footer_link"`         // 自定义页脚链�?
-	MetingAPI        string `json:"meting_api"`          // Meting API 地址
-	CustomCSS        string `json:"custom_css"`          // 自定�?CSS
-	CustomJS         string `json:"custom_js"`           // 自定�?JS
+	SiteTitle        string `json:"site_title"`
+	ServerLogo       string `json:"server_logo"`
+	ServerLogoFileID string `json:"server_logo_file_id"`
+	ServerName       string `json:"server_name"`
+	ServerURL        string `json:"server_url"`
+	AllowRegister    bool   `json:"allow_register"`
+	DefaultLocale    string `json:"default_locale"`
+	ICPNumber        string `json:"ICP_number"`
+	FooterContent    string `json:"footer_content"`
+	FooterLink       string `json:"footer_link"`
+	MetingAPI        string `json:"meting_api"`
+	CustomCSS        string `json:"custom_css"`
+	CustomJS         string `json:"custom_js"`
+	// DisableAgentDiscovery opts out of the discovery documents; stored inverted,
+	// so a settings blob written before the field existed keeps them enabled.
+	DisableAgentDiscovery bool `json:"disable_agent_discovery"`
 }
 
 type S3Setting struct {

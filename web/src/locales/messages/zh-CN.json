@@ -1,4 +1,17 @@
-﻿{
+{
+  "reaction": {
+    "add": "添加表情反应",
+    "close": "关闭表情选择",
+    "unavailable": "当前为静态归档站点，无法使用表情反应。",
+    "failed": "表情反应失败，请重试。",
+    "like": "赞",
+    "heart": "喜欢",
+    "haha": "哈哈",
+    "wow": "惊讶",
+    "sad": "难过",
+    "cry": "大哭",
+    "party": "庆祝"
+  },
   "common": {
     "requestFailed": "请求失败",
     "save": "保存",
@@ -156,7 +169,6 @@
     "bold": "粗体",
     "italic": "斜体",
     "heading": "标题",
-    "quote": "引用",
     "unorderedList": "无序列表",
     "codeBlock": "代码块",
     "addedLabel": "已添加：",
@@ -252,9 +264,6 @@
     "downloadFailed": "下载失败",
     "downloadFailedResponse": "下载失败：服务端返回异常内容"
   },
-  "staticSite": {
-    "likeUnavailable": "当前为静态归档站点，无法点赞。"
-  },
   "auth": {
     "loginSuccess": "登录成功,欢迎回来！🎉",
     "signupSuccess": "注册成功,请登录！"
@@ -275,6 +284,7 @@
     "passkeyLoginFailed": "Passkey 登录失败"
   },
   "init": {
+    "introKicker": "首次设置",
     "ownerEmailPlaceholder": "Owner 邮箱",
     "ownerUsernamePlaceholder": "Owner 用户名",
     "ownerPasswordPlaceholder": "Owner 密码",
@@ -282,14 +292,36 @@
     "initialize": "初始化",
     "initDone": "初始化完成",
     "alreadyInitializedRedirect": "系统已初始化，正在跳转登录",
-    "initFailed": "初始化失败"
+    "initFailed": "初始化失败",
+    "introHeading": "开始使用 Ech0",
+    "introDescription": "创建 Owner 账号，完成站点基本设置，开启你的个人记录空间。",
+    "siteTitlePlaceholder": "站点名称（可留空）",
+    "autoLoginFailed": "Owner 已创建，请手动登录。"
+  },
+  "onboarding": {
+    "title": "让你的实例准备就绪",
+    "publishTitle": "写下第一条 Echo",
+    "publishDesc": "记录一个想法，让你的时间线从这里开始。",
+    "siteTitleTitle": "为站点取个名字",
+    "siteTitleDesc": "给你的站点一个名字，它将显示在浏览器标题和分享卡片中。",
+    "siteURLTitle": "设置站点地址",
+    "siteURLDesc": "配置你的公开地址，让 RSS、分享链接和内容快照都能正确访问。",
+    "done": "已完成",
+    "hide": "不再提示",
+    "firstEchoTitle": "第一条 Echo 已发布",
+    "firstEchoDesc": "你的时间线有了新的开始。点击日期即可查看 Echo 详情。",
+    "dismiss": "稍后再说",
+    "actionPublish": "立即发布",
+    "actionSiteTitle": "填写名称",
+    "actionSiteURL": "填写地址"
   },
   "hub": {
     "emptyList": "Hub列表为空，请到设置中添加Connect吧~",
+    "emptyListGuest": "这里还没有连接其他 Ech0，暂时探测不到别人的 Echo～",
     "noAvailableInstance": "当前Hub暂无可连接的实例。",
     "connectedCount": "成功连接 {count} 个实例，开始加载 Echos",
     "loading": "加载中...",
-    "emptyConnectHint": "暂无数据，快去添加 Connect 吧",
+    "noEchoes": "暂时没有可探索的 Echo",
     "noMoreData": "没有更多数据了"
   },
   "systemLog": {
@@ -319,17 +351,14 @@
     "alreadyLatest": "已是最新版本",
     "checkUpdateFailed": "检查更新失败",
     "clickToCheckUpdate": "点击检查更新",
-    "activityTitle": "Activity",
-    "activityAccent": "Log",
-    "visitorTitle": "Visitor",
-    "visitorAccent": "Stats",
+    "activityTitle": "Activity Log",
+    "visitorTitle": "Visitor Stats",
     "visitorPv": "访问量",
     "visitorUv": "独立访客",
     "visitorEmpty": "暂无访客数据"
   },
   "tagPileWidget": {
-    "title": "Tech",
-    "accent": "Stacks",
+    "title": "Tech Stacks",
     "empty": "暂无热门标签"
   },
   "panelPage": {
@@ -404,6 +433,23 @@
     "rangeSeparator": "至",
     "activeCountSuffix": "{count} 项过滤已启用"
   },
+  "wall": {
+    "deskCorner": "桌角",
+    "loadMore": "加载更多",
+    "hasNotes": "有便签的日子",
+    "all": "全部",
+    "notesCount": "{count} 枚便签",
+    "empty": "墙上还没有便签",
+    "emptyDay": "这一天还没有便签",
+    "openNote": "打开便签",
+    "viewDetail": "查看详情",
+    "close": "关闭",
+    "previousMonth": "上个月",
+    "nextMonth": "下个月",
+    "connected": "连接",
+    "noConnects": "还没有连接的站点",
+    "aiSummary": "AI 摘要"
+  },
   "homeSidebar": {
     "home": "动态",
     "panel": "设置",
@@ -418,7 +464,11 @@
     "noMore": "没有更多数据了",
     "noMoreFiltered": "没有更多数据了",
     "loading": "加载中...",
-    "older": "溯往拾遗"
+    "loadingMore": "正在加载更多...",
+    "loadMoreFailed": "加载失败",
+    "loadFailed": "时间线加载失败",
+    "retry": "重试",
+    "allLoaded": "已经到底了"
   },
   "dateTime": {
     "justNow": "刚刚",
@@ -442,9 +492,6 @@
   },
   "echoDetail": {
     "share": "分享",
-    "like": "点赞",
-    "alreadyLiked": "你已经点赞过了，感谢你的喜欢！",
-    "likeSuccess": "点赞成功！",
     "copied": "链接已复制到剪贴板！",
     "shareSuffix": "来自 Ech0 分享",
     "sharePanelTitle": "分享这条 Ech0",
@@ -506,10 +553,10 @@
     "deleteConfirmDesc": "删除后将无法恢复，请谨慎操作",
     "deleteSuccess": "删除成功！",
     "exitUpdateModeFirst": "请先退出更新模式！",
+    "editAnotherEchoTitle": "编辑另一条 Echo？",
+    "editAnotherEchoDesc": "你正在编辑另一条 Echo。放弃当前修改并编辑这条吗？",
     "openDetail": "查看详情",
-    "imagePreviewTruncated": "图片预览已省略",
-    "commentsLabel": "评论",
-    "commentCount": "{count} 条评论"
+    "commentsLabel": "评论"
   },
   "userSetting": {
     "title": "用户中心",
@@ -525,6 +572,10 @@
     "avatarUploading": "头像上传中...",
     "avatarUploadSuccess": "头像上传成功！",
     "uploadFailed": "上传失败，请稍后再试",
+    "role": "身份",
+    "roleOwner": "所有者",
+    "roleAdmin": "管理员",
+    "roleMember": "成员",
     "resetAvatar": "恢复默认头像",
     "resetAvatarConfirmTitle": "恢复默认头像？",
     "resetAvatarConfirmDesc": "恢复后将删除当前自定义头像文件，且无法撤销。",
@@ -563,6 +614,8 @@
     "customJs": "自定义 JS",
     "customJsPlaceholder": "请输入自定义 Script",
     "allowRegister": "允许注册",
+    "agentDiscovery": "智能体发现",
+    "agentDiscoveryHint": "向 AI 智能体公开 /llms.txt、AI catalog 与 MCP server card，使其能自动发现本实例的订阅源、API 与 MCP 端点",
     "defaultLocale": "默认语言",
     "logoUploading": "服务器 Logo 上传中...",
     "logoUploadSuccess": "服务器 Logo 上传成功！",
@@ -794,20 +847,33 @@
     "scopeGroupConnect": "互联权限",
     "scopeGroupProfile": "资料权限",
     "scopeGroupAdmin": "管理权限",
+    "scopeGroupMcp": "MCP 权限",
     "scopeEchoRead": "查看 Echo",
     "scopeEchoWrite": "创建/编辑 Echo",
+    "scopeEchoDelete": "删除 Echo",
+    "scopeEchoPrivate": "查看私密 Echo",
     "scopeCommentRead": "查看评论",
     "scopeCommentWrite": "发表评论",
-    "scopeCommentModerate": "评论审核",
+    "scopeCommentReview": "评论审核",
+    "scopeCommentDelete": "删除评论",
+    "scopeCommentSettings": "评论设置管理",
     "scopeFileRead": "查看文件",
-    "scopeFileWrite": "上传/管理文件",
+    "scopeFileWrite": "上传/编辑文件",
+    "scopeFileDelete": "删除文件",
     "scopeConnectRead": "查看互联连接",
-    "scopeConnectWrite": "管理互联连接",
+    "scopeConnectWrite": "添加/编辑互联连接",
+    "scopeConnectDelete": "删除互联连接",
     "scopeProfileRead": "查看个人资料",
     "scopeProfileWrite": "修改个人资料",
-    "scopeAdminSettings": "系统设置管理",
+    "scopeAdminSite": "站点设置管理",
+    "scopeAdminStorage": "存储设置管理",
+    "scopeAdminAuth": "登录与认证设置管理",
+    "scopeAdminWebhook": "Webhook 管理",
+    "scopeAdminAgent": "Agent 与 Embedding 管理",
+    "scopeAdminData": "数据迁移与快照管理",
+    "scopeAdminOps": "日志与运行状态管理",
     "scopeAdminUser": "用户管理",
-    "scopeAdminToken": "令牌管理",
+    "scopeMcpRead": "查看 MCP 清单",
     "copyToken": "复制 Token",
     "detail": "详情",
     "viewDetail": "查看 Token 详情",
@@ -1004,8 +1070,7 @@
     "collapse": "收起",
     "copy": "复制",
     "copied": "已复制",
-    "taskCheckboxLabel": "任务复选框",
-    "imageLoadFailed": "图片无法加载，点击尝试打开原图"
+    "taskCheckboxLabel": "任务复选框"
   },
   "baseSelect": {
     "empty": "暂无选项",
@@ -1029,18 +1094,13 @@
     "pageNotFound": "页面不存在"
   },
   "hubEcho": {
-    "jumpToEcho": "跳转至该 Echo",
-    "like": "点赞",
-    "alreadyLiked": "你已经点赞过",
-    "likeFailed": "点赞失败",
-    "likeSuccess": "点赞成功",
-    "imagePreviewTruncated": "图片预览已省略，查看详情"
+    "jumpToEcho": "跳转至该 Echo"
   },
   "imageGallery": {
     "previewImage": "预览图片{index}",
     "prevImage": "上一张图片",
     "nextImage": "下一张图片",
-    "scrollHint": "← 左右滑动查看更多 →"
+    "goToImage": "跳到第 {index} 张图片"
   },
   "audioPlayer": {
     "unsupported": "您的浏览器不支持音频播放",
@@ -1079,7 +1139,8 @@
     "tweetView": "在 X 上查看原帖"
   },
   "recentCard": {
-    "mysteriousRecent": "作者最近很神秘～"
+    "mysteriousRecent": "作者最近很神秘～",
+    "generating": "生成中..."
   },
   "websocket": {
     "invalidMessage": "收到无效的 WebSocket 消息"
@@ -1088,25 +1149,38 @@
     "title": "Ech0 Copilot"
   },
   "mcpSetting": {
-    "description": "将 Ech0 接入支持 MCP 的 AI 客户端，让 AI 直接访问和管理你的内容。",
+    "description": "将 Ech0 接入支持 MCP 的 AI 客户端。支持 OAuth 2.1 自动发现，也可以使用访问令牌。",
     "createToken": "创建访问令牌",
     "endpointTitle": "MCP Endpoint",
-    "endpointHint": "将此地址添加到你的 MCP Client，并使用 Bearer Token 进行认证。",
+    "endpointHint": "将这个地址添加到 MCP Client。支持 OAuth 的客户端会自动打开授权页；其他客户端使用 Bearer Token。",
     "copyEndpoint": "复制地址",
     "copySuccess": "地址已复制",
     "copyFailed": "复制失败",
     "loadFailed": "没能读取 MCP 信息",
     "transport": "Transport",
     "audience": "Token Audience",
-    "protocolVersions": "Protocol Version",
+    "protocolVersions": "协议版本",
+    "authorizationTitle": "授权",
+    "authorizationHint": "支持 OAuth 2.1 的客户端会自动发现授权服务器并在浏览器中打开同意页；只有管理员可以批准。",
+    "oauth": "OAuth",
+    "oauthValue": "2.1 · PKCE (S256)",
+    "discovery": "发现",
+    "discoveryValue": "RFC 9728 · RFC 8414",
+    "clientRegistration": "客户端注册",
+    "clientRegistrationValue": "优先 CIMD · 回退 DCR",
+    "tokenPolicy": "令牌策略",
+    "tokenPolicyValue": "仅签发 Access Token · 不签发 refresh token",
+    "oauthServer": "授权服务器",
+    "refreshHint": "Ech0 不签发 refresh token。若客户端默认申请 refresh_token grant，请先在客户端中关闭该选项。",
     "capabilitiesTitle": "Capabilities",
-    "dangerLegend": "标红的操作具有破坏性，建议在客户端要求确认后再执行。点击名称查看所需 Scope 与完整说明。",
+    "dangerLegend": "标红的操作具有破坏性。支持 elicitation 的客户端会先弹出确认；其他客户端由 Host 根据破坏性注解确认。点击名称查看所需 Scope 与完整说明。",
     "groupEcho": "内容",
     "groupProfile": "个人资料",
     "groupComment": "评论",
     "groupFile": "文件",
     "groupConnect": "互联",
     "groupAdmin": "站点管理",
+    "groupMCP": "MCP",
     "groupResources": "资源",
     "detailClose": "关闭",
     "detailScopes": "所需 Scope",
@@ -1206,5 +1280,54 @@
     "exportPhasePending": "准备",
     "exportPhasePacking": "打包",
     "exportPhaseCompleted": "完成"
+  },
+  "scopeAccordion": {
+    "scopes": "权限范围",
+    "summary": "{count} 项权限 · {groups} 个类别",
+    "otherScopes": "其他权限"
+  },
+  "oauthConsent": {
+    "title": "授权应用访问",
+    "subtitle": "一个应用请求访问你的 Ech0 实例。",
+    "client": "客户端",
+    "resource": "资源",
+    "approve": "允许",
+    "deny": "拒绝",
+    "approving": "处理中…",
+    "loading": "正在读取授权请求…",
+    "adminRequired": "只有管理员可以授权应用。",
+    "invalidRequest": "授权请求不完整或参数无效。",
+    "loadFailed": "无法读取授权请求，请回到客户端重试。",
+    "failed": "授权处理失败，请回到客户端重试。",
+    "securityHint": "仅在你信任该客户端时授权。授权会签发一个访问令牌，可随时在「设置 → 访问令牌」中撤销。"
+  },
+  "devicePage": {
+    "codeLabel": "设备码",
+    "codeSlotLabel": "第 {index} 个字符，共 {total} 个",
+    "codeHelp": "输入终端中显示的 8 位设备码。",
+    "approve": "确认授权",
+    "approving": "授权中…",
+    "client": "客户端：",
+    "expiresIn": "剩余有效期",
+    "expired": "该设备码已过期，请在终端重新发起授权。",
+    "approved": "已授权，请回到终端继续。",
+    "lookupFailed": "设备码无效或已过期。",
+    "approveFailed": "授权失败，请重试。",
+    "backHome": "返回首页",
+    "signedInAs": "当前登录账户",
+    "switchAccount": "切换账户",
+    "adminRequired": "只有管理员可以授权设备登录。",
+    "securityHint": "只授权你在自己终端发起的请求。"
+  },
+  "starJournal": {
+    "eyebrow": "今日星语",
+    "seal": "星笺",
+    "words": "{count} 字",
+    "epigraph1": "慢慢来，比较快。",
+    "epigraph2": "把日子过成诗，把心事折成星。",
+    "epigraph3": "风会记得一朵花的香。",
+    "epigraph4": "且将新火试新茶，诗酒趁年华。",
+    "epigraph5": "万物皆有裂痕，那是光照进来的地方。",
+    "epigraph6": "人间忽晚，山河已秋。"
   }
 }

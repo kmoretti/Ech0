@@ -14,7 +14,6 @@ import (
 	echoService "github.com/lin-snow/ech0/internal/service/echo"
 	"github.com/lin-snow/ech0/internal/test/helpers"
 	commonmock "github.com/lin-snow/ech0/internal/test/mocks/commonmock"
-	echomock "github.com/lin-snow/ech0/internal/test/mocks/echomock"
 	filemock "github.com/lin-snow/ech0/internal/test/mocks/filemock"
 	txmock "github.com/lin-snow/ech0/internal/test/mocks/txmock"
 	"github.com/lin-snow/ech0/pkg/busen"
@@ -25,7 +24,7 @@ import (
 
 func TestPostEcho_Guards(t *testing.T) {
 	t.Run("non-admin is denied", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		common.EXPECT().
 			CommonGetUserByUserId(mock.Anything, userID).
@@ -33,13 +32,13 @@ func TestPostEcho_Guards(t *testing.T) {
 			Once()
 
 		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
-		err := svc.PostEcho(helpers.CtxAsUser(userID), &echoModel.Echo{Content: "hi"})
+		_, err := svc.PostEcho(helpers.CtxAsUser(userID), &echoModel.Echo{Content: "hi"})
 
 		require.EqualError(t, err, commonModel.NO_PERMISSION_DENIED)
 	})
 
 	t.Run("user lookup error propagates", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		boom := errors.New("user lookup failed")
 		common.EXPECT().
@@ -48,13 +47,13 @@ func TestPostEcho_Guards(t *testing.T) {
 			Once()
 
 		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
-		err := svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{Content: "hi"})
+		_, err := svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{Content: "hi"})
 
 		require.ErrorIs(t, err, boom)
 	})
 
 	t.Run("invalid extension is rejected before transaction", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		common.EXPECT().
 			CommonGetUserByUserId(mock.Anything, adminID).
@@ -62,7 +61,7 @@ func TestPostEcho_Guards(t *testing.T) {
 			Once()
 
 		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
-		err := svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{
+		_, err := svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{
 			Content:   "hi",
 			Extension: &echoModel.EchoExtension{Type: echoModel.Extension_MUSIC},
 		})
@@ -72,7 +71,7 @@ func TestPostEcho_Guards(t *testing.T) {
 	})
 
 	t.Run("empty echo is rejected", func(t *testing.T) {
-		repo := echomock.NewMockRepository(t)
+		repo := newEchoRepoMock(t)
 		common := commonmock.NewMockService(t)
 		common.EXPECT().
 			CommonGetUserByUserId(mock.Anything, adminID).
@@ -80,14 +79,14 @@ func TestPostEcho_Guards(t *testing.T) {
 			Once()
 
 		svc := echoService.NewEchoService(nil, common, nil, repo, nilBus)
-		err := svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{Content: "   "})
+		_, err := svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{Content: "   "})
 
 		require.EqualError(t, err, commonModel.ECHO_CAN_NOT_BE_EMPTY)
 	})
 }
 
 func TestPostEcho_Success(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 	file := filemock.NewMockService(t)
 	tx := txmock.NewMockTransactor(t)
@@ -128,7 +127,8 @@ func TestPostEcho_Success(t *testing.T) {
 
 	svc := echoService.NewEchoService(tx, common, file, repo, func() *busen.Bus { return bus })
 	in := &echoModel.Echo{Content: "hello", Layout: "weird-layout"}
-	require.NoError(t, svc.PostEcho(helpers.CtxAsUser(adminID), in))
+	_, err = svc.PostEcho(helpers.CtxAsUser(adminID), in)
+	require.NoError(t, err)
 
 	assert.Equal(t, echoModel.LayoutWaterfall, created.Layout)
 	assert.Equal(t, "adminuser", created.Username)
@@ -140,7 +140,7 @@ func TestPostEcho_Success(t *testing.T) {
 }
 
 func TestPostEcho_ValidLayoutPreserved(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 	file := filemock.NewMockService(t)
 	tx := txmock.NewMockTransactor(t)
@@ -165,16 +165,17 @@ func TestPostEcho_ValidLayoutPreserved(t *testing.T) {
 	file.EXPECT().ConfirmTempFiles(mock.Anything, mock.Anything).Return(nil).Once()
 
 	svc := echoService.NewEchoService(tx, common, file, repo, func() *busen.Bus { return bus })
-	require.NoError(t, svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{
+	_, err := svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{
 		Content: "hello",
 		Layout:  echoModel.LayoutGrid,
-	}))
+	})
+	require.NoError(t, err)
 
 	assert.Equal(t, echoModel.LayoutGrid, created.Layout)
 }
 
 func TestPostEcho_TransactionError(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 	tx := txmock.NewMockTransactor(t)
 	boom := errors.New("create echo failed")
@@ -188,13 +189,13 @@ func TestPostEcho_TransactionError(t *testing.T) {
 	repo.EXPECT().CreateEcho(mock.Anything, mock.Anything).Return(boom).Once()
 
 	svc := echoService.NewEchoService(tx, common, nil, repo, nilBus)
-	err := svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{Content: "hello"})
+	_, err := svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{Content: "hello"})
 
 	require.ErrorIs(t, err, boom)
 }
 
 func TestPostEcho_SavedEchoNilSkipsEvent(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 	file := filemock.NewMockService(t)
 	tx := txmock.NewMockTransactor(t)
@@ -220,13 +221,14 @@ func TestPostEcho_SavedEchoNilSkipsEvent(t *testing.T) {
 	defer unsub()
 
 	svc := echoService.NewEchoService(tx, common, file, repo, func() *busen.Bus { return bus })
-	require.NoError(t, svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{Content: "hello"}))
+	_, err = svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{Content: "hello"})
+	require.NoError(t, err)
 
 	assert.Equal(t, 0, fired)
 }
 
 func TestPostEcho_RefetchError(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 	tx := txmock.NewMockTransactor(t)
 	bus := helpers.NewTestBus(t)
@@ -243,13 +245,13 @@ func TestPostEcho_RefetchError(t *testing.T) {
 	repo.EXPECT().GetEchosById(mock.Anything, mock.Anything).Return(nil, boom).Once()
 
 	svc := echoService.NewEchoService(tx, common, nil, repo, func() *busen.Bus { return bus })
-	err := svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{Content: "hello"})
+	_, err := svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{Content: "hello"})
 
 	require.ErrorIs(t, err, boom)
 }
 
 func TestPostEcho_LayoutNonePreserved(t *testing.T) {
-	repo := echomock.NewMockRepository(t)
+	repo := newEchoRepoMock(t)
 	common := commonmock.NewMockService(t)
 	file := filemock.NewMockService(t)
 	tx := txmock.NewMockTransactor(t)
@@ -274,10 +276,11 @@ func TestPostEcho_LayoutNonePreserved(t *testing.T) {
 	file.EXPECT().ConfirmTempFiles(mock.Anything, mock.Anything).Return(nil).Once()
 
 	svc := echoService.NewEchoService(tx, common, file, repo, func() *busen.Bus { return bus })
-	require.NoError(t, svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{
+	_, err := svc.PostEcho(helpers.CtxAsUser(adminID), &echoModel.Echo{
 		Content: "audio post",
 		Layout:  echoModel.LayoutNone,
-	}))
+	})
+	require.NoError(t, err)
 
 	assert.Equal(t, echoModel.LayoutNone, created.Layout)
 }
