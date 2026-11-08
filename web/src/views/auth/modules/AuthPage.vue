@@ -8,7 +8,7 @@
       <header class="auth-brand">
         <div>
           <p class="auth-brand__eyebrow">{{ t('starJournal.eyebrow') }} · {{ dateLabel }}</p>
-          <h1 class="auth-brand__title">Ech0</h1>
+          <h1 class="auth-brand__title">{{ brandTitle }}</h1>
         </div>
         <span class="auth-brand__postmark">{{ t('starJournal.seal') }}</span>
       </header>
@@ -131,9 +131,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import BaseInput from '@/components/common/BaseInput.vue'
 import BaseButton from '@/components/common/BaseButton.vue'
-import { useUserStore } from '@/stores'
+import { useSettingStore, useUserStore } from '@/stores'
 import Arrow from '@/components/icons/arrow.vue'
 import Passkey from '@/components/icons/passkey.vue'
 import Home from '@/components/icons/home.vue'
@@ -152,6 +153,9 @@ const AuthMode = ref<'login' | 'register'>('login')
 const username = ref<string>('')
 const password = ref<string>('')
 const userStore = useUserStore()
+const settingStore = useSettingStore()
+const { SystemSetting } = storeToRefs(settingStore)
+const brandTitle = computed(() => SystemSetting.value.server_name?.trim() || '提笔摘星')
 const { t, locale } = useI18n()
 const dateLabel = computed(() =>
   new Intl.DateTimeFormat(locale.value, {
