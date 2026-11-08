@@ -87,7 +87,7 @@
       <div class="wall-connect">
         <p class="wall-connect__label">{{ t('wall.connected') }}</p>
         <ul v-if="connects.length" class="wall-connect__list">
-          <li v-for="connect in connects.slice(0, 4)" :key="connect.server_url">
+          <li v-for="connect in connects" :key="connect.server_url">
             <a
               :href="connect.server_url"
               target="_blank"
@@ -102,6 +102,8 @@
         <p v-else class="wall-connect__empty">{{ t('wall.noConnects') }}</p>
       </div>
     </section>
+
+    <TheWallFooter class="wall-rail__footer" />
   </aside>
 </template>
 
@@ -110,6 +112,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import HomeHeader from '@/views/home/modules/HomeHeader.vue'
 import TheWallCalendar from '@/components/advanced/wall/TheWallCalendar.vue'
+import TheWallFooter from '@/components/advanced/wall/TheWallFooter.vue'
 import { TheRecentCard } from '@/components/advanced/widget'
 import Home from '@/components/icons/home.vue'
 import Write from '@/components/icons/write.vue'
@@ -224,7 +227,6 @@ const latestStamp = computed(() => {
   border: 1px solid rgb(90 70 45 / 18%);
   border-radius: 1px;
   background: rgb(255 252 244 / 9%);
-  font-family: var(--font-family-display);
   font-size: 0.72rem;
   letter-spacing: 0.05em;
   color: rgb(58 50 40 / 68%);
@@ -326,6 +328,11 @@ const latestStamp = computed(() => {
   flex: none;
 }
 
+.wall-rail__footer {
+  flex: none;
+  margin-top: auto;
+}
+
 .wall-explore {
   display: flex;
   flex-direction: column;
@@ -343,7 +350,6 @@ const latestStamp = computed(() => {
 
 .wall-explore__title {
   margin: 0;
-  font-family: var(--font-family-display);
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -364,7 +370,6 @@ const latestStamp = computed(() => {
 .wall-connect__label,
 .wall-ai__label {
   margin: 0 0 0.35rem;
-  font-family: var(--font-family-display);
   font-size: 0.58rem;
   letter-spacing: 0.14em;
   color: rgb(58 50 40 / 46%);
@@ -396,7 +401,6 @@ const latestStamp = computed(() => {
 
 .wall-connect__name {
   overflow: hidden;
-  font-family: var(--font-family-display);
   font-size: 0.66rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -404,7 +408,6 @@ const latestStamp = computed(() => {
 
 .wall-connect__count {
   flex: none;
-  font-family: var(--font-family-display);
   font-size: 0.56rem;
   color: rgb(58 50 40 / 40%);
   font-variant-numeric: tabular-nums;
@@ -412,7 +415,6 @@ const latestStamp = computed(() => {
 
 .wall-connect__empty {
   margin: 0;
-  font-family: var(--font-family-display);
   font-size: 0.62rem;
   color: rgb(58 50 40 / 40%);
 }
@@ -445,7 +447,6 @@ const latestStamp = computed(() => {
 }
 
 .wall-ai :deep(.recent-content) {
-  font-family: var(--font-family-display);
   font-size: 0.66rem;
   line-height: 1.66;
   color: rgb(58 50 40 / 64%);
@@ -453,7 +454,6 @@ const latestStamp = computed(() => {
 
 .wall-ai__text {
   margin: 0;
-  font-family: var(--font-family-display);
   font-size: 0.66rem;
   line-height: 1.66;
   color: rgb(58 50 40 / 64%);
@@ -494,6 +494,10 @@ const latestStamp = computed(() => {
   }
 
   .wall-rail__calendar {
+    display: none;
+  }
+
+  .wall-rail__footer {
     display: none;
   }
 
