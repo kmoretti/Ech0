@@ -23,9 +23,10 @@
     @keydown.enter.prevent="handleKeyOpen"
     @keydown.space.prevent="handleKeyOpen"
   >
+    <span class="wall-note__fastener" aria-hidden="true"></span>
+
     <div class="wall-note__sheet">
       <span class="wall-note__grain" aria-hidden="true"></span>
-      <span class="wall-note__fastener" aria-hidden="true"></span>
 
       <span class="wall-note__date">
         <span class="wall-note__stamp">{{ dateParts.stamp }}</span>
@@ -329,7 +330,6 @@ const noteStyle = computed(() => ({
   align-items: baseline;
   gap: 0.32rem;
   padding: 0.72rem 0.8rem 0.22rem;
-  font-family: var(--font-family-display);
   font-size: 0.58rem;
   line-height: 1.2;
   letter-spacing: 0.04em;
@@ -404,7 +404,6 @@ const noteStyle = computed(() => ({
   display: -webkit-box;
   flex: none;
   overflow: hidden;
-  font-family: var(--font-family-display);
   font-size: 0.84rem;
   line-height: 1.72;
   letter-spacing: 0.01em;
@@ -424,7 +423,6 @@ const noteStyle = computed(() => ({
   align-items: center;
   gap: 0.4rem;
   padding: 0.28rem 0.8rem 0.08rem;
-  font-family: var(--font-family-display);
   font-size: 0.56rem;
   color: rgb(74 62 48 / 48%);
 }
@@ -499,7 +497,6 @@ const noteStyle = computed(() => ({
   border: 1px solid transparent;
   border-radius: 1px;
   background: transparent;
-  font-family: var(--font-family-display);
   font-size: 0.58rem;
   letter-spacing: 0.04em;
   color: rgb(74 62 48 / 58%);

@@ -77,6 +77,8 @@
     >
       {{ loadingMore ? t('homeFeed.loading') : t('wall.loadMore') }}
     </button>
+
+    <TheWallFooter v-if="!isDesktop" class="wall-stage__footer" />
   </section>
 </template>
 
@@ -87,6 +89,7 @@ import { useI18n } from 'vue-i18n'
 import { getEchoFiles } from '@/utils/echo'
 import TheLoadingIndicator from '@/components/common/TheLoadingIndicator.vue'
 import TheWallNote from './TheWallNote.vue'
+import TheWallFooter from './TheWallFooter.vue'
 import {
   formatWallDay,
   hashString,
@@ -381,7 +384,6 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
   padding: 0.16rem 0.42rem;
   border: 1px dashed rgb(90 70 45 / 34%);
   border-radius: 1px;
-  font-family: var(--font-family-display);
   font-size: 0.58rem;
   letter-spacing: 0.1em;
   color: rgb(58 50 40 / 68%);
@@ -402,7 +404,6 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
 }
 
 .wall-stage__filter-date {
-  font-family: var(--font-family-display);
   font-size: 0.62rem;
   letter-spacing: 0.04em;
   color: rgb(52 42 30 / 78%);
@@ -417,7 +418,6 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
   border: 1px solid rgb(70 52 32 / 24%);
   border-radius: 1px;
   background: transparent;
-  font-family: var(--font-family-display);
   font-size: 0.6rem;
   letter-spacing: 0.06em;
   color: rgb(52 42 30 / 68%);
@@ -474,14 +474,12 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
 
 .wall-stage__empty-sheet p {
   margin: 0;
-  font-family: var(--font-family-display);
   font-size: 0.78rem;
   letter-spacing: 0.04em;
   color: rgb(52 42 30 / 72%);
 }
 
 .wall-stage__empty-date {
-  font-family: var(--font-family-display);
   font-size: 0.62rem;
   letter-spacing: 0.3em;
   color: rgb(52 42 30 / 38%);
@@ -534,7 +532,6 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
   border-radius: 1px;
   background: rgb(246 240 227 / 92%);
   box-shadow: 0 8px 18px -16px rgb(0 0 0 / 55%);
-  font-family: var(--font-family-display);
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   color: rgb(52 42 30 / 78%);
@@ -562,5 +559,10 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
 .wall-more:focus-visible {
   outline: 2px solid rgb(58 50 40 / 55%);
   outline-offset: 2px;
+}
+
+.wall-stage__footer {
+  width: min(100%, 42rem);
+  margin: 0.45rem auto 3.6rem;
 }
 </style>
