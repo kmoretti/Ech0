@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -27,15 +27,25 @@ const isVisible = computed(
   () => !['auth', 'init', 'panel', 'chat'].includes(String(route.name ?? '')),
 )
 
-const getScrollContainer = () => {
+// Resolving the container costs a querySelector + getComputedStyle (forced
+// style recalc), so cache it per route and let the scroll handler stay cheap.
+let cachedContainer: HTMLElement | null | undefined = undefined
+
+const resolveContainer = () => {
+  if (cachedContainer !== undefined) return cachedContainer
   const homeMain = document.querySelector<HTMLElement>('.home-main')
-  if (!homeMain || homeMain.scrollHeight <= homeMain.clientHeight + 1) return null
+  if (!homeMain || homeMain.scrollHeight <= homeMain.clientHeight + 1) {
+    cachedContainer = null
+    return cachedContainer
+  }
   const overflowY = window.getComputedStyle(homeMain).overflowY
-  return overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay' ? homeMain : null
+  cachedContainer =
+    overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay' ? homeMain : null
+  return cachedContainer
 }
 
 const updateBackTop = () => {
-  const container = getScrollContainer()
+  const container = resolveContainer()
   showBackTop.value = (container?.scrollTop ?? window.scrollY) > 320
 }
 
@@ -44,12 +54,20 @@ const openPublish = () => {
 }
 
 const scrollToTop = () => {
-  const container = getScrollContainer()
+  const container = resolveContainer()
   if (container) container.scrollTo({ top: 0, behavior: 'smooth' })
   else window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const onScroll = () => updateBackTop()
+
+watch(
+  () => route.name,
+  () => {
+    cachedContainer = undefined
+    updateBackTop()
+  },
+)
 
 onMounted(() => {
   window.addEventListener('scroll', onScroll, { passive: true, capture: true })
