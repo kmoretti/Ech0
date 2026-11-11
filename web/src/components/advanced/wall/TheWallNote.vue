@@ -592,37 +592,74 @@ const noteStyle = computed(() => ({
   height: 0.72rem;
 }
 
+/* Paper scrap menu: same stock as the notes, a strip of tape on top and a
+   slight tilt so the popover reads as another object on the desk. */
 .wall-note__menu {
   position: fixed;
   z-index: 10000;
   display: flex;
   flex-direction: column;
   min-width: 7.5rem;
-  padding: 0.28rem;
+  padding: 0.55rem 0.3rem 0.32rem;
   background-color: var(--wall-menu-bg);
-  border: 1px solid rgb(var(--wall-line-rgb) / 26%);
-  border-radius: 3px;
+  border: 1px solid rgb(var(--wall-line-rgb) / 30%);
+  border-radius: 1px;
   box-shadow:
     0 1px 1px rgb(40 27 16 / 14%),
-    0 12px 26px -14px rgb(30 20 10 / 55%);
+    0 10px 18px -12px rgb(30 20 10 / 55%),
+    0 26px 38px -28px rgb(30 20 10 / 50%);
+  transform: rotate(-0.8deg);
+  transform-origin: 78% 0%;
+}
+
+.wall-note__menu::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  top: -0.34rem;
+  left: 50%;
+  width: 2.7rem;
+  height: 0.72rem;
+  pointer-events: none;
+  transform: translateX(-50%) rotate(-2.4deg);
+  background:
+    repeating-linear-gradient(90deg, rgb(90 72 48 / 7%) 0 1px, transparent 1px 5px),
+    rgb(244 236 216 / 80%);
+  box-shadow: 0 1px 2px rgb(60 40 20 / 12%);
+}
+
+.wall-note__menu::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
 }
 
 .menu-row {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 0.4rem;
   width: 100%;
-  padding: 0.34rem 0.5rem;
+  padding: 0.4rem 0.55rem;
   border: 0;
-  border-radius: 2px;
+  border-radius: 1px;
   background: transparent;
-  font-size: 0.68rem;
-  letter-spacing: 0.03em;
+  font-size: 0.66rem;
+  letter-spacing: 0.05em;
   color: rgb(var(--wall-ink-soft-rgb) / 86%);
   cursor: pointer;
   transition:
     background-color 140ms ease,
     color 140ms ease;
+}
+
+.menu-row + .menu-row {
+  border-top: 1px dashed rgb(var(--wall-line-rgb) / 20%);
 }
 
 .menu-row:hover {
