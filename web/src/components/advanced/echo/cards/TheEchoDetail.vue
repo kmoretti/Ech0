@@ -22,8 +22,18 @@
         <span class="echo-username text-[var(--color-text-secondary)]">@ {{ echo.username }}</span>
       </div>
       <button
+        v-if="userStore.isLogin"
         type="button"
-        class="echo-detail-back ml-auto cursor-pointer rounded-full px-4 py-1 text-sm font-medium ring-1 ring-inset ring-[var(--color-border-subtle)] text-[var(--color-text-primary)] bg-transparent transition-colors duration-200 hover:bg-[var(--color-bg-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+        class="echo-detail-edit ml-auto cursor-pointer rounded-full px-4 py-1 text-sm font-medium ring-1 ring-inset ring-[var(--color-border-subtle)] text-[var(--color-text-primary)] bg-transparent transition-colors duration-200 hover:bg-[var(--color-bg-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+        :aria-label="t('echoCard.update')"
+        @click="handleEdit"
+      >
+        {{ t('echoCard.update') }}
+      </button>
+      <button
+        type="button"
+        class="cursor-pointer rounded-full px-4 py-1 text-sm font-medium ring-1 ring-inset ring-[var(--color-border-subtle)] text-[var(--color-text-primary)] bg-transparent transition-colors duration-200 hover:bg-[var(--color-bg-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+        :class="{ 'ml-auto': !userStore.isLogin }"
         :aria-label="t('commonNav.back')"
         @click="goBack"
       >
@@ -64,10 +74,12 @@ import { computed, defineAsyncComponent } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useSettingStore } from '@/stores'
+import { useSettingStore, useUserStore, useEchoStore, useEditorStore } from '@/stores'
 import { resolveAvatarUrl } from '@/service/request/shared'
 import { isContentLeadingEcho } from '@/utils/echo'
 import { TheMdPreview } from '@/components/advanced/md'
+import { fetchGetEchoById } from '@/service/api'
+import { theToast } from '@/utils/toast'
 
 const TheMediaPlayer = defineAsyncComponent(
   () => import('@/components/advanced/media/TheMediaPlayer.vue'),
@@ -96,6 +108,29 @@ const goBack = () => {
   } else {
     router.push({ name: 'home' })
   }
+}
+
+const userStore = useUserStore()
+const echoStore = useEchoStore()
+const editorStore = useEditorStore()
+
+const handleEdit = async () => {
+  if (editorStore.isUpdateMode) {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    theToast.warning(String(t('echoCard.exitUpdateModeFirst')))
+    await router.push({ name: 'home', query: { tab: 'publish' } })
+    return
+  }
+
+  const res = await fetchGetEchoById(String(props.echo.id))
+  if (res.code === 1 && res.data) {
+    echoStore.echoToUpdate = res.data
+  } else {
+    echoStore.echoToUpdate = props.echo
+  }
+
+  editorStore.isUpdateMode = true
+  await router.push({ name: 'home', query: { tab: 'publish' } })
 }
 </script>
 

@@ -46,6 +46,7 @@
         :delay="Math.min(index * 16, 220)"
         @open="handleOpen"
         @view-detail="handleViewDetail"
+        @refresh="emit('refresh')"
       />
     </div>
 
@@ -64,6 +65,7 @@
           :delay="Math.min(index * 8, 180)"
           @open="handleOpen"
           @view-detail="handleViewDetail"
+          @refresh="emit('refresh')"
         />
       </div>
     </div>
@@ -122,6 +124,7 @@ const emit = defineEmits<{
   (event: 'view-detail', echo: WallEcho): void
   (event: 'clear-date'): void
   (event: 'load-more'): void
+  (event: 'refresh'): void
 }>()
 
 type WallSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
@@ -382,11 +385,11 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
 
 .wall-stage__count {
   padding: 0.16rem 0.42rem;
-  border: 1px dashed rgb(90 70 45 / 34%);
+  border: 1px dashed rgb(var(--wall-line-rgb) / 34%);
   border-radius: 1px;
   font-size: 0.58rem;
   letter-spacing: 0.1em;
-  color: rgb(58 50 40 / 68%);
+  color: rgb(var(--wall-ink-soft-rgb) / 68%);
   white-space: nowrap;
 }
 
@@ -396,8 +399,8 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
   gap: 0.5rem;
   margin-left: auto;
   padding: 0.14rem 0.22rem 0.14rem 0.55rem;
-  background: rgb(246 240 227 / 94%);
-  border: 1px solid rgb(70 52 32 / 24%);
+  background: rgb(var(--wall-chip-bg-rgb) / 94%);
+  border: 1px solid rgb(var(--wall-line-rgb) / 24%);
   border-radius: 1px;
   box-shadow: 0 4px 10px -8px rgb(0 0 0 / 55%);
   transform: rotate(0.4deg);
@@ -406,7 +409,7 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
 .wall-stage__filter-date {
   font-size: 0.62rem;
   letter-spacing: 0.04em;
-  color: rgb(52 42 30 / 78%);
+  color: rgb(var(--wall-ink-deep-rgb) / 78%);
   white-space: nowrap;
 }
 
@@ -415,12 +418,12 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
   align-items: center;
   gap: 0.28rem;
   padding: 0.18rem 0.46rem;
-  border: 1px solid rgb(70 52 32 / 24%);
+  border: 1px solid rgb(var(--wall-line-rgb) / 24%);
   border-radius: 1px;
   background: transparent;
   font-size: 0.6rem;
   letter-spacing: 0.06em;
-  color: rgb(52 42 30 / 68%);
+  color: rgb(var(--wall-ink-deep-rgb) / 68%);
   cursor: pointer;
   transition:
     color 160ms ease,
@@ -429,13 +432,13 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
 }
 
 .wall-stage__clear:hover {
-  border-color: rgb(52 42 30 / 46%);
-  background: rgb(52 42 30 / 7%);
-  color: rgb(38 30 21 / 92%);
+  border-color: rgb(var(--wall-ink-deep-rgb) / 46%);
+  background: rgb(var(--wall-ink-deep-rgb) / 7%);
+  color: rgb(var(--wall-ink-deep-rgb) / 92%);
 }
 
 .wall-stage__clear:focus-visible {
-  outline: 2px solid rgb(90 70 45 / 70%);
+  outline: 2px solid rgb(var(--wall-line-rgb) / 70%);
   outline-offset: 2px;
 }
 
@@ -466,8 +469,8 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
   align-items: center;
   gap: 0.5rem;
   padding: 1.4rem 2rem;
-  background: rgb(246 240 227 / 90%);
-  border: 1px solid rgb(70 52 32 / 22%);
+  background: rgb(var(--wall-chip-bg-rgb) / 90%);
+  border: 1px solid rgb(var(--wall-line-rgb) / 22%);
   box-shadow: 0 14px 30px -24px rgb(0 0 0 / 60%);
   transform: rotate(-0.4deg);
 }
@@ -476,13 +479,13 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
   margin: 0;
   font-size: 0.78rem;
   letter-spacing: 0.04em;
-  color: rgb(52 42 30 / 72%);
+  color: rgb(var(--wall-ink-deep-rgb) / 72%);
 }
 
 .wall-stage__empty-date {
   font-size: 0.62rem;
   letter-spacing: 0.3em;
-  color: rgb(52 42 30 / 38%);
+  color: rgb(var(--wall-ink-deep-rgb) / 38%);
 }
 
 .wall-flow {
@@ -513,28 +516,28 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
   padding: 0.35rem 0.1rem 0.5rem;
   background: linear-gradient(
     to bottom,
-    rgb(238 232 221 / 94%),
-    rgb(238 232 221 / 82%) 70%,
+    rgb(var(--wall-bubble-rgb) / 94%),
+    rgb(var(--wall-bubble-rgb) / 82%) 70%,
     transparent
   );
   backdrop-filter: blur(4px);
 }
 
 .wall-stage--flow .wall-stage__count {
-  color: rgb(58 50 40 / 78%);
+  color: rgb(var(--wall-ink-soft-rgb) / 78%);
 }
 
 .wall-more {
   align-self: center;
   margin: 0.4rem auto 1.6rem;
   padding: 0.5rem 1.2rem;
-  border: 1px solid rgb(90 70 45 / 28%);
+  border: 1px solid rgb(var(--wall-line-rgb) / 28%);
   border-radius: 1px;
-  background: rgb(246 240 227 / 92%);
+  background: rgb(var(--wall-chip-bg-rgb) / 92%);
   box-shadow: 0 8px 18px -16px rgb(0 0 0 / 55%);
   font-size: 0.68rem;
   letter-spacing: 0.08em;
-  color: rgb(52 42 30 / 78%);
+  color: rgb(var(--wall-ink-deep-rgb) / 78%);
   cursor: pointer;
   transform: rotate(-0.35deg);
   transition:
@@ -545,9 +548,9 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
 }
 
 .wall-more:hover {
-  border-color: rgb(52 42 30 / 46%);
-  background: rgb(250 246 236 / 96%);
-  color: rgb(38 30 21 / 94%);
+  border-color: rgb(var(--wall-ink-deep-rgb) / 46%);
+  background: rgb(var(--wall-chip-strong-rgb) / 96%);
+  color: rgb(var(--wall-ink-deep-rgb) / 94%);
   transform: rotate(0deg) translateY(-1px);
 }
 
@@ -557,7 +560,7 @@ const handleViewDetail = (echo: WallEcho) => emit('view-detail', echo)
 }
 
 .wall-more:focus-visible {
-  outline: 2px solid rgb(58 50 40 / 55%);
+  outline: 2px solid rgb(var(--wall-ink-soft-rgb) / 55%);
   outline-offset: 2px;
 }
 

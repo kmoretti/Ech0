@@ -32,6 +32,65 @@
         <span class="wall-note__stamp">{{ dateParts.stamp }}</span>
         <span class="wall-note__weekday">{{ dateParts.weekday }}</span>
         <span class="wall-note__clock">{{ dateParts.time }}</span>
+
+        <span v-if="canManage" class="wall-note__menu-wrap" @click.stop @pointerdown.stop @keydown.stop>
+          <button
+            ref="menuTriggerRef"
+            type="button"
+            class="wall-note__menu-btn"
+            :aria-label="t('echoCard.moreActions')"
+            :aria-expanded="isMenuOpen"
+            aria-haspopup="menu"
+            @click.stop="toggleMenu"
+          >
+            <More class="wall-note__menu-icon" />
+          </button>
+
+          <Teleport to="body">
+            <transition
+              enter-active-class="transition duration-150 ease-out"
+              enter-from-class="opacity-0 scale-95"
+              enter-to-class="opacity-100 scale-100"
+              leave-active-class="transition duration-100 ease-in"
+              leave-from-class="opacity-100 scale-100"
+              leave-to-class="opacity-0 scale-95"
+            >
+              <div
+                v-if="isMenuOpen"
+                ref="menuPanelRef"
+                :style="menuPanelStyle"
+                class="wall-note__menu"
+              >
+                <button
+                  type="button"
+                  class="menu-row"
+                  @click="
+                    () => {
+                      closeMenu()
+                      handleUpdateEcho()
+                    }
+                  "
+                >
+                  <EditEcho class="menu-row__icon" />
+                  <span>{{ t('echoCard.update') }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="menu-row menu-row--danger"
+                  @click="
+                    () => {
+                      closeMenu()
+                      handleDeleteEcho()
+                    }
+                  "
+                >
+                  <Roll class="menu-row__icon" />
+                  <span>{{ t('echoCard.delete') }}</span>
+                </button>
+              </div>
+            </transition>
+          </Teleport>
+        </span>
       </span>
 
       <div v-if="hasImages" class="wall-note__media" @click.stop @keydown.stop>
@@ -62,11 +121,25 @@
   </div>
 </template>
 
+<script lang="ts">
+import { ref } from 'vue'
+
+const activeMenuId = ref<string | null>(null)
+</script>
+
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import { fetchDeleteEcho, fetchGetEchoById } from '@/service/api'
+import { theToast } from '@/utils/toast'
+import { useBaseDialog } from '@/composables/useBaseDialog'
+import { useEchoStore, useEditorStore, useUserStore } from '@/stores'
 import Lock from '@/components/icons/lock.vue'
 import Open from '@/components/icons/open.vue'
+import More from '@/components/icons/more.vue'
+import EditEcho from '@/components/icons/editecho.vue'
+import Roll from '@/components/icons/roll.vue'
 import TheEchoReactions from '@/components/advanced/echo/cards/TheEchoReactions.vue'
 import { getEchoFiles } from '@/utils/echo'
 import {
@@ -111,6 +184,7 @@ const emit = defineEmits<{
     },
   ): void
   (event: 'view-detail', echo: WallEcho): void
+  (event: 'refresh'): void
 }>()
 
 const TheMediaPlayer = defineAsyncComponent(
@@ -141,6 +215,121 @@ const handleKeyOpen = (event: KeyboardEvent) => {
 
 const handleDetail = () => emit('view-detail', props.echo)
 
+const userStore = useUserStore()
+const echoStore = useEchoStore()
+const editorStore = useEditorStore()
+const router = useRouter()
+const { openConfirm } = useBaseDialog()
+
+const canManage = computed(() => props.interactive && userStore.isLogin)
+
+const handleDeleteEcho = () => {
+  openConfirm({
+    title: String(t('echoCard.deleteConfirmTitle')),
+    description: String(t('echoCard.deleteConfirmDesc')),
+    onConfirm: () => {
+      fetchDeleteEcho(String(props.echo.id)).then(() => {
+        theToast.success(String(t('echoCard.deleteSuccess')))
+        emit('refresh')
+      })
+    },
+  })
+}
+
+const handleUpdateEcho = async () => {
+  if (editorStore.isUpdateMode) {
+    theToast.warning(String(t('echoCard.exitUpdateModeFirst')))
+    await router.push({
+      name: 'home',
+      query: { ...router.currentRoute.value.query, tab: 'publish' },
+    })
+    return
+  }
+
+  const res = await fetchGetEchoById(String(props.echo.id))
+  if (res.code === 1 && res.data) {
+    echoStore.echoToUpdate = res.data
+  } else {
+    echoStore.echoToUpdate = props.echo
+  }
+
+  editorStore.isUpdateMode = true
+  await router.push({
+    name: 'home',
+    query: { ...router.currentRoute.value.query, tab: 'publish' },
+  })
+}
+
+const isMenuOpen = computed(() => activeMenuId.value === props.echo.id)
+const menuTriggerRef = ref<HTMLElement | null>(null)
+const menuPanelRef = ref<HTMLElement | null>(null)
+const menuPanelStyle = ref<Record<string, string>>({})
+
+const MENU_GAP = 8
+
+const updateMenuPosition = () => {
+  if (!isMenuOpen.value || !menuTriggerRef.value) return
+  const rect = menuTriggerRef.value.getBoundingClientRect()
+  const viewportRight = window.innerWidth
+  const right = Math.max(MENU_GAP, viewportRight - rect.right)
+  menuPanelStyle.value = {
+    top: `${rect.bottom + MENU_GAP}px`,
+    right: `${right}px`,
+  }
+}
+
+const closeMenu = () => {
+  if (isMenuOpen.value) activeMenuId.value = null
+}
+
+const toggleMenu = () => {
+  activeMenuId.value = isMenuOpen.value ? null : props.echo.id
+}
+
+const handleDocumentClick = (event: MouseEvent) => {
+  const target = event.target as Node | null
+  if (!target) return
+  if (menuPanelRef.value?.contains(target) || menuTriggerRef.value?.contains(target)) return
+  closeMenu()
+}
+
+const handleEscape = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') closeMenu()
+}
+
+const SCROLL_LISTENER_OPTIONS: AddEventListenerOptions = { passive: true, capture: true }
+
+const bindGlobalListeners = () => {
+  document.addEventListener('click', handleDocumentClick)
+  document.addEventListener('keydown', handleEscape)
+  window.addEventListener('resize', updateMenuPosition, { passive: true })
+  window.addEventListener('scroll', updateMenuPosition, SCROLL_LISTENER_OPTIONS)
+}
+
+const unbindGlobalListeners = () => {
+  document.removeEventListener('click', handleDocumentClick)
+  document.removeEventListener('keydown', handleEscape)
+  window.removeEventListener('resize', updateMenuPosition)
+  window.removeEventListener('scroll', updateMenuPosition, SCROLL_LISTENER_OPTIONS)
+}
+
+watch(isMenuOpen, async (open) => {
+  if (open) {
+    await nextTick()
+    updateMenuPosition()
+    bindGlobalListeners()
+  } else {
+    unbindGlobalListeners()
+  }
+})
+
+onBeforeUnmount(() => {
+  if (isMenuOpen.value) {
+    activeMenuId.value = null
+    unbindGlobalListeners()
+  }
+})
+
 const noteStyle = computed(() => ({
   ...(props.flow || props.stacked
     ? {}
@@ -163,7 +352,7 @@ const noteStyle = computed(() => ({
   padding: 0;
   border: 0;
   background: transparent;
-  color: #2b2621;
+  color: var(--wall-ink-strong);
   text-align: left;
   z-index: var(--note-z, 1);
   cursor: pointer;
@@ -245,11 +434,9 @@ const noteStyle = computed(() => ({
   height: auto;
   min-height: 6.5rem;
   overflow: hidden;
-  background-color: #f5efe2;
-  background-image:
-    radial-gradient(circle at 18% 10%, rgb(255 255 255 / 55%), transparent 42%),
-    radial-gradient(circle at 80% 92%, rgb(92 68 42 / 5%), transparent 55%);
-  border: 1px solid rgb(96 74 50 / 24%);
+  background-color: var(--wall-note-bg);
+  background-image: var(--wall-note-image);
+  border: 1px solid rgb(var(--wall-line-rgb) / 24%);
   border-radius: 1px;
   box-shadow: var(--note-shadow);
   transition: box-shadow 300ms ease;
@@ -333,7 +520,7 @@ const noteStyle = computed(() => ({
   font-size: 0.58rem;
   line-height: 1.2;
   letter-spacing: 0.04em;
-  color: rgb(74 62 48 / 72%);
+  color: rgb(var(--wall-ink-rgb) / 72%);
   white-space: nowrap;
 }
 
@@ -356,13 +543,106 @@ const noteStyle = computed(() => ({
 }
 
 .wall-note__weekday {
-  color: rgb(74 62 48 / 52%);
+  color: rgb(var(--wall-ink-rgb) / 52%);
 }
 
 .wall-note__clock {
   margin-left: auto;
-  color: rgb(74 62 48 / 42%);
+  color: rgb(var(--wall-ink-rgb) / 42%);
   font-variant-numeric: tabular-nums;
+}
+
+.wall-note__menu-wrap {
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  flex: none;
+  margin-left: 0.3rem;
+}
+
+.wall-note__menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: rgb(var(--wall-ink-rgb) / 48%);
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+
+.wall-note__menu-btn:hover,
+.wall-note__menu-btn:focus-visible {
+  color: var(--wall-ink-strong);
+  background: rgb(var(--wall-ink-soft-rgb) / 8%);
+}
+
+.wall-note__menu-btn:focus-visible {
+  outline: 2px solid var(--wall-focus);
+  outline-offset: 1px;
+}
+
+.wall-note__menu-icon {
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
+.wall-note__menu {
+  position: fixed;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  min-width: 7.5rem;
+  padding: 0.28rem;
+  background-color: var(--wall-menu-bg);
+  border: 1px solid rgb(var(--wall-line-rgb) / 26%);
+  border-radius: 3px;
+  box-shadow:
+    0 1px 1px rgb(40 27 16 / 14%),
+    0 12px 26px -14px rgb(30 20 10 / 55%);
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.34rem 0.5rem;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  color: rgb(var(--wall-ink-soft-rgb) / 86%);
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.menu-row:hover {
+  background: rgb(var(--wall-ink-soft-rgb) / 7%);
+  color: var(--wall-ink-strong);
+}
+
+.menu-row__icon {
+  width: 0.78rem;
+  height: 0.78rem;
+  flex: none;
+}
+
+.menu-row--danger {
+  color: rgb(var(--wall-accent-rgb) / 86%);
+}
+
+.menu-row--danger:hover {
+  background: rgb(var(--wall-accent-rgb) / 9%);
+  color: rgb(var(--wall-accent-rgb));
 }
 
 .wall-note__media {
@@ -407,8 +687,8 @@ const noteStyle = computed(() => ({
   font-size: 0.84rem;
   line-height: 1.72;
   letter-spacing: 0.01em;
-  color: rgb(60 50 40 / 82%);
-  text-decoration: underline wavy rgb(90 70 45 / 18%);
+  color: rgb(var(--wall-ink-soft-rgb) / 82%);
+  text-decoration: underline wavy rgb(var(--wall-line-rgb) / 18%);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
   -webkit-box-orient: vertical;
@@ -424,7 +704,7 @@ const noteStyle = computed(() => ({
   gap: 0.4rem;
   padding: 0.28rem 0.8rem 0.08rem;
   font-size: 0.56rem;
-  color: rgb(74 62 48 / 48%);
+  color: rgb(var(--wall-ink-rgb) / 48%);
 }
 
 .wall-note__tags {
@@ -447,11 +727,11 @@ const noteStyle = computed(() => ({
 }
 
 .wall-note__actions {
-  --color-border-subtle: rgb(96 74 50 / 26%);
-  --color-border-strong: rgb(96 74 50 / 42%);
-  --color-bg-muted: rgb(70 56 40 / 6%);
-  --color-text-muted: rgb(74 62 48 / 62%);
-  --color-text-primary: #2b2621;
+  --color-border-subtle: rgb(var(--wall-line-rgb) / 26%);
+  --color-border-strong: rgb(var(--wall-line-rgb) / 42%);
+  --color-bg-muted: rgb(var(--wall-ink-soft-rgb) / 6%);
+  --color-text-muted: rgb(var(--wall-ink-rgb) / 62%);
+  --color-text-primary: var(--wall-ink-strong);
 
   position: relative;
   z-index: 3;
@@ -461,7 +741,7 @@ const noteStyle = computed(() => ({
   gap: 0.4rem;
   margin-top: 0.12rem;
   padding: 0.16rem 0.72rem 0.46rem;
-  border-top: 1px dashed rgb(92 72 48 / 18%);
+  border-top: 1px dashed rgb(var(--wall-line-rgb) / 18%);
 }
 
 .wall-note__actions :deep(.echo-reactions-anchor) {
@@ -499,7 +779,7 @@ const noteStyle = computed(() => ({
   background: transparent;
   font-size: 0.58rem;
   letter-spacing: 0.04em;
-  color: rgb(74 62 48 / 58%);
+  color: rgb(var(--wall-ink-rgb) / 58%);
   cursor: pointer;
   transition:
     color 160ms ease,
@@ -508,13 +788,13 @@ const noteStyle = computed(() => ({
 }
 
 .wall-note__detail:hover {
-  border-color: rgb(92 72 48 / 26%);
-  background: rgb(70 56 40 / 5%);
-  color: #2b2621;
+  border-color: rgb(var(--wall-line-rgb) / 26%);
+  background: rgb(var(--wall-ink-soft-rgb) / 5%);
+  color: var(--wall-ink-strong);
 }
 
 .wall-note__detail:focus-visible {
-  outline: 2px solid #3a2f24;
+  outline: 2px solid var(--wall-focus);
   outline-offset: 2px;
 }
 
@@ -537,15 +817,9 @@ const noteStyle = computed(() => ({
     0 1px 1px rgb(40 27 16 / 14%), 0 15px 24px -16px rgb(30 22 12 / 50%),
     0 30px 46px -32px rgb(30 22 12 / 46%);
 
-  border-color: rgb(92 104 118 / 26%);
-  background-color: #f7f2e7;
-  background-image:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0 1.32rem,
-      rgb(92 104 118 / 13%) 1.32rem calc(1.32rem + 1px)
-    ),
-    radial-gradient(circle at 18% 10%, rgb(255 255 255 / 55%), transparent 42%);
+  border-color: rgb(var(--wall-line-rgb) / 26%);
+  background-color: var(--wall-paper-ruled-bg);
+  background-image: var(--wall-paper-ruled-image);
 }
 
 .wall-note--ruled .wall-note__body {
@@ -560,19 +834,9 @@ const noteStyle = computed(() => ({
     0 1px 1px rgb(40 32 20 / 15%), 0 16px 26px -18px rgb(28 26 18 / 48%),
     0 32px 50px -34px rgb(28 26 18 / 44%);
 
-  border-color: rgb(96 92 70 / 26%);
-  background-color: #f2efe5;
-  background-image:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0 0.92rem,
-      rgb(100 100 84 / 11%) 0.92rem calc(0.92rem + 1px)
-    ),
-    repeating-linear-gradient(
-      to right,
-      transparent 0 0.92rem,
-      rgb(100 100 84 / 11%) 0.92rem calc(0.92rem + 1px)
-    );
+  border-color: rgb(var(--wall-line-rgb) / 26%);
+  background-color: var(--wall-paper-grid-bg);
+  background-image: var(--wall-paper-grid-image);
 }
 
 .wall-note--kraft .wall-note__sheet {
@@ -583,28 +847,26 @@ const noteStyle = computed(() => ({
     0 1px 1px rgb(60 36 12 / 22%), 0 18px 30px -18px rgb(62 38 14 / 60%),
     0 36px 56px -34px rgb(62 38 14 / 52%);
 
-  background-color: #c8a97e;
-  background-image:
-    radial-gradient(circle at 24% 12%, rgb(255 245 220 / 28%), transparent 46%),
-    radial-gradient(circle at 86% 90%, rgb(88 58 28 / 12%), transparent 52%);
-  border-color: rgb(70 48 24 / 36%);
+  background-color: var(--wall-paper-kraft-bg);
+  background-image: var(--wall-paper-kraft-image);
+  border-color: rgb(var(--wall-line-rgb) / 36%);
 }
 
 .wall-note--kraft .wall-note__date,
 .wall-note--kraft .wall-note__foot {
-  color: rgb(54 38 20 / 78%);
+  color: rgb(var(--wall-ink-deep-rgb) / 78%);
 }
 
 .wall-note--kraft .wall-note__text {
-  color: rgb(44 30 14 / 94%);
-  text-decoration-color: rgb(70 44 18 / 26%);
+  color: rgb(var(--wall-ink-deep-rgb) / 94%);
+  text-decoration-color: rgb(var(--wall-line-rgb) / 26%);
 }
 
 .wall-note--torn .wall-note__sheet {
   --note-shadow: none;
   --note-shadow-hover: none;
 
-  border: 1px solid rgb(96 74 50 / 20%);
+  border: 1px solid rgb(var(--wall-line-rgb) / 20%);
   border-radius: 1px;
   clip-path: polygon(
     0% 0.8%,
@@ -648,15 +910,9 @@ const noteStyle = computed(() => ({
     0 1px 0 rgb(40 30 18 / 15%), 0 14px 24px -16px rgb(30 24 14 / 50%),
     0 28px 44px -30px rgb(30 24 14 / 44%);
 
-  background-color: #fbfaf4;
-  border-color: rgb(84 70 52 / 28%);
-  background-image:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0 1.22rem,
-      rgb(84 94 112 / 10%) 1.22rem calc(1.22rem + 1px)
-    ),
-    radial-gradient(circle at 20% 8%, rgb(255 255 255 / 60%), transparent 40%);
+  background-color: var(--wall-paper-index-bg);
+  border-color: rgb(var(--wall-line-rgb) / 28%);
+  background-image: var(--wall-paper-index-image);
 }
 
 .wall-note--index .wall-note__sheet::before {
@@ -666,7 +922,7 @@ const noteStyle = computed(() => ({
   left: 0;
   width: 100%;
   height: 2px;
-  background: var(--sj-accent, #8a4132);
+  background: var(--sj-accent, rgb(var(--wall-accent-rgb)));
   opacity: 0.72;
 }
 
@@ -692,7 +948,7 @@ const noteStyle = computed(() => ({
 
 .wall-note:focus-visible {
   z-index: 9995;
-  outline: 2px solid #3a2f24;
+  outline: 2px solid var(--wall-focus);
   outline-offset: 4px;
 }
 

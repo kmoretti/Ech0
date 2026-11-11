@@ -12,6 +12,7 @@
           :loading-more="echoStore.isLoadingMore"
           @open="openEcho"
           @view-detail="goDetail"
+          @refresh="refreshWall"
           @clear-date="selectedDate = null"
           @load-more="loadMoreEchoes"
         />
@@ -132,6 +133,9 @@ const canLoadMore = computed(() => !isDemo.value && echoStore.canLoadMore)
 const loadMoreEchoes = () => {
   if (!canLoadMore.value || echoStore.isLoadingMore) return
   void echoStore.loadMore()
+}
+const refreshWall = () => {
+  void echoStore.refreshEchos(16)
 }
 
 watch(
@@ -256,43 +260,37 @@ onBeforeUnmount(() => {
 }
 
 .wall-tab__sheet {
-  --color-text-primary: #2c2620;
-  --color-text-secondary: rgb(70 56 40 / 74%);
-  --color-text-muted: rgb(74 62 48 / 58%);
-  --color-border-subtle: rgb(92 72 48 / 20%);
-  --md-editor-input-text: #2c2620;
-  --md-editor-placeholder: rgb(74 62 48 / 38%);
-  --md-editor-mini-bg: #fbf7ee;
-  --md-editor-mini-border: rgb(92 72 48 / 20%);
-  --md-editor-mini-btn-bg: #fcf9f2;
-  --md-editor-mini-btn-border: rgb(92 72 48 / 20%);
-  --md-editor-mini-btn-hover-bg: #f6efe2;
-  --md-editor-mode-toggle-bg: #f8f4ea;
-  --md-editor-mode-toggle-hover-bg: #f6efe2;
-  --md-editor-actions-ring-color: rgb(92 72 48 / 16%);
-  --md-editor-actions-hover-bg: #f6efe2;
-  --md-editor-actions-hover-border: rgb(92 72 48 / 30%);
-  --md-editor-divider-color: rgb(92 72 48 / 16%);
-  --md-editor-toolbar-btn-bg: #fcf9f2;
-  --md-editor-toolbar-btn-text: rgb(70 56 40 / 70%);
-  --md-editor-toolbar-btn-hover-bg: #f6efe2;
-  --md-editor-toolbar-btn-hover-text: #2c2620;
-  --md-editor-toolbar-btn-hover-border: rgb(92 72 48 / 30%);
+  --color-text-primary: var(--wall-ink-strong);
+  --color-text-secondary: rgb(var(--wall-ink-soft-rgb) / 74%);
+  --color-text-muted: rgb(var(--wall-ink-rgb) / 58%);
+  --color-border-subtle: rgb(var(--wall-line-rgb) / 20%);
+  --md-editor-input-text: var(--wall-ink-strong);
+  --md-editor-placeholder: rgb(var(--wall-ink-rgb) / 38%);
+  --md-editor-mini-bg: var(--wall-editor-surface);
+  --md-editor-mini-border: rgb(var(--wall-line-rgb) / 20%);
+  --md-editor-mini-btn-bg: var(--wall-editor-btn);
+  --md-editor-mini-btn-border: rgb(var(--wall-line-rgb) / 20%);
+  --md-editor-mini-btn-hover-bg: var(--wall-editor-hover);
+  --md-editor-mode-toggle-bg: var(--wall-editor-toggle);
+  --md-editor-mode-toggle-hover-bg: var(--wall-editor-hover);
+  --md-editor-actions-ring-color: rgb(var(--wall-line-rgb) / 16%);
+  --md-editor-actions-hover-bg: var(--wall-editor-hover);
+  --md-editor-actions-hover-border: rgb(var(--wall-line-rgb) / 30%);
+  --md-editor-divider-color: rgb(var(--wall-line-rgb) / 16%);
+  --md-editor-toolbar-btn-bg: var(--wall-editor-btn);
+  --md-editor-toolbar-btn-text: rgb(var(--wall-ink-soft-rgb) / 70%);
+  --md-editor-toolbar-btn-hover-bg: var(--wall-editor-hover);
+  --md-editor-toolbar-btn-hover-text: var(--wall-ink-strong);
+  --md-editor-toolbar-btn-hover-border: rgb(var(--wall-line-rgb) / 30%);
 
   width: min(100%, 44rem);
   height: auto;
   margin: 0 auto;
   padding: 1.15rem 1.35rem 1.2rem;
-  color: #2c2620;
-  background-color: #f7f1e5;
-  background-image:
-    radial-gradient(circle at 16% 4%, rgb(255 255 255 / 58%), transparent 44%),
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0 1.9rem,
-      rgb(92 104 118 / 8%) 1.9rem calc(1.9rem + 1px)
-    );
-  border: 1px solid rgb(92 72 48 / 24%);
+  color: var(--wall-ink-strong);
+  background-color: var(--wall-sheet-bg);
+  background-image: var(--wall-sheet-image);
+  border: 1px solid rgb(var(--wall-line-rgb) / 24%);
   border-radius: 1px;
   box-shadow:
     0 1px 0 rgb(255 255 255 / 40%),
@@ -313,16 +311,16 @@ onBeforeUnmount(() => {
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.16em;
-  color: rgb(52 42 30 / 82%);
+  color: rgb(var(--wall-ink-deep-rgb) / 82%);
 }
 
 .wall-tab__rule {
   flex: 1 1 auto;
-  border-top: 1px dashed rgb(92 72 48 / 24%);
+  border-top: 1px dashed rgb(var(--wall-line-rgb) / 24%);
 }
 
 .wall-tab__sheet :deep(.markdown-editor:not(.is-full)) {
-  border-color: rgb(92 72 48 / 20%);
+  border-color: rgb(var(--wall-line-rgb) / 20%);
 }
 
 .wall-tab__sheet :deep(.editor-input) {
