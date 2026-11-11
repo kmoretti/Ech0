@@ -2,6 +2,7 @@
 <!-- Copyright (C) 2025-2026 lin-snow -->
 <template>
   <div class="wall-page">
+    <span class="wall-page__paper" aria-hidden="true"></span>
     <span class="wall-page__light" aria-hidden="true"></span>
     <span class="wall-page__grain" aria-hidden="true"></span>
 
@@ -20,30 +21,24 @@
 
 <style scoped>
 .wall-page {
-  --wall-paper: #f4ede0;
-  --wall-ink: #2e2720;
-
   position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100dvh;
   overflow: hidden;
-  color: var(--wall-ink);
-  background-color: #ece9e3;
-  background-image:
-    radial-gradient(120% 80% at 12% 0%, rgb(255 253 246 / 46%), transparent 60%),
-    radial-gradient(90% 70% at 92% 100%, rgb(150 122 88 / 7%), transparent 64%),
-    repeating-linear-gradient(
-      0deg,
-      rgb(112 85 55 / 4.5%) 0 1px,
-      transparent 1px 16px,
-      rgb(255 255 255 / 18%) 16px 17px,
-      transparent 17px 33px
-    ),
-    repeating-linear-gradient(0deg, rgb(118 92 62 / 2%) 0 1px, transparent 1px 47px),
-    linear-gradient(180deg, #f2efea 0%, #ece9e3 55%, #e5e1da 100%);
-  background-attachment: fixed;
+  color: var(--wall-ink-strong);
+  background-color: var(--wall-canvas);
+}
+
+/* Paper backdrop on a fixed layer: scrolling never repaints the gradient
+   stack, unlike background-attachment: fixed. */
+.wall-page__paper {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--wall-backdrop);
 }
 
 .wall-page::before {

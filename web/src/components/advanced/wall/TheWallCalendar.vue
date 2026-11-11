@@ -168,16 +168,10 @@ const toggleDay = (key: string, marked: boolean) => {
 .wall-calendar {
   position: relative;
   padding: 1rem 0.95rem 0.85rem;
-  color: #2e2720;
-  background-color: #f6f0e3;
-  background-image:
-    radial-gradient(circle at 20% 6%, rgb(255 255 255 / 62%), transparent 44%),
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0 1.36rem,
-      rgb(90 76 56 / 6%) 1.36rem calc(1.36rem + 1px)
-    );
-  border: 1px solid rgb(92 72 48 / 24%);
+  color: var(--wall-ink-strong);
+  background-color: var(--wall-cal-bg);
+  background-image: var(--wall-cal-image);
+  border: 1px solid rgb(var(--wall-line-rgb) / 24%);
   border-radius: 1px;
   box-shadow:
     0 1px 1px rgb(40 27 16 / 12%),
@@ -206,7 +200,7 @@ const toggleDay = (key: string, marked: boolean) => {
   align-items: center;
   gap: 0.45rem;
   padding-bottom: 0.55rem;
-  border-bottom: 1px dashed rgb(92 72 48 / 28%);
+  border-bottom: 1px dashed rgb(var(--wall-line-rgb) / 28%);
 }
 
 .wall-calendar__title-wrap {
@@ -232,10 +226,10 @@ const toggleDay = (key: string, marked: boolean) => {
 .wall-calendar__reset {
   flex: none;
   padding: 0.1rem 0.34rem;
-  border: 1px solid rgb(92 72 48 / 30%);
+  border: 1px solid rgb(var(--wall-line-rgb) / 30%);
   border-radius: 1px;
   background: transparent;
-  color: rgb(70 56 40 / 72%);
+  color: rgb(var(--wall-ink-soft-rgb) / 72%);
   font-size: 0.58rem;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -246,9 +240,9 @@ const toggleDay = (key: string, marked: boolean) => {
 }
 
 .wall-calendar__reset:hover {
-  border-color: rgb(70 56 40 / 52%);
-  background: rgb(70 56 40 / 6%);
-  color: #2e2720;
+  border-color: rgb(var(--wall-ink-soft-rgb) / 52%);
+  background: rgb(var(--wall-ink-soft-rgb) / 6%);
+  color: var(--wall-ink-strong);
 }
 
 .wall-calendar__nav {
@@ -262,7 +256,7 @@ const toggleDay = (key: string, marked: boolean) => {
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: rgb(70 56 40 / 58%);
+  color: rgb(var(--wall-ink-soft-rgb) / 58%);
   cursor: pointer;
   transition:
     color 160ms ease,
@@ -270,13 +264,13 @@ const toggleDay = (key: string, marked: boolean) => {
 }
 
 .wall-calendar__nav:hover {
-  background: rgb(70 56 40 / 7%);
-  color: #2e2720;
+  background: rgb(var(--wall-ink-soft-rgb) / 7%);
+  color: var(--wall-ink-strong);
 }
 
 .wall-calendar__nav:focus-visible,
 .wall-calendar__reset:focus-visible {
-  outline: 2px solid #3a2f24;
+  outline: 2px solid var(--wall-focus);
   outline-offset: 2px;
 }
 
@@ -299,7 +293,7 @@ const toggleDay = (key: string, marked: boolean) => {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-align: center;
-  color: rgb(70 56 40 / 46%);
+  color: rgb(var(--wall-ink-soft-rgb) / 46%);
 }
 
 .wall-calendar__grid {
@@ -319,7 +313,7 @@ const toggleDay = (key: string, marked: boolean) => {
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: rgb(70 56 40 / 30%);
+  color: rgb(var(--wall-ink-soft-rgb) / 30%);
   font-size: 0.66rem;
   font-variant-numeric: tabular-nums;
   cursor: default;
@@ -334,17 +328,17 @@ const toggleDay = (key: string, marked: boolean) => {
 }
 
 .wall-calendar__day.is-marked {
-  color: #3b3127;
+  color: var(--wall-ink-strong);
   cursor: pointer;
 }
 
 .wall-calendar__day.is-marked:hover {
-  background: rgb(60 48 34 / 8%);
+  background: rgb(var(--wall-ink-soft-rgb) / 8%);
   transform: translateY(-1px);
 }
 
 .wall-calendar__day.is-marked:focus-visible {
-  outline: 2px solid #3a2f24;
+  outline: 2px solid var(--wall-focus);
   outline-offset: 1px;
 }
 
@@ -355,13 +349,13 @@ const toggleDay = (key: string, marked: boolean) => {
 }
 
 .wall-calendar__day.is-selected {
-  color: #f8f2e5;
-  background: #332a21;
+  color: var(--wall-ink-strong);
+  background: var(--wall-cal-today-bg);
   box-shadow: 0 3px 7px -4px rgb(0 0 0 / 55%);
 }
 
 .wall-calendar__day.is-selected:hover {
-  background: #332a21;
+  background: var(--wall-cal-today-bg);
 }
 
 .wall-calendar__dot {
@@ -371,13 +365,13 @@ const toggleDay = (key: string, marked: boolean) => {
   width: 0.2rem;
   height: 0.2rem;
   border-radius: 50%;
-  background: #8a4132;
+  background: rgb(var(--wall-accent-rgb));
   opacity: 0.65;
   transform: translateX(-50%);
 }
 
 .wall-calendar__day.is-selected .wall-calendar__dot {
-  background: #f0d9cd;
+  background: var(--wall-cal-dot);
   opacity: 0.8;
 }
 
@@ -388,17 +382,17 @@ const toggleDay = (key: string, marked: boolean) => {
   gap: 0.32rem;
   margin-top: 0.55rem;
   padding-top: 0.5rem;
-  border-top: 1px dashed rgb(92 72 48 / 20%);
+  border-top: 1px dashed rgb(var(--wall-line-rgb) / 20%);
   font-size: 0.56rem;
   letter-spacing: 0.04em;
-  color: rgb(70 56 40 / 46%);
+  color: rgb(var(--wall-ink-soft-rgb) / 46%);
 }
 
 .wall-calendar__legend-dot {
   width: 0.22rem;
   height: 0.22rem;
   border-radius: 50%;
-  background: #8a4132;
+  background: rgb(var(--wall-accent-rgb));
   opacity: 0.65;
 }
 </style>

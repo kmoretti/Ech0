@@ -121,18 +121,18 @@ onBeforeUnmount(() => clearSeoOverride(route.path))
   width: 100%;
   min-height: 100dvh;
   padding: 2.4rem 1rem 3rem;
-  background-color: #ece9e3;
-  background-image:
-    radial-gradient(120% 80% at 12% 0%, rgb(255 253 246 / 46%), transparent 60%),
-    repeating-linear-gradient(
-      0deg,
-      rgb(118 92 62 / 3.5%) 0 1px,
-      transparent 1px 16px,
-      rgb(255 255 255 / 14%) 16px 17px,
-      transparent 17px 33px
-    ),
-    linear-gradient(180deg, #f2efea 0%, #ece9e3 55%, #e5e1da 100%);
-  background-attachment: fixed;
+}
+
+/* Backdrop on a fixed layer instead of background-attachment: fixed, so
+   scrolling the page never repaints the gradient stack. */
+.echo-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--wall-canvas);
+  background-image: var(--wall-backdrop);
 }
 
 .echo-sheet {

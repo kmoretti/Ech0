@@ -1,0 +1,204 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2025-2026 lin-snow
+
+// Star-letter wall palette.
+// The wall renders a paper desk: inked notes, tape, pins, ruled and grid
+// paper stocks. Every component consumes these --wall-* variables, so the
+// light desk and the "night reading" desk (dark mode) stay one palette apart
+// instead of scattering literals across components.
+// RGB triplets are exposed separately (e.g. --wall-ink-rgb) so components can
+// derive alpha variants: rgb(var(--wall-ink-rgb) / 48%).
+
+:root {
+  /* ink */
+  --wall-ink-rgb: 74 62 48;
+  --wall-ink-soft-rgb: 58 50 40;
+  --wall-ink-deep-rgb: 52 42 30;
+  --wall-ink-strong: #2b2621;
+  --wall-focus: #3a2f24;
+  --wall-accent-rgb: 138 65 50;
+
+  /* lines */
+  --wall-line-rgb: 92 72 48;
+  --wall-line-strong: #c3bcb2;
+
+  /* desk */
+  --wall-canvas: #ece9e3;
+  --wall-backdrop:
+    radial-gradient(120% 80% at 12% 0%, rgb(255 253 246 / 46%), transparent 60%),
+    radial-gradient(90% 70% at 92% 100%, rgb(150 122 88 / 7%), transparent 64%),
+    repeating-linear-gradient(
+      0deg,
+      rgb(112 85 55 / 4.5%) 0 1px,
+      transparent 1px 16px,
+      rgb(255 255 255 / 18%) 16px 17px,
+      transparent 17px 33px
+    ),
+    repeating-linear-gradient(0deg, rgb(118 92 62 / 2%) 0 1px, transparent 1px 47px),
+    linear-gradient(180deg, #f2efea 0%, #ece9e3 55%, #e5e1da 100%);
+
+  /* paper stocks */
+  --wall-note-bg: #f5efe2;
+  --wall-note-image:
+    radial-gradient(circle at 18% 10%, rgb(255 255 255 / 55%), transparent 42%),
+    radial-gradient(circle at 80% 92%, rgb(92 68 42 / 5%), transparent 55%);
+  --wall-paper-ruled-bg: #f7f2e7;
+  --wall-paper-ruled-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 1.32rem,
+      rgb(92 104 118 / 13%) 1.32rem calc(1.32rem + 1px)
+    ),
+    radial-gradient(circle at 18% 10%, rgb(255 255 255 / 55%), transparent 42%);
+  --wall-paper-grid-bg: #f2efe5;
+  --wall-paper-grid-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 0.92rem,
+      rgb(100 100 84 / 11%) 0.92rem calc(0.92rem + 1px)
+    ),
+    repeating-linear-gradient(
+      to right,
+      transparent 0 0.92rem,
+      rgb(100 100 84 / 11%) 0.92rem calc(0.92rem + 1px)
+    );
+  --wall-paper-kraft-bg: #c8a97e;
+  --wall-paper-kraft-image:
+    radial-gradient(circle at 24% 12%, rgb(255 245 220 / 28%), transparent 46%),
+    radial-gradient(circle at 86% 90%, rgb(88 58 28 / 12%), transparent 52%);
+  --wall-paper-index-bg: #fbfaf4;
+  --wall-paper-index-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 1.22rem,
+      rgb(84 94 112 / 10%) 1.22rem calc(1.22rem + 1px)
+    ),
+    radial-gradient(circle at 20% 8%, rgb(255 255 255 / 60%), transparent 40%);
+
+  /* small surfaces */
+  --wall-chip-bg-rgb: 246 240 227;
+  --wall-chip-strong-rgb: 250 246 236;
+  --wall-bubble-rgb: 238 232 221;
+  --wall-menu-bg: #f5efe2;
+  --wall-sheet-bg: #f7f1e5;
+  --wall-sheet-image:
+    radial-gradient(circle at 16% 4%, rgb(255 255 255 / 58%), transparent 44%),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 1.9rem,
+      rgb(92 104 118 / 8%) 1.9rem calc(1.9rem + 1px)
+    );
+
+  /* editor surfaces on the tab sheet */
+  --wall-editor-surface: #fbf7ee;
+  --wall-editor-btn: #fcf9f2;
+  --wall-editor-hover: #f6efe2;
+  --wall-editor-toggle: #f8f4ea;
+
+  /* wall calendar */
+  --wall-cal-bg: #f6f0e3;
+  --wall-cal-image:
+    radial-gradient(circle at 20% 6%, rgb(255 255 255 / 62%), transparent 44%),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 1.36rem,
+      rgb(90 76 56 / 6%) 1.36rem calc(1.36rem + 1px)
+    );
+  --wall-cal-today-bg: #332a21;
+  --wall-cal-dot: #f0d9cd;
+}
+
+/* Night reading desk: same paper language, lamp-lit charcoal stock. The
+   palette mirrors the app's warm dark tokens (#191715 canvas, #e9e4dc ink,
+   #a85c49 accent) so the wall never drifts into blue-gray slop. */
+:root.dark {
+  --wall-ink-rgb: 233 228 220;
+  --wall-ink-soft-rgb: 196 189 178;
+  --wall-ink-deep-rgb: 238 233 224;
+  --wall-ink-strong: #ece7de;
+  --wall-focus: #d8c7a9;
+  --wall-accent-rgb: 201 139 110;
+
+  --wall-line-rgb: 224 209 184;
+  --wall-line-strong: #4e4841;
+
+  --wall-canvas: #191715;
+  --wall-backdrop:
+    radial-gradient(120% 80% at 12% 0%, rgb(255 240 214 / 5%), transparent 60%),
+    radial-gradient(90% 70% at 92% 100%, rgb(150 122 88 / 6%), transparent 64%),
+    repeating-linear-gradient(
+      0deg,
+      rgb(255 244 220 / 3%) 0 1px,
+      transparent 1px 16px,
+      rgb(255 255 255 / 5%) 16px 17px,
+      transparent 17px 33px
+    ),
+    repeating-linear-gradient(0deg, rgb(255 244 220 / 2%) 0 1px, transparent 1px 47px),
+    linear-gradient(180deg, #1d1916 0%, #191715 55%, #151210 100%);
+
+  --wall-note-bg: #262019;
+  --wall-note-image:
+    radial-gradient(circle at 18% 10%, rgb(255 240 214 / 6%), transparent 42%),
+    radial-gradient(circle at 80% 92%, rgb(120 92 60 / 6%), transparent 55%);
+  --wall-paper-ruled-bg: #242019;
+  --wall-paper-ruled-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 1.32rem,
+      rgb(233 228 220 / 8%) 1.32rem calc(1.32rem + 1px)
+    ),
+    radial-gradient(circle at 18% 10%, rgb(255 240 214 / 6%), transparent 42%);
+  --wall-paper-grid-bg: #231e18;
+  --wall-paper-grid-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 0.92rem,
+      rgb(233 228 220 / 6%) 0.92rem calc(0.92rem + 1px)
+    ),
+    repeating-linear-gradient(
+      to right,
+      transparent 0 0.92rem,
+      rgb(233 228 220 / 6%) 0.92rem calc(0.92rem + 1px)
+    );
+  --wall-paper-kraft-bg: #5a4632;
+  --wall-paper-kraft-image:
+    radial-gradient(circle at 24% 12%, rgb(255 245 220 / 10%), transparent 46%),
+    radial-gradient(circle at 86% 90%, rgb(30 20 10 / 24%), transparent 52%);
+  --wall-paper-index-bg: #1f1b16;
+  --wall-paper-index-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 1.22rem,
+      rgb(233 228 220 / 7%) 1.22rem calc(1.22rem + 1px)
+    ),
+    radial-gradient(circle at 20% 8%, rgb(255 240 214 / 8%), transparent 40%);
+
+  --wall-chip-bg-rgb: 42 36 29;
+  --wall-chip-strong-rgb: 50 43 34;
+  --wall-bubble-rgb: 42 36 29;
+  --wall-menu-bg: #2a231c;
+  --wall-sheet-bg: #201b16;
+  --wall-sheet-image:
+    radial-gradient(circle at 16% 4%, rgb(255 240 214 / 5%), transparent 44%),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 1.9rem,
+      rgb(233 228 220 / 6%) 1.9rem calc(1.9rem + 1px)
+    );
+
+  --wall-editor-surface: #2a241c;
+  --wall-editor-btn: #2e2720;
+  --wall-editor-hover: #372e24;
+  --wall-editor-toggle: #2c251e;
+
+  --wall-cal-bg: #221d17;
+  --wall-cal-image:
+    radial-gradient(circle at 20% 6%, rgb(255 240 214 / 6%), transparent 44%),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 1.36rem,
+      rgb(233 228 220 / 7%) 1.36rem calc(1.36rem + 1px)
+    );
+  --wall-cal-today-bg: #453a2e;
+  --wall-cal-dot: #a8917c;
+}

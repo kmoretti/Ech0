@@ -32,11 +32,11 @@ const footerLink = computed(() => SystemSetting.value.footer_link?.trim() || '')
 <style scoped>
 .wall-footer {
   padding: 0.7rem 0.6rem 0.2rem;
-  border-top: 1px dashed rgb(92 72 48 / 18%);
+  border-top: 1px dashed rgb(var(--wall-line-rgb) / 18%);
   font-size: 0.62rem;
   line-height: 1.6;
   letter-spacing: 0.03em;
-  color: rgb(58 50 40 / 58%);
+  color: rgb(var(--wall-ink-soft-rgb) / 58%);
   text-align: center;
 }
 
@@ -48,19 +48,19 @@ const footerLink = computed(() => SystemSetting.value.footer_link?.trim() || '')
 .wall-footer__link {
   color: inherit;
   text-decoration: none;
-  border-bottom: 1px dashed rgb(92 72 48 / 28%);
+  border-bottom: 1px dashed rgb(var(--wall-line-rgb) / 28%);
   transition:
     color 160ms ease,
     border-color 160ms ease;
 }
 
 .wall-footer__link:hover {
-  color: rgb(58 50 40 / 86%);
-  border-bottom-color: rgb(92 72 48 / 50%);
+  color: rgb(var(--wall-ink-soft-rgb) / 86%);
+  border-bottom-color: rgb(var(--wall-line-rgb) / 50%);
 }
 
 .wall-footer__link:focus-visible {
-  outline: 2px solid rgb(90 70 45 / 70%);
+  outline: 2px solid rgb(var(--wall-line-rgb) / 70%);
   outline-offset: 2px;
 }
 </style>

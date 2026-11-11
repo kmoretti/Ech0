@@ -192,22 +192,22 @@ const latestStamp = computed(() => {
 }
 
 .wall-rail :deep(.home-header__title) {
-  color: rgb(58 50 40 / 92%);
+  color: rgb(var(--wall-ink-soft-rgb) / 92%);
   font-size: 1.05rem;
   text-shadow: 0 1px 8px rgb(0 0 0 / 25%);
 }
 
 .wall-rail :deep(.home-header__link-icon) {
-  color: rgb(58 50 40 / 60%);
+  color: rgb(var(--wall-ink-soft-rgb) / 60%);
 }
 
 .wall-rail :deep(.home-header__link-icon:hover) {
-  color: rgb(58 50 40 / 94%);
-  background: rgb(58 50 40 / 10%);
+  color: rgb(var(--wall-ink-soft-rgb) / 94%);
+  background: rgb(var(--wall-ink-soft-rgb) / 10%);
 }
 
 .wall-rail :deep(.home-header__logo) {
-  border-color: rgb(58 50 40 / 30%);
+  border-color: rgb(var(--wall-ink-soft-rgb) / 30%);
   box-shadow: 0 0 0 1px rgb(0 0 0 / 18%);
 }
 
@@ -224,12 +224,12 @@ const latestStamp = computed(() => {
   align-items: center;
   gap: 0.4rem;
   padding: 0.48rem 0.55rem;
-  border: 1px solid rgb(90 70 45 / 18%);
+  border: 1px solid rgb(var(--wall-line-rgb) / 18%);
   border-radius: 1px;
   background: rgb(255 252 244 / 9%);
   font-size: 0.72rem;
   letter-spacing: 0.05em;
-  color: rgb(58 50 40 / 68%);
+  color: rgb(var(--wall-ink-soft-rgb) / 68%);
   text-align: left;
   cursor: pointer;
   transition:
@@ -256,16 +256,16 @@ const latestStamp = computed(() => {
 }
 
 .wall-nav__tab:hover {
-  border-color: rgb(90 70 45 / 34%);
+  border-color: rgb(var(--wall-line-rgb) / 34%);
   background: rgb(255 252 244 / 16%);
-  color: rgb(58 50 40 / 96%);
+  color: rgb(var(--wall-ink-soft-rgb) / 96%);
   transform: rotate(0deg) translateY(-1px);
 }
 
 .wall-nav__tab.is-active {
-  border-color: rgb(90 70 45 / 40%);
-  background: rgb(246 240 227 / 92%);
-  color: #3b3128;
+  border-color: rgb(var(--wall-line-rgb) / 40%);
+  background: rgb(var(--wall-chip-bg-rgb) / 92%);
+  color: var(--wall-ink-strong);
   box-shadow: 0 6px 14px -12px rgb(0 0 0 / 60%);
   transform: rotate(0deg);
 }
@@ -278,11 +278,11 @@ const latestStamp = computed(() => {
   width: 0.24rem;
   height: 0.24rem;
   border-radius: 50%;
-  background: #8a4132;
+  background: rgb(var(--wall-accent-rgb));
 }
 
 .wall-nav__tab:focus-visible {
-  outline: 2px solid rgb(90 70 45 / 72%);
+  outline: 2px solid rgb(var(--wall-line-rgb) / 72%);
   outline-offset: 2px;
 }
 
@@ -302,7 +302,7 @@ const latestStamp = computed(() => {
   border: 0;
   border-radius: 0.375rem;
   background: transparent;
-  color: rgb(58 50 40 / 58%);
+  color: rgb(var(--wall-ink-soft-rgb) / 58%);
   cursor: pointer;
   transition:
     color 160ms ease,
@@ -310,12 +310,12 @@ const latestStamp = computed(() => {
 }
 
 .wall-rail__head-btn:hover {
-  background: rgb(58 50 40 / 9%);
-  color: rgb(58 50 40 / 92%);
+  background: rgb(var(--wall-ink-soft-rgb) / 9%);
+  color: rgb(var(--wall-ink-soft-rgb) / 92%);
 }
 
 .wall-rail__head-btn:focus-visible {
-  outline: 2px solid rgb(90 70 45 / 70%);
+  outline: 2px solid rgb(var(--wall-line-rgb) / 70%);
   outline-offset: 2px;
 }
 
@@ -353,17 +353,17 @@ const latestStamp = computed(() => {
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.14em;
-  color: rgb(58 50 40 / 74%);
+  color: rgb(var(--wall-ink-soft-rgb) / 74%);
 }
 
 .wall-explore__rule {
   flex: 1 1 auto;
-  border-top: 1px dashed rgb(90 70 45 / 18%);
+  border-top: 1px dashed rgb(var(--wall-line-rgb) / 18%);
 }
 
 .wall-connect {
   padding: 0.55rem 0.65rem 0.6rem;
-  border: 1px solid rgb(90 70 45 / 13%);
+  border: 1px solid rgb(var(--wall-line-rgb) / 13%);
   background: rgb(255 252 244 / 4%);
 }
 
@@ -372,7 +372,7 @@ const latestStamp = computed(() => {
   margin: 0 0 0.35rem;
   font-size: 0.58rem;
   letter-spacing: 0.14em;
-  color: rgb(58 50 40 / 46%);
+  color: rgb(var(--wall-ink-soft-rgb) / 46%);
 }
 
 .wall-connect__list {
@@ -390,13 +390,13 @@ const latestStamp = computed(() => {
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.12rem 0;
-  color: rgb(58 50 40 / 68%);
+  color: rgb(var(--wall-ink-soft-rgb) / 68%);
   text-decoration: none;
   transition: color 160ms ease;
 }
 
 .wall-connect__item:hover {
-  color: rgb(58 50 40 / 94%);
+  color: rgb(var(--wall-ink-soft-rgb) / 94%);
 }
 
 .wall-connect__name {
@@ -409,19 +409,19 @@ const latestStamp = computed(() => {
 .wall-connect__count {
   flex: none;
   font-size: 0.56rem;
-  color: rgb(58 50 40 / 40%);
+  color: rgb(var(--wall-ink-soft-rgb) / 40%);
   font-variant-numeric: tabular-nums;
 }
 
 .wall-connect__empty {
   margin: 0;
   font-size: 0.62rem;
-  color: rgb(58 50 40 / 40%);
+  color: rgb(var(--wall-ink-soft-rgb) / 40%);
 }
 
 .wall-ai {
   padding: 0.65rem 0.7rem 0.7rem;
-  border: 1px solid rgb(90 70 45 / 14%);
+  border: 1px solid rgb(var(--wall-line-rgb) / 14%);
   background: rgb(255 252 244 / 5%);
 }
 
@@ -449,14 +449,14 @@ const latestStamp = computed(() => {
 .wall-ai :deep(.recent-content) {
   font-size: 0.66rem;
   line-height: 1.66;
-  color: rgb(58 50 40 / 64%);
+  color: rgb(var(--wall-ink-soft-rgb) / 64%);
 }
 
 .wall-ai__text {
   margin: 0;
   font-size: 0.66rem;
   line-height: 1.66;
-  color: rgb(58 50 40 / 64%);
+  color: rgb(var(--wall-ink-soft-rgb) / 64%);
 }
 
 @media (width <= 1079px) {

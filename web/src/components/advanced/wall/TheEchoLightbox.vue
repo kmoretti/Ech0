@@ -255,10 +255,10 @@ onBeforeUnmount(() => {
   width: 2rem;
   height: 2rem;
   padding: 0;
-  border: 1px solid rgb(92 72 48 / 22%);
+  border: 1px solid rgb(var(--wall-line-rgb) / 22%);
   border-radius: 50%;
-  background: rgb(246 240 227 / 84%);
-  color: rgb(70 56 40 / 60%);
+  background: rgb(var(--wall-chip-bg-rgb) / 84%);
+  color: rgb(var(--wall-ink-soft-rgb) / 60%);
   cursor: pointer;
   box-shadow: 0 6px 14px -12px rgb(0 0 0 / 55%);
   transition:
@@ -268,13 +268,13 @@ onBeforeUnmount(() => {
 }
 
 .wall-lightbox__close:hover {
-  border-color: rgb(92 72 48 / 38%);
-  background: rgb(250 246 236 / 96%);
-  color: #2c2620;
+  border-color: rgb(var(--wall-line-rgb) / 38%);
+  background: rgb(var(--wall-chip-strong-rgb) / 96%);
+  color: var(--wall-ink-strong);
 }
 
 .wall-lightbox__close:focus-visible {
-  outline: 2px solid #3a2f24;
+  outline: 2px solid var(--wall-focus);
   outline-offset: 2px;
 }
 
