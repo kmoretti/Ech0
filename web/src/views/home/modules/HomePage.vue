@@ -310,7 +310,6 @@ onBeforeUnmount(() => {
 
 .wall-tab__title {
   margin: 0;
-  font-family: var(--font-family-display);
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.16em;
@@ -327,7 +326,6 @@ onBeforeUnmount(() => {
 }
 
 .wall-tab__sheet :deep(.editor-input) {
-  font-family: var(--font-family-display);
   font-size: 0.92rem;
   line-height: 1.9;
 }

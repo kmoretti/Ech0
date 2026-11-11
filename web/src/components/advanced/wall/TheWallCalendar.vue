@@ -221,7 +221,6 @@ const toggleDay = (key: string, marked: boolean) => {
 .wall-calendar__title {
   margin: 0;
   overflow: hidden;
-  font-family: var(--font-family-display);
   font-size: 1.02rem;
   font-weight: 600;
   line-height: 1.2;
@@ -237,7 +236,6 @@ const toggleDay = (key: string, marked: boolean) => {
   border-radius: 1px;
   background: transparent;
   color: rgb(70 56 40 / 72%);
-  font-family: var(--font-family-display);
   font-size: 0.58rem;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -297,7 +295,6 @@ const toggleDay = (key: string, marked: boolean) => {
   grid-template-columns: repeat(7, 1fr);
   gap: 0.14rem;
   margin-top: 0.55rem;
-  font-family: var(--font-family-display);
   font-size: 0.54rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -323,7 +320,6 @@ const toggleDay = (key: string, marked: boolean) => {
   border-radius: 50%;
   background: transparent;
   color: rgb(70 56 40 / 30%);
-  font-family: var(--font-family-display);
   font-size: 0.66rem;
   font-variant-numeric: tabular-nums;
   cursor: default;
@@ -393,7 +389,6 @@ const toggleDay = (key: string, marked: boolean) => {
   margin-top: 0.55rem;
   padding-top: 0.5rem;
   border-top: 1px dashed rgb(92 72 48 / 20%);
-  font-family: var(--font-family-display);
   font-size: 0.56rem;
   letter-spacing: 0.04em;
   color: rgb(70 56 40 / 46%);
